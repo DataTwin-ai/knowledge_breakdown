@@ -1,0 +1,383 @@
+# GOVERNANCE MASTER TSG04_03 Discounts (TG04 Value)
+# LAW ARC - 6 laws - status NEEDS_REVIEW
+name: TSG04_03 Discounts - GOVERNANCE MASTER rulebook
+version: TSG04_03
+facts:
+  F_SUPPLY_DISCOUNT_TIMING:
+    name: Time at which the discount is given relative to the supply
+    type: CODE
+    options:
+    - AFTER_SUPPLY
+    - AT_SUPPLY
+    - BEFORE_SUPPLY
+    tier: T1
+  F_SUPPLY_DISCOUNT_RECORDED_IN_INVOICE:
+    name: Discount is duly recorded in the invoice issued in respect of the supply
+    type: BOOLEAN
+    tier: T0
+  F_SUPPLY_CONSIDERATION_FORM:
+    name: Form in which the consideration for the supply is represented
+    type: CODE
+    options:
+    - DISCOUNT
+    - INTEREST
+    - OTHER
+    tier: T1
+  F_DISCOUNT_AGREEMENT_TIMING:
+    name: Time at which the agreement establishing the discount was entered into relative to the supply
+    type: CODE
+    options:
+    - BEFORE_SUPPLY
+    - AT_SUPPLY
+    - AFTER_SUPPLY
+    - NO_AGREEMENT
+    tier: T1
+  F_DISCOUNT_LINKED_TO_INVOICES:
+    name: Discount is specifically linked to relevant invoices
+    type: BOOLEAN
+    tier: T1
+  F_ITC_ATTRIBUTABLE_TO_DISCOUNT:
+    name: Input tax credit is attributable to the discount
+    type: BOOLEAN
+    tier: T1
+  F_DISCOUNT_DOCUMENT_ISSUED_BY_SUPPLIER:
+    name: Document on the basis of which the credit attributable to the discount is determined was issued by the supplier
+    type: BOOLEAN
+    tier: T1
+  F_ITC_REVERSED_BY_RECIPIENT:
+    name: Input tax credit attributable to the discount has been reversed by the recipient
+    type: BOOLEAN
+    tier: T1
+  F_TFOS:
+    name: Form of supply
+    type: CODE
+    options:
+    - SALE
+    - TRANSFER
+    - BARTER
+    - EXCHANGE
+    - LICENCE
+    - RENTAL
+    - LEASE
+    - DISPOSAL
+    - OTHER
+    tier: T1
+  F_SUPPLY_DESCRIPTION:
+    name: Description of supply
+    type: TEXT
+    tier: T1
+  F_SUPPLY_STATUS:
+    name: Status of supply
+    type: CODE
+    options:
+    - AGREED
+    - MADE
+    tier: T1
+  F_SUPPLY_CONSIDERATION_EXISTS:
+    name: Consideration exists for the supply
+    type: BOOLEAN
+    tier: T1
+  F_SUPPLIER_IS_A_PERSON:
+    name: Supplier is a 'person' under the Act
+    type: BOOLEAN
+    tier: T0
+  F_SUPPLIER_ACTIVITY_DESCRIPTION:
+    name: Description of supplier's activity
+    type: TEXT
+    tier: T0
+  F_SUPPLIER_LOCATION:
+    name: Location of supplier
+    type: TEXT
+    tier: T1
+  F_RECIPIENT_LOCATION:
+    name: Location of recipient
+    type: TEXT
+    tier: T1
+  F_SUPPLY_PLACE:
+    name: Place of supply
+    type: TEXT
+    tier: T1
+predicates:
+  A_SALE:
+    statement: The supply of goods or services or both is a sale
+    order: LOW
+    rule: F_TFOS = 'SALE'
+  A_TRANSFER:
+    statement: The supply of goods or services or both is a transfer
+    order: LOW
+    rule: F_TFOS = 'TRANSFER'
+  A_BARTER:
+    statement: The supply of goods or services or both is a barter
+    order: LOW
+    rule: F_TFOS = 'BARTER'
+  A_EXCHANGE:
+    statement: The supply of goods or services or both is an exchange
+    order: LOW
+    rule: F_TFOS = 'EXCHANGE'
+  A_LICENCE:
+    statement: The supply of goods or services or both is a licence
+    order: LOW
+    rule: F_TFOS = 'LICENCE'
+  A_RENTAL:
+    statement: The supply of goods or services or both is a rental
+    order: LOW
+    rule: F_TFOS = 'RENTAL'
+  A_LEASE:
+    statement: The supply of goods or services or both is a lease
+    order: LOW
+    rule: F_TFOS = 'LEASE'
+  A_DISPOSAL:
+    statement: The supply of goods or services or both is a disposal
+    order: LOW
+    rule: F_TFOS = 'DISPOSAL'
+  A_OTHER_FORM:
+    statement: The supply of goods or services or both is another qualifying form
+    order: HIGH
+    interpretation: Based on the description, is the transaction a form of supply similar in nature to sale, transfer, barter,
+      exchange, licence, rental, lease, or disposal?
+    grounding:
+    - F_TFOS
+    - F_SUPPLY_DESCRIPTION
+  A_MADE:
+    statement: The supply is made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'MADE'
+  A_AGREED:
+    statement: The supply is agreed to be made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'AGREED'
+  A_CONSIDERATION:
+    statement: The supply is for a consideration
+    order: LOW
+    rule: F_SUPPLY_CONSIDERATION_EXISTS = TRUE
+  A_PERSON:
+    statement: The supply is by a person
+    order: LOW
+    rule: F_SUPPLIER_IS_A_PERSON = TRUE
+  A_BUSINESS:
+    statement: The supply is in the course or furtherance of business
+    order: HIGH
+    interpretation: Based on the supplier's activity description, is this supply made in the course or furtherance of their
+      business?
+    grounding:
+    - F_SUPPLIER_ACTIVITY_DESCRIPTION
+  A_M_IOSFC_1:
+    statement: The transaction is an import of services
+    order: HIGH
+    interpretation: Based on the supplier location, recipient location, and place of supply, is this an 'import of services'?
+    grounding:
+    - F_SUPPLIER_LOCATION
+    - F_RECIPIENT_LOCATION
+    - F_SUPPLY_PLACE
+  A_M_IOSFC_2:
+    statement: The import of services is for a consideration
+    order: LOW
+    rule: F_SUPPLY_CONSIDERATION_EXISTS = TRUE
+  A_SCHEDULE_I_ACTIVITY:
+    statement: The activity is specified in Schedule I
+    order: HIGH
+    interpretation: Is the described activity one of the activities specified in Schedule I of the CGST Act?
+    grounding:
+    - F_SUPPLIER_ACTIVITY_DESCRIPTION
+    - F_SUPPLY_DESCRIPTION
+  A_MADE_SISIA:
+    statement: The activity is made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'MADE'
+  A_AGREED_SISIA:
+    statement: The activity is agreed to be made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'AGREED'
+  A_NO_CONSIDERATION:
+    statement: The activity is without a consideration
+    order: LOW
+    rule: F_SUPPLY_CONSIDERATION_EXISTS = FALSE
+  A_DISC_BEFORE:
+    statement: The value of the supply shall not include any discount which is given before the time of the supply (this timing
+      alternative only; recording in the invoice is tested separately)
+    order: LOW
+    rule: F_SUPPLY_DISCOUNT_TIMING = 'BEFORE_SUPPLY'
+  A_DISC_AT:
+    statement: The value of the supply shall not include any discount which is given at the time of the supply (this timing
+      alternative only; recording in the invoice is tested separately)
+    order: LOW
+    rule: F_SUPPLY_DISCOUNT_TIMING = 'AT_SUPPLY'
+  A_DISC_RECORDED:
+    statement: The value of the supply shall not include any discount if such discount has been duly recorded in the invoice
+      issued in respect of such supply (this recording condition only; timing is tested separately)
+    order: LOW
+    rule: F_SUPPLY_DISCOUNT_RECORDED_IN_INVOICE = TRUE
+  A_PSDAC_NOT_INCLUDE:
+    statement: The amount in question is a discount that the value of the supply shall not include (the prohibition applies
+      to any discount that meets the other stated conditions)
+    order: LOW
+    rule: F_SUPPLY_CONSIDERATION_FORM = 'DISCOUNT'
+  A_PSDAC_AFTER:
+    statement: The discount is given after the supply has been effected
+    order: LOW
+    rule: F_SUPPLY_DISCOUNT_TIMING = 'AFTER_SUPPLY'
+  A_PSDAC_AGREEMENT:
+    statement: Such discount is established in terms of an agreement entered into at or before the time of such supply
+    order: LOW
+    rule: F_DISCOUNT_AGREEMENT_TIMING IN ['BEFORE_SUPPLY', 'AT_SUPPLY']
+  A_PSDAC_LINKED:
+    statement: Such discount is specifically linked to relevant invoices
+    order: LOW
+    rule: F_DISCOUNT_LINKED_TO_INVOICES = TRUE
+  A_ITC_ATTRIB:
+    statement: Input tax credit is attributable to the discount on the basis of a document issued by the supplier
+    order: LOW
+    rule: F_ITC_ATTRIBUTABLE_TO_DISCOUNT = TRUE AND F_DISCOUNT_DOCUMENT_ISSUED_BY_SUPPLIER = TRUE
+  A_ITC_REV:
+    statement: The input tax credit attributable to the discount has been reversed by the recipient of the supply
+    order: LOW
+    rule: F_ITC_REVERSED_BY_RECIPIENT = TRUE
+  A_DISC_AFTER:
+    statement: The discount is given after the supply has been effected
+    order: LOW
+    rule: F_SUPPLY_DISCOUNT_TIMING = 'AFTER_SUPPLY'
+groups:
+  G_FORMS:
+    name: Forms of Supply
+    logic: ANY
+    members:
+    - A_SALE
+    - A_TRANSFER
+    - A_BARTER
+    - A_EXCHANGE
+    - A_LICENCE
+    - A_RENTAL
+    - A_LEASE
+    - A_DISPOSAL
+    - A_OTHER_FORM
+    description: The supply must take one of the listed or other similar forms.
+  G_TIMING:
+    name: Supply Timing
+    logic: ANY
+    members:
+    - A_MADE
+    - A_AGREED
+    description: The supply must be either made or agreed to be made.
+  G_STATUS:
+    name: Supply Status
+    logic: ANY
+    members:
+    - A_MADE_SISIA
+    - A_AGREED_SISIA
+    description: The activity is either made or agreed to be made.
+  G_DISC_TIMING:
+    name: Discount given before or at the time of supply
+    logic: ANY
+    members:
+    - A_DISC_BEFORE
+    - A_DISC_AT
+    description: The discount is given before the time of the supply OR at the time of the supply.
+  G_PSDAC_CONDITIONS:
+    name: Post-supply discount exclusion conditions
+    logic: ALL
+    members:
+    - A_PSDAC_NOT_INCLUDE
+    - A_PSDAC_AFTER
+    - A_PSDAC_AGREEMENT
+    - A_PSDAC_LINKED
+    description: The amount is a discount that the value shall not include AND it is given after the supply AND it is established
+      by an agreement at or before the supply AND it is specifically linked to relevant invoices
+  G_PSDIR_COND:
+    name: Post-supply discount with recipient ITC reversal
+    logic: ALL
+    members:
+    - A_DISC_AFTER
+    - A_ITC_ATTRIB
+    - A_ITC_REV
+    description: 'All three conditions must hold together: the discount is given after the supply, ITC is attributable to
+      it on a supplier document, and that ITC has been reversed by the recipient.'
+outcomes:
+  LE_SIAFOS:
+    outcome: SUPPLY_INCLUDED_S7_1_a
+    expr: G_FORMS AND G_TIMING AND A_CONSIDERATION AND A_PERSON AND A_BUSINESS
+    module: M_SIAFOS
+    description: The transaction is included in the definition of supply under Section 7(1)(a) if it meets all the specified
+      conditions.
+  LE_M_IOSFC:
+    outcome: SUPPLY_INCLUDED
+    expr: A_M_IOSFC_1 AND A_M_IOSFC_2
+    module: M_IOSFC
+  LE_SISIA:
+    outcome: SUPPLY_INCLUDED
+    expr: A_SCHEDULE_I_ACTIVITY AND G_STATUS AND A_NO_CONSIDERATION
+    module: M_SISIA
+    description: The transaction is included in the scope of supply if it is a Schedule I activity, made or agreed to be made,
+      and is without consideration.
+  LE_DBOAS:
+    outcome: DISCOUNT_EXCLUDED_FROM_VALUE
+    expr: G_DISC_TIMING AND A_DISC_RECORDED
+    module: M_DBOAS
+    description: The value of the supply shall not include the discount when it is given before or at the time of the supply
+      AND it has been duly recorded in the invoice issued in respect of that supply.
+  LE_PSDAC:
+    outcome: VALUE_SHALL_NOT_INCLUDE_DISCOUNT
+    expr: G_PSDAC_CONDITIONS
+    module: M_PSDAC
+    description: The value of the supply shall not include the discount when the amount is a discount AND it is given after
+      the supply AND it is established by an agreement at or before the supply AND it is specifically linked to relevant invoices
+  LE_PSDIR:
+    outcome: DISCOUNT_EXCLUDED_FROM_VALUE
+    expr: G_PSDIR_COND
+    module: M_PSDIR
+    description: The value of the supply shall not include the discount when it was given after the supply and the attributable
+      input tax credit on the supplier's document has been reversed by the recipient.
+products:
+  PD_SIAFOS:
+    statement: The transaction is included in the definition of supply under Section 7(1)(a) if it meets all the specified
+      conditions.
+  PD_M_IOSFC:
+    statement: SUPPLY_INCLUDED
+  PD_SISIA:
+    statement: The transaction is included in the scope of supply if it is a Schedule I activity, made or agreed to be made,
+      and is without consideration.
+  PD_DBOAS:
+    statement: The value of the supply shall not include the discount when it is given before or at the time of the supply
+      AND it has been duly recorded in the invoice issued in respect of that supply.
+  PD_PSDAC:
+    statement: The value of the supply shall not include the discount when the amount is a discount AND it is given after
+      the supply AND it is established by an agreement at or before the supply AND it is specifically linked to relevant invoices
+  PD_PSDIR:
+    statement: The value of the supply shall not include the discount when it was given after the supply and the attributable
+      input tax credit on the supplier's document has been reversed by the recipient.
+compounds:
+- id: C_S7_SS1
+  question: 'Section 7(1): which clause applies?'
+  includes:
+  - LE_SIAFOS
+  - LE_M_IOSFC
+  - LE_SISIA
+  produces:
+  - product: PD_SIAFOS
+    from:
+    - LE_SIAFOS
+  - product: PD_M_IOSFC
+    from:
+    - LE_M_IOSFC
+  - product: PD_SISIA
+    from:
+    - LE_SISIA
+- id: C_DBOAS
+  question: 'Section 15(3)(a): Discount Before Or At Supply?'
+  includes:
+  - LE_DBOAS
+  produces:
+  - product: PD_DBOAS
+    from:
+    - LE_DBOAS
+- id: C_S15_SS3_CB
+  question: 'Section 15(3)(b): which clause applies?'
+  includes:
+  - LE_PSDAC
+  - LE_PSDIR
+  produces:
+  - product: PD_PSDAC
+    from:
+    - LE_PSDAC
+  - product: PD_PSDIR
+    from:
+    - LE_PSDIR

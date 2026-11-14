@@ -1,0 +1,460 @@
+# GOVERNANCE MASTER TSG01_04 Composite & mixed supply (TG01 Supply & Taxability)
+# LAW ARC - 8 laws - status NEEDS_REVIEW
+name: TSG01_04 Composite & mixed supply - GOVERNANCE MASTER rulebook
+version: TSG01_04
+facts:
+  F_SUPPLY_IS_COMPOSITE_SUPPLY:
+    name: Supply is a composite supply
+    type: BOOLEAN
+    tier: T1
+  F_SUPPLY_IS_MIXED:
+    name: Supply is a mixed supply
+    type: BOOLEAN
+    tier: T1
+  F_SUPPLY_COMPONENTS_RATES:
+    name: Tax rates of constituent supplies
+    type: TEXT
+    tier: T1
+  F_INPUT_IS_ELEMENT_OF_OUTWARD_SUPPLY:
+    name: The inward supply is supplied as an element or component of the outward supply
+    type: BOOLEAN
+    tier: T1
+  F_OUTWARD_SUPPLY_DESCRIPTION:
+    name: Description of the outward supply made using the inward supply, including its components
+    type: TEXT
+    tier: T1
+  F_SUPPLY_IS_TAXABLE:
+    name: The supply is taxable under the Act
+    type: BOOLEAN
+    tier: T0
+  F_SUPPLY_IS_COMPOSITE:
+    name: Supply is a composite supply
+    type: BOOLEAN
+    tier: T1
+  F_SUPPLY_IS_WORKS_CONTRACT:
+    name: Composite supply is a works contract as defined in clause (119) of section 2
+    type: BOOLEAN
+    tier: T1
+  F_PROPERTY_CONSTRUCTED_DESCRIPTION:
+    name: Description of the property or work for which the service is supplied
+    type: TEXT
+    tier: T1
+  F_SUPPLY_DESCRIPTION:
+    name: Description of supply
+    type: TEXT
+    tier: T1
+  F_SUPPLY_MANNER:
+    name: Manner in which the goods are supplied
+    type: CODE
+    options:
+    - BY_WAY_OF_SERVICE
+    - AS_PART_OF_SERVICE
+    - ANY_OTHER_MANNER
+    - NONE
+    tier: T1
+  F_GOODS_IS_FOOD:
+    name: Goods supplied are food
+    type: BOOLEAN
+    tier: T1
+  F_GOODS_IS_OTHER_ARTICLE_FOR_HUMAN_CONSUMPTION:
+    name: Goods supplied are an article for human consumption other than food
+    type: BOOLEAN
+    tier: T1
+  F_GOODS_IS_DRINK:
+    name: Goods supplied are a drink
+    type: BOOLEAN
+    tier: T1
+  F_GOODS_IS_ALCOHOLIC_LIQUOR_FOR_HUMAN_CONSUMPTION:
+    name: Goods are alcoholic liquor for human consumption
+    type: BOOLEAN
+    tier: T1
+  F_CONSIDERATION_IN_CASH:
+    name: Supply or service is for cash
+    type: BOOLEAN
+    tier: T1
+  F_CONSIDERATION_DEFERRED_PAYMENT:
+    name: Supply or service is for deferred payment
+    type: BOOLEAN
+    tier: T1
+  F_CONSIDERATION_OTHER_VALUABLE:
+    name: Supply or service is for other valuable consideration
+    type: BOOLEAN
+    tier: T1
+  F_TFOS:
+    name: Form of supply
+    type: CODE
+    options:
+    - SALE
+    - TRANSFER
+    - BARTER
+    - EXCHANGE
+    - LICENCE
+    - RENTAL
+    - LEASE
+    - DISPOSAL
+    - OTHER
+    tier: T1
+  F_SUPPLY_STATUS:
+    name: Status of supply
+    type: CODE
+    options:
+    - AGREED
+    - MADE
+    tier: T1
+  F_SUPPLY_CONSIDERATION_EXISTS:
+    name: Consideration exists for the supply
+    type: BOOLEAN
+    tier: T1
+  F_SUPPLIER_IS_A_PERSON:
+    name: Supplier is a 'person' under the Act
+    type: BOOLEAN
+    tier: T0
+  F_SUPPLIER_ACTIVITY_DESCRIPTION:
+    name: Description of supplier's activity
+    type: TEXT
+    tier: T0
+  F_SUPPLIER_LOCATION:
+    name: Location of supplier
+    type: TEXT
+    tier: T1
+  F_RECIPIENT_LOCATION:
+    name: Location of recipient
+    type: TEXT
+    tier: T1
+  F_SUPPLY_PLACE:
+    name: Place of supply
+    type: TEXT
+    tier: T1
+predicates:
+  A_SALE:
+    statement: The supply of goods or services or both is a sale
+    order: LOW
+    rule: F_TFOS = 'SALE'
+  A_TRANSFER:
+    statement: The supply of goods or services or both is a transfer
+    order: LOW
+    rule: F_TFOS = 'TRANSFER'
+  A_BARTER:
+    statement: The supply of goods or services or both is a barter
+    order: LOW
+    rule: F_TFOS = 'BARTER'
+  A_EXCHANGE:
+    statement: The supply of goods or services or both is an exchange
+    order: LOW
+    rule: F_TFOS = 'EXCHANGE'
+  A_LICENCE:
+    statement: The supply of goods or services or both is a licence
+    order: LOW
+    rule: F_TFOS = 'LICENCE'
+  A_RENTAL:
+    statement: The supply of goods or services or both is a rental
+    order: LOW
+    rule: F_TFOS = 'RENTAL'
+  A_LEASE:
+    statement: The supply of goods or services or both is a lease
+    order: LOW
+    rule: F_TFOS = 'LEASE'
+  A_DISPOSAL:
+    statement: The supply of goods or services or both is a disposal
+    order: LOW
+    rule: F_TFOS = 'DISPOSAL'
+  A_OTHER_FORM:
+    statement: The supply of goods or services or both is another qualifying form
+    order: HIGH
+    interpretation: Based on the description, is the transaction a form of supply similar in nature to sale, transfer, barter,
+      exchange, licence, rental, lease, or disposal?
+    grounding:
+    - F_TFOS
+    - F_SUPPLY_DESCRIPTION
+  A_MADE:
+    statement: The supply is made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'MADE'
+  A_AGREED:
+    statement: The supply is agreed to be made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'AGREED'
+  A_CONSIDERATION:
+    statement: The supply is for a consideration
+    order: LOW
+    rule: F_SUPPLY_CONSIDERATION_EXISTS = TRUE
+  A_PERSON:
+    statement: The supply is by a person
+    order: LOW
+    rule: F_SUPPLIER_IS_A_PERSON = TRUE
+  A_BUSINESS:
+    statement: The supply is in the course or furtherance of business
+    order: HIGH
+    interpretation: Based on the supplier's activity description, is this supply made in the course or furtherance of their
+      business?
+    grounding:
+    - F_SUPPLIER_ACTIVITY_DESCRIPTION
+  A_M_IOSFC_1:
+    statement: The transaction is an import of services
+    order: HIGH
+    interpretation: Based on the supplier location, recipient location, and place of supply, is this an 'import of services'?
+    grounding:
+    - F_SUPPLIER_LOCATION
+    - F_RECIPIENT_LOCATION
+    - F_SUPPLY_PLACE
+  A_M_IOSFC_2:
+    statement: The import of services is for a consideration
+    order: LOW
+    rule: F_SUPPLY_CONSIDERATION_EXISTS = TRUE
+  A_SCHEDULE_I_ACTIVITY:
+    statement: The activity is specified in Schedule I
+    order: HIGH
+    interpretation: Is the described activity one of the activities specified in Schedule I of the CGST Act?
+    grounding:
+    - F_SUPPLIER_ACTIVITY_DESCRIPTION
+    - F_SUPPLY_DESCRIPTION
+  A_MADE_SISIA:
+    statement: The activity is made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'MADE'
+  A_AGREED_SISIA:
+    statement: The activity is agreed to be made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'AGREED'
+  A_NO_CONSIDERATION:
+    statement: The activity is without a consideration
+    order: LOW
+    rule: F_SUPPLY_CONSIDERATION_EXISTS = FALSE
+  A_CSPST_1:
+    statement: The supply is a composite supply comprising two or more supplies, one of which is a principal supply.
+    order: HIGH
+    interpretation: The determination of whether a supply is a composite supply (comprising two or more supplies, one of which
+      is principal) is based on the facts and circumstances of the transaction, as per the definition in Section 2(30).
+    grounding:
+    - F_SUPPLY_IS_COMPOSITE_SUPPLY
+  A_M_MSHTR_1:
+    statement: a mixed supply comprising two or more supplies shall be treated as a supply of that particular supply which
+      attracts the highest rate of tax.
+    order: HIGH
+    interpretation: For the given transaction, confirm it is a mixed supply with two or more components, and if so, identify
+      which component supply attracts the highest rate of tax.
+    grounding:
+    - F_SUPPLY_IS_MIXED
+    - F_SUPPLY_COMPONENTS_RATES
+  A_COMPOSITE_ELEMENT:
+    statement: The inward supply of such goods or services or both is used by the registered person as an element of a taxable
+      composite or mixed supply
+    order: HIGH
+    interpretation: Is the inward supply used as an element of an outward supply that is a composite supply or a mixed supply,
+      and is that composite or mixed supply taxable?
+    grounding:
+    - F_INPUT_IS_ELEMENT_OF_OUTWARD_SUPPLY
+    - F_OUTWARD_SUPPLY_DESCRIPTION
+    - F_SUPPLY_IS_TAXABLE
+  A_COMPOSITE_SUPPLY:
+    statement: The supply is a composite supply of the kind listed in this paragraph
+    order: LOW
+    rule: F_SUPPLY_IS_COMPOSITE = TRUE
+  A_WORKS_CONTRACT:
+    statement: The composite supply is a works contract as defined in clause (119) of section 2
+    order: HIGH
+    interpretation: Does the composite supply meet the definition of works contract in clause (119) of section 2, which is
+      not reproduced in this paragraph
+    grounding:
+    - F_SUPPLY_IS_WORKS_CONTRACT
+    - F_PROPERTY_CONSTRUCTED_DESCRIPTION
+  A_COMPOSITE_SUPPLY_FADSAS:
+    statement: The supply is a composite supply of the kind dealt with in this paragraph
+    order: HIGH
+    interpretation: Is the supply a composite supply that includes a supply of goods, so that it is one of the composite supplies
+      to which this paragraph applies?
+    grounding:
+    - F_SUPPLY_DESCRIPTION
+  A_GOODS_SUPPLY_MANNER:
+    statement: Goods are supplied by way of or as part of any service or in any other manner whatsoever
+    order: LOW
+    rule: F_SUPPLY_MANNER IN ['BY_WAY_OF_SERVICE','AS_PART_OF_SERVICE','ANY_OTHER_MANNER']
+  A_GOODS_FOOD:
+    statement: The goods supplied are food
+    order: LOW
+    rule: F_GOODS_IS_FOOD = TRUE
+  A_GOODS_OTHER_ARTICLE:
+    statement: The goods supplied are any other article for human consumption
+    order: LOW
+    rule: F_GOODS_IS_OTHER_ARTICLE_FOR_HUMAN_CONSUMPTION = TRUE
+  A_GOODS_DRINK:
+    statement: The goods supplied are any drink other than alcoholic liquor for human consumption
+    order: LOW
+    if_false: The drink is alcoholic liquor for human consumption
+    rule: F_GOODS_IS_DRINK = TRUE AND F_GOODS_IS_ALCOHOLIC_LIQUOR_FOR_HUMAN_CONSUMPTION = FALSE
+  A_CONSIDERATION_CASH:
+    statement: Such supply or service is for cash
+    order: LOW
+    rule: F_CONSIDERATION_IN_CASH = TRUE
+  A_CONSIDERATION_DEFERRED:
+    statement: Such supply or service is for deferred payment
+    order: LOW
+    rule: F_CONSIDERATION_DEFERRED_PAYMENT = TRUE
+  A_CONSIDERATION_OTHER_VALUABLE:
+    statement: Such supply or service is for other valuable consideration
+    order: LOW
+    rule: F_CONSIDERATION_OTHER_VALUABLE = TRUE
+groups:
+  G_FORMS:
+    name: Forms of Supply
+    logic: ANY
+    members:
+    - A_SALE
+    - A_TRANSFER
+    - A_BARTER
+    - A_EXCHANGE
+    - A_LICENCE
+    - A_RENTAL
+    - A_LEASE
+    - A_DISPOSAL
+    - A_OTHER_FORM
+    description: The supply must take one of the listed or other similar forms.
+  G_TIMING:
+    name: Supply Timing
+    logic: ANY
+    members:
+    - A_MADE
+    - A_AGREED
+    description: The supply must be either made or agreed to be made.
+  G_STATUS:
+    name: Supply Status
+    logic: ANY
+    members:
+    - A_MADE_SISIA
+    - A_AGREED_SISIA
+    description: The activity is either made or agreed to be made.
+  G_GOODS_TYPE:
+    name: Goods are food or other article for human consumption or non-alcoholic drink
+    logic: ANY
+    members:
+    - A_GOODS_FOOD
+    - A_GOODS_OTHER_ARTICLE
+    - A_GOODS_DRINK
+    description: Any one of the three kinds of goods is enough
+  G_CONSIDERATION:
+    name: Supply or service is for cash or deferred payment or other valuable consideration
+    logic: ANY
+    members:
+    - A_CONSIDERATION_CASH
+    - A_CONSIDERATION_DEFERRED
+    - A_CONSIDERATION_OTHER_VALUABLE
+    description: Any one form of consideration is enough
+outcomes:
+  LE_SIAFOS:
+    outcome: SUPPLY_INCLUDED_S7_1_a
+    expr: G_FORMS AND G_TIMING AND A_CONSIDERATION AND A_PERSON AND A_BUSINESS
+    module: M_SIAFOS
+    description: The transaction is included in the definition of supply under Section 7(1)(a) if it meets all the specified
+      conditions.
+  LE_M_IOSFC:
+    outcome: SUPPLY_INCLUDED
+    expr: A_M_IOSFC_1 AND A_M_IOSFC_2
+    module: M_IOSFC
+  LE_SISIA:
+    outcome: SUPPLY_INCLUDED
+    expr: A_SCHEDULE_I_ACTIVITY AND G_STATUS AND A_NO_CONSIDERATION
+    module: M_SISIA
+    description: The transaction is included in the scope of supply if it is a Schedule I activity, made or agreed to be made,
+      and is without consideration.
+  LE_CSPST:
+    outcome: SUPPLY_TREATMENT_DEEMED
+    expr: A_CSPST_1
+    module: M_CSPST
+    description: The composite supply shall be treated as a supply of its principal supply.
+  LE_M_MSHTR:
+    outcome: MIXED_SUPPLY_TAX_LIABILITY_DETERMINED
+    expr: A_M_MSHTR_1
+    module: M_MSHTR
+    description: The tax liability for the mixed supply is determined by treating it as the supply of its highest-taxed component.
+  LE_COMPOSITE_ELEMENT:
+    outcome: COMPOSITE_ELEMENT
+    expr: A_COMPOSITE_ELEMENT
+    module: M_CAFSCS
+    description: The inward supply of such goods or services or both is used by the registered person as an element of a taxable
+      composite or mixed supply (Proviso to section 17(5)(b), part of the law)
+  LE_WCAS_SERVICE:
+    outcome: DEEMED_SUPPLY_OF_SERVICES
+    expr: A_COMPOSITE_SUPPLY AND A_WORKS_CONTRACT
+    module: M_WCAS
+    description: A supply that is a composite supply and a works contract as defined in clause (119) of section 2 is treated
+      as a supply of services
+  LE_FADSAS:
+    outcome: TREATED_AS_SUPPLY_OF_SERVICES
+    expr: A_COMPOSITE_SUPPLY_FADSAS AND A_GOODS_SUPPLY_MANNER AND G_GOODS_TYPE AND G_CONSIDERATION
+    module: M_FADSAS
+    description: The composite supply shall be treated as a supply of services when it is a supply of goods in the stated
+      manner and the goods are food or another article for human consumption or a drink other than alcoholic liquor and the
+      supply or service is for cash or deferred payment or other valuable considera
+products:
+  PD_SIAFOS:
+    statement: The transaction is included in the definition of supply under Section 7(1)(a) if it meets all the specified
+      conditions.
+  PD_M_IOSFC:
+    statement: SUPPLY_INCLUDED
+  PD_SISIA:
+    statement: The transaction is included in the scope of supply if it is a Schedule I activity, made or agreed to be made,
+      and is without consideration.
+  PD_CSPST:
+    statement: The composite supply shall be treated as a supply of its principal supply.
+  PD_M_MSHTR:
+    statement: The tax liability for the mixed supply is determined by treating it as the supply of its highest-taxed component.
+  PD_COMPOSITE_ELEMENT:
+    statement: The inward supply of such goods or services or both is used by the registered person as an element of a taxable
+      composite or mixed supply
+  PD_WCAS_SERVICE:
+    statement: A supply that is a composite supply and a works contract as defined in clause (119) of section 2 is treated
+      as a supply of services
+  PD_FADSAS:
+    statement: The composite supply shall be treated as a supply of services when it is a supply of goods in the stated manner
+      and the goods are food or another article for human consumption or a drink other than alcoholic liquor and the supply
+      or service is for cash or deferred payment or other valuable considera
+compounds:
+- id: C_S7_SS1
+  question: 'Section 7(1): which clause applies?'
+  includes:
+  - LE_SIAFOS
+  - LE_M_IOSFC
+  - LE_SISIA
+  produces:
+  - product: PD_SIAFOS
+    from:
+    - LE_SIAFOS
+  - product: PD_M_IOSFC
+    from:
+    - LE_M_IOSFC
+  - product: PD_SISIA
+    from:
+    - LE_SISIA
+- id: C_S8
+  question: 'Section 8: which clause applies?'
+  includes:
+  - LE_CSPST
+  - LE_M_MSHTR
+  produces:
+  - product: PD_CSPST
+    from:
+    - LE_CSPST
+  - product: PD_M_MSHTR
+    from:
+    - LE_M_MSHTR
+- id: C_CAFSCS
+  question: The inward supply of such goods or services or both is used by the registered person as an element of a taxable
+    composite or mixed supply? (Proviso to section 17(5)(b))
+  includes:
+  - LE_COMPOSITE_ELEMENT
+  produces:
+  - product: PD_COMPOSITE_ELEMENT
+    from:
+    - LE_COMPOSITE_ELEMENT
+- id: C_SCHII_EN6
+  question: 'Schedule II, paragraph 6: which clause applies?'
+  includes:
+  - LE_WCAS_SERVICE
+  - LE_FADSAS
+  produces:
+  - product: PD_WCAS_SERVICE
+    from:
+    - LE_WCAS_SERVICE
+  - product: PD_FADSAS
+    from:
+    - LE_FADSAS

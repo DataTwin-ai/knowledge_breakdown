@@ -1,0 +1,319 @@
+# GOVERNANCE MASTER TSG03_04 Imports (TG03 Location & Tax Type)
+# LAW ARC - 6 laws - status NEEDS_REVIEW
+name: TSG03_04 Imports - GOVERNANCE MASTER rulebook
+version: TSG03_04
+facts:
+  F_SUPPLIER_LOCATION:
+    name: Location of supplier
+    type: TEXT
+    tier: T1
+  F_RECIPIENT_LOCATION:
+    name: Location of recipient
+    type: TEXT
+    tier: T1
+  F_SUPPLY_PLACE:
+    name: Place of supply
+    type: TEXT
+    tier: T1
+  F_SUPPLY_CONSIDERATION_EXISTS:
+    name: Consideration exists for the supply
+    type: BOOLEAN
+    tier: T1
+  F_SUPPLY_IS_SERVICE:
+    name: The supply is a supply of services
+    type: BOOLEAN
+    tier: T1
+  F_SUPPLIER_LOCATED_OUTSIDE_INDIA:
+    name: Supplier of service is located outside India
+    type: BOOLEAN
+    tier: T1
+  F_SUPPLY_IS_OIDAR_SERVICE:
+    name: Supply is an OIDAR service
+    type: BOOLEAN
+    tier: T1
+  F_RECIPIENT_LOCATED_IN_INDIA:
+    name: Recipient is located in India
+    type: BOOLEAN
+    tier: T1
+  F_PERSON_IS_REGISTERED:
+    name: Person using the goods or services is a registered person
+    type: BOOLEAN
+    tier: T0
+  F_SUPPLY_IS_IMPORT_OF_SERVICES:
+    name: Supply is an import of services by a person
+    type: BOOLEAN
+    tier: T1
+  F_TFOS:
+    name: Form of supply
+    type: CODE
+    options:
+    - SALE
+    - TRANSFER
+    - BARTER
+    - EXCHANGE
+    - LICENCE
+    - RENTAL
+    - LEASE
+    - DISPOSAL
+    - OTHER
+    tier: T1
+  F_SUPPLY_DESCRIPTION:
+    name: Description of supply
+    type: TEXT
+    tier: T1
+  F_SUPPLY_STATUS:
+    name: Status of supply
+    type: CODE
+    options:
+    - AGREED
+    - MADE
+    tier: T1
+  F_SUPPLIER_IS_A_PERSON:
+    name: Supplier is a 'person' under the Act
+    type: BOOLEAN
+    tier: T0
+  F_SUPPLIER_ACTIVITY_DESCRIPTION:
+    name: Description of supplier's activity
+    type: TEXT
+    tier: T0
+predicates:
+  A_M_IOSFC_1:
+    statement: The transaction is an import of services
+    order: HIGH
+    interpretation: Based on the supplier location, recipient location, and place of supply, is this an 'import of services'?
+    grounding:
+    - F_SUPPLIER_LOCATION
+    - F_RECIPIENT_LOCATION
+    - F_SUPPLY_PLACE
+  A_M_IOSFC_2:
+    statement: The import of services is for a consideration
+    order: LOW
+    rule: F_SUPPLY_CONSIDERATION_EXISTS = TRUE
+  A_SALE:
+    statement: The supply of goods or services or both is a sale
+    order: LOW
+    rule: F_TFOS = 'SALE'
+  A_TRANSFER:
+    statement: The supply of goods or services or both is a transfer
+    order: LOW
+    rule: F_TFOS = 'TRANSFER'
+  A_BARTER:
+    statement: The supply of goods or services or both is a barter
+    order: LOW
+    rule: F_TFOS = 'BARTER'
+  A_EXCHANGE:
+    statement: The supply of goods or services or both is an exchange
+    order: LOW
+    rule: F_TFOS = 'EXCHANGE'
+  A_LICENCE:
+    statement: The supply of goods or services or both is a licence
+    order: LOW
+    rule: F_TFOS = 'LICENCE'
+  A_RENTAL:
+    statement: The supply of goods or services or both is a rental
+    order: LOW
+    rule: F_TFOS = 'RENTAL'
+  A_LEASE:
+    statement: The supply of goods or services or both is a lease
+    order: LOW
+    rule: F_TFOS = 'LEASE'
+  A_DISPOSAL:
+    statement: The supply of goods or services or both is a disposal
+    order: LOW
+    rule: F_TFOS = 'DISPOSAL'
+  A_OTHER_FORM:
+    statement: The supply of goods or services or both is another qualifying form
+    order: HIGH
+    interpretation: Based on the description, is the transaction a form of supply similar in nature to sale, transfer, barter,
+      exchange, licence, rental, lease, or disposal?
+    grounding:
+    - F_TFOS
+    - F_SUPPLY_DESCRIPTION
+  A_MADE:
+    statement: The supply is made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'MADE'
+  A_AGREED:
+    statement: The supply is agreed to be made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'AGREED'
+  A_CONSIDERATION:
+    statement: The supply is for a consideration
+    order: LOW
+    rule: F_SUPPLY_CONSIDERATION_EXISTS = TRUE
+  A_PERSON:
+    statement: The supply is by a person
+    order: LOW
+    rule: F_SUPPLIER_IS_A_PERSON = TRUE
+  A_BUSINESS:
+    statement: The supply is in the course or furtherance of business
+    order: HIGH
+    interpretation: Based on the supplier's activity description, is this supply made in the course or furtherance of their
+      business?
+    grounding:
+    - F_SUPPLIER_ACTIVITY_DESCRIPTION
+  A_LOC:
+    statement: The supplier of service is located outside India
+    order: LOW
+    rule: F_SUPPLY_IS_SERVICE = TRUE AND F_SUPPLIER_LOCATED_OUTSIDE_INDIA = TRUE
+  A_SUPPLIES_OIDAR:
+    statement: A person supplies online information and database access or retrieval services
+    order: LOW
+    rule: F_SUPPLY_IS_OIDAR_SERVICE = TRUE
+  A_SUPPLIER_OUTSIDE_INDIA:
+    statement: The supply is from a place outside India
+    order: LOW
+    rule: F_SUPPLIER_LOCATED_OUTSIDE_INDIA = TRUE
+  A_RECIPIENT_IN_INDIA:
+    statement: The supply is to a person in India
+    order: LOW
+    rule: F_RECIPIENT_LOCATED_IN_INDIA = TRUE
+  A_RECIPIENT_UNREGISTERED:
+    statement: The recipient is a person other than a registered person
+    order: LOW
+    rule: F_PERSON_IS_REGISTERED = FALSE
+  A_SERVICE_IMPORT:
+    statement: The supply is an import of services by a person
+    order: LOW
+    rule: F_SUPPLY_IS_IMPORT_OF_SERVICES = TRUE
+  A_MADE_SISIA:
+    statement: The activity is made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'MADE'
+  A_AGREED_SISIA:
+    statement: The activity is agreed to be made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'AGREED'
+  A_NO_CONSIDERATION:
+    statement: The activity is without a consideration
+    order: LOW
+    rule: F_SUPPLY_CONSIDERATION_EXISTS = FALSE
+groups:
+  G_FORMS:
+    name: Forms of Supply
+    logic: ANY
+    members:
+    - A_SALE
+    - A_TRANSFER
+    - A_BARTER
+    - A_EXCHANGE
+    - A_LICENCE
+    - A_RENTAL
+    - A_LEASE
+    - A_DISPOSAL
+    - A_OTHER_FORM
+    description: The supply must take one of the listed or other similar forms.
+  G_TIMING:
+    name: Supply Timing
+    logic: ANY
+    members:
+    - A_MADE
+    - A_AGREED
+    description: The supply must be either made or agreed to be made.
+  G_CONDITIONS:
+    name: Conditions for compulsory OIDAR registration
+    logic: ALL
+    members:
+    - A_SUPPLIES_OIDAR
+    - A_SUPPLIER_OUTSIDE_INDIA
+    - A_RECIPIENT_IN_INDIA
+    - A_RECIPIENT_UNREGISTERED
+    description: All conditions regarding the supply type, supplier location, recipient location, and recipient status must
+      be met.
+  G_STATUS:
+    name: Supply Status
+    logic: ANY
+    members:
+    - A_MADE_SISIA
+    - A_AGREED_SISIA
+    description: The activity is either made or agreed to be made.
+outcomes:
+  LE_M_IOSFC:
+    outcome: SUPPLY_INCLUDED
+    expr: A_M_IOSFC_1 AND A_M_IOSFC_2
+    module: M_IOSFC
+  LE_SIAFOS:
+    outcome: SUPPLY_INCLUDED_S7_1_a
+    expr: G_FORMS AND G_TIMING AND A_CONSIDERATION AND A_PERSON AND A_BUSINESS
+    module: M_SIAFOS
+    description: The transaction is included in the definition of supply under Section 7(1)(a) if it meets all the specified
+      conditions.
+  LE_LOC:
+    outcome: LOC
+    expr: A_LOC
+    module: M_RTOSFAE
+    description: The supplier of service is located outside India (Second Proviso to Section 13(3), part of the law)
+  LE_M_OISR:
+    outcome: COMPULSORY_REGISTRATION
+    expr: G_CONDITIONS
+    module: M_OISR
+    description: A person is required to register compulsorily if they are a foreign supplier of OIDAR services to an unregistered
+      person in India.
+  LE_SERVICE_IMPORT:
+    outcome: SERVICE_IMPORT
+    expr: A_SERVICE_IMPORT
+    module: M_IOSFRP
+    description: The supply is an import of services by a person (Schedule I, paragraph 4, part of the law)
+  LE_SISIA:
+    outcome: SUPPLY_INCLUDED
+    expr: PD_SERVICE_IMPORT AND G_STATUS AND A_NO_CONSIDERATION
+    module: M_SISIA
+    description: The transaction is included in the scope of supply if it is a Schedule I activity, made or agreed to be made,
+      and is without consideration.
+products:
+  PD_M_IOSFC:
+    statement: SUPPLY_INCLUDED
+  PD_SIAFOS:
+    statement: The transaction is included in the definition of supply under Section 7(1)(a) if it meets all the specified
+      conditions.
+  PD_LOC:
+    statement: The supplier of service is located outside India
+  PD_M_OISR:
+    statement: A person is required to register compulsorily if they are a foreign supplier of OIDAR services to an unregistered
+      person in India.
+  PD_SERVICE_IMPORT:
+    statement: The supply is an import of services by a person
+  PD_SISIA:
+    statement: The transaction is included in the scope of supply if it is a Schedule I activity, made or agreed to be made,
+      and is without consideration.
+compounds:
+- id: C_RTOSFAE
+  question: The supplier of service is located outside India? (Second Proviso to Section 13(3))
+  includes:
+  - LE_LOC
+  produces:
+  - product: PD_LOC
+    from:
+    - LE_LOC
+- id: C_OISR
+  question: 'Section 24(xi): Online Information Services Registration?'
+  includes:
+  - LE_M_OISR
+  produces:
+  - product: PD_M_OISR
+    from:
+    - LE_M_OISR
+- id: C_IOSFRP
+  question: The supply is an import of services by a person? (Schedule I, paragraph 4)
+  includes:
+  - LE_SERVICE_IMPORT
+  produces:
+  - product: PD_SERVICE_IMPORT
+    from:
+    - LE_SERVICE_IMPORT
+- id: C_S7_SS1
+  question: 'Section 7(1): which clause applies?'
+  includes:
+  - LE_M_IOSFC
+  - LE_SIAFOS
+  - LE_SISIA
+  produces:
+  - product: PD_M_IOSFC
+    from:
+    - LE_M_IOSFC
+  - product: PD_SIAFOS
+    from:
+    - LE_SIAFOS
+  - product: PD_SISIA
+    from:
+    - LE_SISIA

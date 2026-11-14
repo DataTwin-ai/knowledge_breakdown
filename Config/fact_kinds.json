@@ -1,0 +1,3 @@
+{
+  "_about": "How each fact is obtained when a document is validated. Reviewed by people; the fact catalog uses it. kind: DOCUMENT (on the document / register), DERIVED (Python works it out from other facts: list them in the fact's derived_from), LOOKUP (from a table, e.g. rate from HSN), ASK (from the user or ERP). A fact not listed here is DOCUMENT, or DERIVED when AKP recorded derived_from. Add a line per fact as you confirm it, e.g. \"F_SUPPLY_CONSIDERATION\": {\"kind\": \"ASK\", \"how\": \"from the contract / ERP\"}"
+}

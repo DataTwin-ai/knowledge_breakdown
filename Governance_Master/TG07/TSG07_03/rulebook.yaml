@@ -1,0 +1,317 @@
+# GOVERNANCE MASTER TSG07_03 E-commerce operator liability (TG07 Reverse Charge, TDS, TCS)
+# LAW ARC - 5 laws - status NEEDS_REVIEW
+name: TSG07_03 E-commerce operator liability - GOVERNANCE MASTER rulebook
+version: TSG07_03
+facts:
+  F_SERVICE_IS_NOTIFIED_ECO_LIABILITY:
+    name: Service is in a category notified for Electronic Commerce Operator tax liability
+    type: BOOLEAN
+    tier: T1
+  F_SUPPLY_IS_INTRA_STATE:
+    name: Supply is an intra-State supply
+    type: BOOLEAN
+    tier: T1
+  F_SUPPLY_IS_THROUGH_ECO:
+    name: Supply is facilitated by an electronic commerce operator
+    type: BOOLEAN
+    tier: T1
+  F_ECO_PHYSICAL_PRESENCE_IN_TERRITORY:
+    name: Electronic commerce operator has a physical presence in the taxable territory
+    type: BOOLEAN
+    tier: T1
+  F_ECO_HAS_REPRESENTATIVE_IN_TERRITORY:
+    name: A person represents the electronic commerce operator in the taxable territory
+    type: BOOLEAN
+    tier: T1
+  F_TFOS:
+    name: Form of supply
+    type: CODE
+    options:
+    - SALE
+    - TRANSFER
+    - BARTER
+    - EXCHANGE
+    - LICENCE
+    - RENTAL
+    - LEASE
+    - DISPOSAL
+    - OTHER
+    tier: T1
+  F_SUPPLY_DESCRIPTION:
+    name: Description of supply
+    type: TEXT
+    tier: T1
+  F_SUPPLY_STATUS:
+    name: Status of supply
+    type: CODE
+    options:
+    - AGREED
+    - MADE
+    tier: T1
+  F_SUPPLY_CONSIDERATION_EXISTS:
+    name: Consideration exists for the supply
+    type: BOOLEAN
+    tier: T1
+  F_SUPPLIER_IS_A_PERSON:
+    name: Supplier is a 'person' under the Act
+    type: BOOLEAN
+    tier: T0
+  F_SUPPLIER_ACTIVITY_DESCRIPTION:
+    name: Description of supplier's activity
+    type: TEXT
+    tier: T0
+  F_SUPPLIER_LOCATION:
+    name: Location of supplier
+    type: TEXT
+    tier: T1
+  F_RECIPIENT_LOCATION:
+    name: Location of recipient
+    type: TEXT
+    tier: T1
+  F_SUPPLY_PLACE:
+    name: Place of supply
+    type: TEXT
+    tier: T1
+predicates:
+  A_SALE:
+    statement: The supply of goods or services or both is a sale
+    order: LOW
+    rule: F_TFOS = 'SALE'
+  A_TRANSFER:
+    statement: The supply of goods or services or both is a transfer
+    order: LOW
+    rule: F_TFOS = 'TRANSFER'
+  A_BARTER:
+    statement: The supply of goods or services or both is a barter
+    order: LOW
+    rule: F_TFOS = 'BARTER'
+  A_EXCHANGE:
+    statement: The supply of goods or services or both is an exchange
+    order: LOW
+    rule: F_TFOS = 'EXCHANGE'
+  A_LICENCE:
+    statement: The supply of goods or services or both is a licence
+    order: LOW
+    rule: F_TFOS = 'LICENCE'
+  A_RENTAL:
+    statement: The supply of goods or services or both is a rental
+    order: LOW
+    rule: F_TFOS = 'RENTAL'
+  A_LEASE:
+    statement: The supply of goods or services or both is a lease
+    order: LOW
+    rule: F_TFOS = 'LEASE'
+  A_DISPOSAL:
+    statement: The supply of goods or services or both is a disposal
+    order: LOW
+    rule: F_TFOS = 'DISPOSAL'
+  A_OTHER_FORM:
+    statement: The supply of goods or services or both is another qualifying form
+    order: HIGH
+    interpretation: Based on the description, is the transaction a form of supply similar in nature to sale, transfer, barter,
+      exchange, licence, rental, lease, or disposal?
+    grounding:
+    - F_TFOS
+    - F_SUPPLY_DESCRIPTION
+  A_MADE:
+    statement: The supply is made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'MADE'
+  A_AGREED:
+    statement: The supply is agreed to be made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'AGREED'
+  A_CONSIDERATION:
+    statement: The supply is for a consideration
+    order: LOW
+    rule: F_SUPPLY_CONSIDERATION_EXISTS = TRUE
+  A_PERSON:
+    statement: The supply is by a person
+    order: LOW
+    rule: F_SUPPLIER_IS_A_PERSON = TRUE
+  A_BUSINESS:
+    statement: The supply is in the course or furtherance of business
+    order: HIGH
+    interpretation: Based on the supplier's activity description, is this supply made in the course or furtherance of their
+      business?
+    grounding:
+    - F_SUPPLIER_ACTIVITY_DESCRIPTION
+  A_M_IOSFC_1:
+    statement: The transaction is an import of services
+    order: HIGH
+    interpretation: Based on the supplier location, recipient location, and place of supply, is this an 'import of services'?
+    grounding:
+    - F_SUPPLIER_LOCATION
+    - F_RECIPIENT_LOCATION
+    - F_SUPPLY_PLACE
+  A_M_IOSFC_2:
+    statement: The import of services is for a consideration
+    order: LOW
+    rule: F_SUPPLY_CONSIDERATION_EXISTS = TRUE
+  A_SCHEDULE_I_ACTIVITY:
+    statement: The activity is specified in Schedule I
+    order: HIGH
+    interpretation: Is the described activity one of the activities specified in Schedule I of the CGST Act?
+    grounding:
+    - F_SUPPLIER_ACTIVITY_DESCRIPTION
+    - F_SUPPLY_DESCRIPTION
+  A_MADE_SISIA:
+    statement: The activity is made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'MADE'
+  A_AGREED_SISIA:
+    statement: The activity is agreed to be made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'AGREED'
+  A_NO_CONSIDERATION:
+    statement: The activity is without a consideration
+    order: LOW
+    rule: F_SUPPLY_CONSIDERATION_EXISTS = FALSE
+  A_SERVICE_NOTIFIED:
+    statement: The supply is of a category of services specified by the Government by notification
+    order: LOW
+    rule: F_SERVICE_IS_NOTIFIED_ECO_LIABILITY = TRUE
+  A_INTRA_STATE_SUPPLY:
+    statement: The supply of services is an intra-State supply
+    order: LOW
+    rule: F_SUPPLY_IS_INTRA_STATE = TRUE
+  A_SUPPLIED_THROUGH_ECO:
+    statement: The services are supplied through an electronic commerce operator
+    order: LOW
+    rule: F_SUPPLY_IS_THROUGH_ECO = TRUE
+  A_M_EORL_1:
+    statement: The electronic commerce operator does not have a physical presence in the taxable territory
+    order: LOW
+    rule: F_ECO_PHYSICAL_PRESENCE_IN_TERRITORY = FALSE
+  A_M_EORL_2:
+    statement: A person represents the electronic commerce operator for any purpose in the taxable territory
+    order: LOW
+    rule: F_ECO_HAS_REPRESENTATIVE_IN_TERRITORY = TRUE
+groups:
+  G_FORMS:
+    name: Forms of Supply
+    logic: ANY
+    members:
+    - A_SALE
+    - A_TRANSFER
+    - A_BARTER
+    - A_EXCHANGE
+    - A_LICENCE
+    - A_RENTAL
+    - A_LEASE
+    - A_DISPOSAL
+    - A_OTHER_FORM
+    description: The supply must take one of the listed or other similar forms.
+  G_TIMING:
+    name: Supply Timing
+    logic: ANY
+    members:
+    - A_MADE
+    - A_AGREED
+    description: The supply must be either made or agreed to be made.
+  G_STATUS:
+    name: Supply Status
+    logic: ANY
+    members:
+    - A_MADE_SISIA
+    - A_AGREED_SISIA
+    description: The activity is either made or agreed to be made.
+  G_CONDITIONS:
+    name: Conditions for ECO liability under Section 9(5)
+    logic: ALL
+    members:
+    - A_SERVICE_NOTIFIED
+    - A_INTRA_STATE_SUPPLY
+    - A_SUPPLIED_THROUGH_ECO
+    description: All conditions must be met for the ECO to be liable for tax payment and be deemed as the supplier.
+  G_M_EORL:
+    name: Conditions for representative's liability under S9(5) proviso
+    logic: ALL
+    members:
+    - A_M_EORL_1
+    - A_M_EORL_2
+outcomes:
+  LE_SIAFOS:
+    outcome: SUPPLY_INCLUDED_S7_1_a
+    expr: G_FORMS AND G_TIMING AND A_CONSIDERATION AND A_PERSON AND A_BUSINESS
+    module: M_SIAFOS
+    description: The transaction is included in the definition of supply under Section 7(1)(a) if it meets all the specified
+      conditions.
+  LE_M_IOSFC:
+    outcome: SUPPLY_INCLUDED
+    expr: A_M_IOSFC_1 AND A_M_IOSFC_2
+    module: M_IOSFC
+  LE_SISIA:
+    outcome: SUPPLY_INCLUDED
+    expr: A_SCHEDULE_I_ACTIVITY AND G_STATUS AND A_NO_CONSIDERATION
+    module: M_SISIA
+    description: The transaction is included in the scope of supply if it is a Schedule I activity, made or agreed to be made,
+      and is without consideration.
+  LE_PAYMENT:
+    outcome: ECO_PAYS_TAX_U_S9_5
+    expr: G_CONDITIONS
+    module: M_EOTL
+    description: The electronic commerce operator is liable to pay the tax on the specified intra-State supply of services.
+  LE_DEEMING:
+    outcome: ECO_DEEMED_SUPPLIER_U_S9_5
+    expr: G_CONDITIONS
+    module: M_EOTL
+    description: The electronic commerce operator is treated as the supplier for all provisions of the Act in relation to
+      the supply.
+  LE_M_EORL:
+    outcome: REPRESENTATIVE_LIABLE_TO_PAY_TAX
+    expr: G_M_EORL
+    module: M_EORL
+products:
+  PD_SIAFOS:
+    statement: The transaction is included in the definition of supply under Section 7(1)(a) if it meets all the specified
+      conditions.
+  PD_M_IOSFC:
+    statement: SUPPLY_INCLUDED
+  PD_SISIA:
+    statement: The transaction is included in the scope of supply if it is a Schedule I activity, made or agreed to be made,
+      and is without consideration.
+  PD_PAYMENT:
+    statement: The electronic commerce operator is liable to pay the tax on the specified intra-State supply of services.
+  PD_DEEMING:
+    statement: The electronic commerce operator is treated as the supplier for all provisions of the Act in relation to the
+      supply.
+  PD_M_EORL:
+    statement: REPRESENTATIVE_LIABLE_TO_PAY_TAX
+compounds:
+- id: C_S7_SS1
+  question: 'Section 7(1): which clause applies?'
+  includes:
+  - LE_SIAFOS
+  - LE_M_IOSFC
+  - LE_SISIA
+  produces:
+  - product: PD_SIAFOS
+    from:
+    - LE_SIAFOS
+  - product: PD_M_IOSFC
+    from:
+    - LE_M_IOSFC
+  - product: PD_SISIA
+    from:
+    - LE_SISIA
+- id: C_EOTL
+  question: 'Section 9(5): E-commerce Operator Tax Liability?'
+  includes:
+  - LE_PAYMENT
+  - LE_DEEMING
+  produces:
+  - product: PD_PAYMENT
+    from:
+    - LE_PAYMENT
+  - product: PD_DEEMING
+    from:
+    - LE_DEEMING
+- id: C_EORL
+  question: 'Section 9(5), first proviso: E-commerce Operator Representative Liability?'
+  includes:
+  - LE_M_EORL
+  produces:
+  - product: PD_M_EORL
+    from:
+    - LE_M_EORL

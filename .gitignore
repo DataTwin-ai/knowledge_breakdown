@@ -1,0 +1,17 @@
+# Credentials
+Credentials/
+credentials/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python temporary files
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Logs
+*.log

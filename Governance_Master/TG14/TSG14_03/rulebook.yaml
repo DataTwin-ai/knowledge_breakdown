@@ -1,0 +1,507 @@
+# GOVERNANCE MASTER TSG14_03 General notifications & circulars (TG14 Definitions & Effective Law)
+# LAW ARC - 10 laws - status NEEDS_REVIEW
+name: TSG14_03 General notifications & circulars - GOVERNANCE MASTER rulebook
+version: TSG14_03
+facts:
+  F_PETRO_LEVY_NOTIFICATION_HAS_COUNCIL_RECOMMENDATION:
+    name: Notification for levy on petroleum products states it is on Council's recommendation
+    type: BOOLEAN
+    tier: T1
+  F_NOTIFICATION_COUNCIL_REC_STATED:
+    name: Notification states it is on Council's recommendation
+    type: BOOLEAN
+    tier: T1
+  F_NOTIFICATION_IS_ISSUED:
+    name: An exemption notification has been issued
+    type: BOOLEAN
+    tier: T1
+  F_S31A_SS1_TEXT_AVAILABLE:
+    name: The text of Section 31A(1) of the CGST Act is available for interpretation
+    type: BOOLEAN
+    tier: T1
+  F_SERVICE_CATEGORY:
+    name: Category of service supplied
+    type: TEXT
+    tier: T1
+  F_DOCUMENT_TYPE:
+    name: Type of document
+    type: CODE
+    options:
+    - ASSESSMENT_DOCUMENT
+    - BILL_OF_SUPPLY
+    - CREDIT_NOTE
+    - DEBIT_NOTE
+    - DELIVERY_CHALLAN
+    - OTHER
+    - OTHER_LIKE_DOCUMENT
+    - PAYMENT_VOUCHER
+    - RECEIPT_VOUCHER
+    - REFUND_VOUCHER
+    - REVISED_INVOICE
+    - SELF_INVOICE
+    - SUPPLEMENTARY_INVOICE
+    - TAX_INVOICE
+    tier: T1
+  F_TRANSACTION_DETAILS:
+    name: Details of the transaction and related documents
+    type: TEXT
+    tier: T1
+  F_SERVICE_IS_IN_NOTIFIED_CATEGORY_FOR_INVOICE_EXCEPTION:
+    name: The service is of a category specified in a notification where a tax invoice is not required, and all conditions
+      in the notification are met
+    type: BOOLEAN
+    tier: T1
+  F_TFOS:
+    name: Form of supply
+    type: CODE
+    options:
+    - SALE
+    - TRANSFER
+    - BARTER
+    - EXCHANGE
+    - LICENCE
+    - RENTAL
+    - LEASE
+    - DISPOSAL
+    - OTHER
+    tier: T1
+  F_SUPPLY_DESCRIPTION:
+    name: Description of supply
+    type: TEXT
+    tier: T1
+  F_SUPPLY_STATUS:
+    name: Status of supply
+    type: CODE
+    options:
+    - AGREED
+    - MADE
+    tier: T1
+  F_SUPPLY_CONSIDERATION_EXISTS:
+    name: Consideration exists for the supply
+    type: BOOLEAN
+    tier: T1
+  F_SUPPLIER_IS_A_PERSON:
+    name: Supplier is a 'person' under the Act
+    type: BOOLEAN
+    tier: T0
+  F_SUPPLIER_ACTIVITY_DESCRIPTION:
+    name: Description of supplier's activity
+    type: TEXT
+    tier: T0
+  F_SUPPLIER_LOCATION:
+    name: Location of supplier
+    type: TEXT
+    tier: T1
+  F_RECIPIENT_LOCATION:
+    name: Location of recipient
+    type: TEXT
+    tier: T1
+  F_SUPPLY_PLACE:
+    name: Place of supply
+    type: TEXT
+    tier: T1
+  F_DOCUMENT_ISSUER_ROLE:
+    name: Role of the entity that issued the document
+    type: CODE
+    options:
+    - SUPPLIER
+    - RECIPIENT
+    - AGENT
+    - OTHER
+    tier: T1
+  F_TAX_INVOICE_ISSUE_DATE:
+    name: Date of issue of the tax invoice relating to the supply
+    type: DATE
+    tier: T1
+  F_ORIGINAL_SUPPLY_DATE:
+    name: Date of the earlier supply
+    type: DATE
+    tier: T1
+predicates:
+  A_SALE:
+    statement: The supply of goods or services or both is a sale
+    order: LOW
+    rule: F_TFOS = 'SALE'
+  A_TRANSFER:
+    statement: The supply of goods or services or both is a transfer
+    order: LOW
+    rule: F_TFOS = 'TRANSFER'
+  A_BARTER:
+    statement: The supply of goods or services or both is a barter
+    order: LOW
+    rule: F_TFOS = 'BARTER'
+  A_EXCHANGE:
+    statement: The supply of goods or services or both is an exchange
+    order: LOW
+    rule: F_TFOS = 'EXCHANGE'
+  A_LICENCE:
+    statement: The supply of goods or services or both is a licence
+    order: LOW
+    rule: F_TFOS = 'LICENCE'
+  A_RENTAL:
+    statement: The supply of goods or services or both is a rental
+    order: LOW
+    rule: F_TFOS = 'RENTAL'
+  A_LEASE:
+    statement: The supply of goods or services or both is a lease
+    order: LOW
+    rule: F_TFOS = 'LEASE'
+  A_DISPOSAL:
+    statement: The supply of goods or services or both is a disposal
+    order: LOW
+    rule: F_TFOS = 'DISPOSAL'
+  A_OTHER_FORM:
+    statement: The supply of goods or services or both is another qualifying form
+    order: HIGH
+    interpretation: Based on the description, is the transaction a form of supply similar in nature to sale, transfer, barter,
+      exchange, licence, rental, lease, or disposal?
+    grounding:
+    - F_TFOS
+    - F_SUPPLY_DESCRIPTION
+  A_MADE:
+    statement: The supply is made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'MADE'
+  A_AGREED:
+    statement: The supply is agreed to be made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'AGREED'
+  A_CONSIDERATION:
+    statement: The supply is for a consideration
+    order: LOW
+    rule: F_SUPPLY_CONSIDERATION_EXISTS = TRUE
+  A_PERSON:
+    statement: The supply is by a person
+    order: LOW
+    rule: F_SUPPLIER_IS_A_PERSON = TRUE
+  A_BUSINESS:
+    statement: The supply is in the course or furtherance of business
+    order: HIGH
+    interpretation: Based on the supplier's activity description, is this supply made in the course or furtherance of their
+      business?
+    grounding:
+    - F_SUPPLIER_ACTIVITY_DESCRIPTION
+  A_M_IOSFC_1:
+    statement: The transaction is an import of services
+    order: HIGH
+    interpretation: Based on the supplier location, recipient location, and place of supply, is this an 'import of services'?
+    grounding:
+    - F_SUPPLIER_LOCATION
+    - F_RECIPIENT_LOCATION
+    - F_SUPPLY_PLACE
+  A_M_IOSFC_2:
+    statement: The import of services is for a consideration
+    order: LOW
+    rule: F_SUPPLY_CONSIDERATION_EXISTS = TRUE
+  A_SCHEDULE_I_ACTIVITY:
+    statement: The activity is specified in Schedule I
+    order: HIGH
+    interpretation: Is the described activity one of the activities specified in Schedule I of the CGST Act?
+    grounding:
+    - F_SUPPLIER_ACTIVITY_DESCRIPTION
+    - F_SUPPLY_DESCRIPTION
+  A_MADE_SISIA:
+    statement: The activity is made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'MADE'
+  A_AGREED_SISIA:
+    statement: The activity is agreed to be made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'AGREED'
+  A_NO_CONSIDERATION:
+    statement: The activity is without a consideration
+    order: LOW
+    rule: F_SUPPLY_CONSIDERATION_EXISTS = FALSE
+  A_M_LOCTOPP_7:
+    statement: The notification for the levy date was made on the recommendations of the Council
+    order: LOW
+    rule: F_PETRO_LEVY_NOTIFICATION_HAS_COUNCIL_RECOMMENDATION = TRUE
+  A_M_GPTGE_2:
+    statement: The power to exempt is exercised on the recommendations of the Council
+    order: LOW
+    rule: F_NOTIFICATION_COUNCIL_REC_STATED = TRUE
+  A_M_GPTGE_3:
+    statement: The exemption is granted by notification
+    order: LOW
+    rule: F_NOTIFICATION_IS_ISSUED = TRUE
+  A_NOTIFICATION_REQUIREMENT:
+    statement: The enhancement and any attendant conditions and limitations are to be notified.
+    order: LOW
+    rule: F_NOTIFICATION_IS_ISSUED = TRUE
+  A_PTPDPF_01:
+    statement: The Government may, on the recommendations of the Council, prescribe a class of registered persons.
+    order: HIGH
+    interpretation: Does the text of Section 31A(1) empower the Government, upon Council recommendation, to designate a specific
+      class of registered persons for this obligation?
+    grounding:
+    - F_S31A_SS1_TEXT_AVAILABLE
+  A_PTPDPF_02:
+    statement: The power includes creating an obligation for the prescribed class to provide prescribed modes of electronic
+      payment to the recipient of their supply of goods or services or both.
+    order: HIGH
+    interpretation: Does the text of Section 31A(1) allow the Government to mandate that these persons must provide specific
+      electronic payment modes?
+    grounding:
+    - F_S31A_SS1_TEXT_AVAILABLE
+  A_PTPDPF_03:
+    statement: The power includes creating an obligation for the prescribed class to give the recipient an option to make
+      payment using the prescribed modes.
+    order: HIGH
+    interpretation: Does the text of Section 31A(1) allow the Government to mandate that the recipient must be given a choice
+      to pay electronically?
+    grounding:
+    - F_S31A_SS1_TEXT_AVAILABLE
+  A_PTPDPF_04:
+    statement: The power includes prescribing the manner, conditions, and restrictions for the obligation.
+    order: HIGH
+    interpretation: Does the text of Section 31A(1) allow the Government to specify the manner, conditions, and restrictions
+      of this obligation?
+    grounding:
+    - F_S31A_SS1_TEXT_AVAILABLE
+  A_M_ODDTI_1:
+    statement: The supply is of a category of services specified in a notification issued under the proviso to Section 31(2).
+    order: HIGH
+    interpretation: Given the service category of the supply, is it a category specified in any notification issued by the
+      Government under the proviso to Section 31(2)?
+    grounding:
+    - F_SERVICE_CATEGORY
+  A_M_ODDTI_2:
+    statement: A document, other than a standard tax invoice, has been issued in relation to the supply.
+    order: LOW
+    rule: F_DOCUMENT_TYPE != 'TAX_INVOICE'
+  A_M_ODDTI_3:
+    statement: The transaction and the issued document meet all conditions mentioned in the relevant notification.
+    order: HIGH
+    interpretation: Do the transaction and the issued document satisfy all conditions stipulated in the relevant notification
+      that allows the document to be deemed a tax invoice?
+    grounding:
+    - F_TRANSACTION_DETAILS
+  A_M_TIMNBI_1:
+    statement: The supply is of a category of services specified by the Government by notification, for which a tax invoice
+      may not be issued, and any conditions mentioned in that notification are met.
+    order: HIGH
+    interpretation: Is the service one for which a notification under the proviso to S.31(2) allows for non-issuance of a
+      tax invoice, and are all conditions in that notification met?
+    grounding:
+    - F_SERVICE_IS_IN_NOTIFIED_CATEGORY_FOR_INVOICE_EXCEPTION
+  A_TIIRI_1:
+    statement: The document is a revised invoice.
+    order: LOW
+    rule: F_DOCUMENT_TYPE = 'REVISED_INVOICE'
+  A_TIIRI_2:
+    statement: The revised invoice was issued by the supplier.
+    order: LOW
+    rule: F_DOCUMENT_ISSUER_ROLE = 'SUPPLIER'
+  A_TIIRI_3:
+    statement: The revised invoice is in respect of a supply made earlier.
+    order: HIGH
+    interpretation: Does the date of issue of the revised invoice (F_TAX_INVOICE_ISSUE_DATE) occur after the date of the supply
+      it pertains to (F_ORIGINAL_SUPPLY_DATE)?
+    grounding:
+    - F_TAX_INVOICE_ISSUE_DATE
+    - F_ORIGINAL_SUPPLY_DATE
+groups:
+  G_FORMS:
+    name: Forms of Supply
+    logic: ANY
+    members:
+    - A_SALE
+    - A_TRANSFER
+    - A_BARTER
+    - A_EXCHANGE
+    - A_LICENCE
+    - A_RENTAL
+    - A_LEASE
+    - A_DISPOSAL
+    - A_OTHER_FORM
+    description: The supply must take one of the listed or other similar forms.
+  G_TIMING:
+    name: Supply Timing
+    logic: ANY
+    members:
+    - A_MADE
+    - A_AGREED
+    description: The supply must be either made or agreed to be made.
+  G_STATUS:
+    name: Supply Status
+    logic: ANY
+    members:
+    - A_MADE_SISIA
+    - A_AGREED_SISIA
+    description: The activity is either made or agreed to be made.
+  G_PTPDPF:
+    name: Scope of Power under S31A(1)
+    logic: ALL
+    members:
+    - A_PTPDPF_01
+    - A_PTPDPF_02
+    - A_PTPDPF_03
+    - A_PTPDPF_04
+    description: All components together define the power granted to the Government.
+  G_TIIRI_CONDITIONS:
+    name: Conditions for a revised invoice to be treated as a tax invoice
+    logic: ALL
+    members:
+    - A_TIIRI_1
+    - A_TIIRI_2
+    - A_TIIRI_3
+outcomes:
+  LE_SIAFOS:
+    outcome: SUPPLY_INCLUDED_S7_1_a
+    expr: G_FORMS AND G_TIMING AND A_CONSIDERATION AND A_PERSON AND A_BUSINESS
+    module: M_SIAFOS
+    description: The transaction is included in the definition of supply under Section 7(1)(a) if it meets all the specified
+      conditions.
+  LE_M_IOSFC:
+    outcome: SUPPLY_INCLUDED
+    expr: A_M_IOSFC_1 AND A_M_IOSFC_2
+    module: M_IOSFC
+  LE_SISIA:
+    outcome: SUPPLY_INCLUDED
+    expr: A_SCHEDULE_I_ACTIVITY AND G_STATUS AND A_NO_CONSIDERATION
+    module: M_SISIA
+    description: The transaction is included in the scope of supply if it is a Schedule I activity, made or agreed to be made,
+      and is without consideration.
+  LE_M_LOCTOPP_7:
+    outcome: M_LOCTOPP_7
+    expr: A_M_LOCTOPP_7
+    module: M_LOCTOPP
+    description: The notification for the levy date was made on the recommendations of the Council (Section 9(2), part of
+      the law)
+  LE_M_GPTGE_2:
+    outcome: M_GPTGE_2
+    expr: A_M_GPTGE_2
+    module: M_GPTGE
+    description: The power to exempt is exercised on the recommendations of the Council (Section 11(1), part of the law)
+  LE_M_GPTGE_3:
+    outcome: M_GPTGE_3
+    expr: A_M_GPTGE_3
+    module: M_GPTGE
+    description: The exemption is granted by notification (Section 11(1), part of the law)
+  LE_NOTIFICATION_REQUIREMENT:
+    outcome: NOTIFICATION_REQUIREMENT
+    expr: A_NOTIFICATION_REQUIREMENT
+    module: M_PTETFG
+    description: The enhancement and any attendant conditions and limitations are to be notified. (Third Proviso to Section
+      22(1), part of the law)
+  LE_PTPDPF:
+    outcome: POWER_DEFINED
+    expr: G_PTPDPF
+    module: M_PTPDPF
+    description: Describes the scope of the Government's power to mandate electronic payment facilities.
+  LE_M_ODDTI:
+    outcome: DOCUMENT_DEEMED_TAX_INVOICE
+    expr: A_M_ODDTI_1 AND A_M_ODDTI_2 AND A_M_ODDTI_3
+    module: M_ODDTI
+    description: If all conditions are met, the document is deemed to be a tax invoice.
+  LE_M_TIMNBI:
+    outcome: PERMISSION_TO_NOT_ISSUE_INVOICE_APPLIES
+    expr: A_M_TIMNBI_1
+    module: M_TIMNBI
+    description: The permission to not issue a tax invoice applies if the service is covered by a specific government notification.
+  LE_TIIRI:
+    outcome: TAX_INVOICE_INCLUDES_REVISED_INVOICE
+    expr: G_TIIRI_CONDITIONS
+    module: M_TIIRI
+    description: For the purposes of Section 31, a document is included in the expression 'tax invoice' if it is a revised
+      invoice issued by the supplier for a supply made earlier.
+products:
+  PD_SIAFOS:
+    statement: The transaction is included in the definition of supply under Section 7(1)(a) if it meets all the specified
+      conditions.
+  PD_M_IOSFC:
+    statement: SUPPLY_INCLUDED
+  PD_SISIA:
+    statement: The transaction is included in the scope of supply if it is a Schedule I activity, made or agreed to be made,
+      and is without consideration.
+  PD_M_LOCTOPP_7:
+    statement: The notification for the levy date was made on the recommendations of the Council
+  PD_M_GPTGE_2:
+    statement: The power to exempt is exercised on the recommendations of the Council
+  PD_M_GPTGE_3:
+    statement: The exemption is granted by notification
+  PD_NOTIFICATION_REQUIREMENT:
+    statement: The enhancement and any attendant conditions and limitations are to be notified.
+  PD_PTPDPF:
+    statement: Describes the scope of the Government's power to mandate electronic payment facilities.
+  PD_M_ODDTI:
+    statement: If all conditions are met, the document is deemed to be a tax invoice.
+  PD_M_TIMNBI:
+    statement: The permission to not issue a tax invoice applies if the service is covered by a specific government notification.
+  PD_TIIRI:
+    statement: For the purposes of Section 31, a document is included in the expression 'tax invoice' if it is a revised invoice
+      issued by the supplier for a supply made earlier.
+compounds:
+- id: C_S7_SS1
+  question: 'Section 7(1): which clause applies?'
+  includes:
+  - LE_SIAFOS
+  - LE_M_IOSFC
+  - LE_SISIA
+  produces:
+  - product: PD_SIAFOS
+    from:
+    - LE_SIAFOS
+  - product: PD_M_IOSFC
+    from:
+    - LE_M_IOSFC
+  - product: PD_SISIA
+    from:
+    - LE_SISIA
+- id: C_LOCTOPP
+  question: The notification for the levy date was made on the recommendations of the Council? (Section 9(2))
+  includes:
+  - LE_M_LOCTOPP_7
+  produces:
+  - product: PD_M_LOCTOPP_7
+    from:
+    - LE_M_LOCTOPP_7
+- id: C_GPTGE
+  question: The power to exempt is exercised on the recommendations of the Council; The exemption is granted by notification?
+    (Section 11(1))
+  includes:
+  - LE_M_GPTGE_2
+  - LE_M_GPTGE_3
+  produces:
+  - product: PD_M_GPTGE_2
+    from:
+    - LE_M_GPTGE_2
+  - product: PD_M_GPTGE_3
+    from:
+    - LE_M_GPTGE_3
+- id: C_PTETFG
+  question: The enhancement and any attendant conditions and limitations are to be notified? (Third Proviso to Section 22(1))
+  includes:
+  - LE_NOTIFICATION_REQUIREMENT
+  produces:
+  - product: PD_NOTIFICATION_REQUIREMENT
+    from:
+    - LE_NOTIFICATION_REQUIREMENT
+- id: C_PTPDPF
+  question: 'Section 31A(1): Power To Prescribe Digital Payment Facility?'
+  includes:
+  - LE_PTPDPF
+  produces:
+  - product: PD_PTPDPF
+    from:
+    - LE_PTPDPF
+- id: C_S31_SS2_P1_CB
+  question: 'Proviso to Section 31(2)(b): which clause applies?'
+  includes:
+  - LE_M_ODDTI
+  - LE_M_TIMNBI
+  produces:
+  - product: PD_M_ODDTI
+    from:
+    - LE_M_ODDTI
+  - product: PD_M_TIMNBI
+    from:
+    - LE_M_TIMNBI
+- id: C_TIIRI
+  question: 'Section 31, Explanation 1: Tax Invoice Includes Revised Invoice?'
+  includes:
+  - LE_TIIRI
+  produces:
+  - product: PD_TIIRI
+    from:
+    - LE_TIIRI

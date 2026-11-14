@@ -1,0 +1,91 @@
+# GOVERNANCE MASTER TSG08_03 Credit / debit note contents (TG08 Documents)
+# LAW ARC - 3 laws - status NEEDS_REVIEW
+name: TSG08_03 Credit / debit note contents - GOVERNANCE MASTER rulebook
+version: TSG08_03
+facts:
+  F_ITC_DOCUMENT_TYPE:
+    name: Type of document possessed for ITC claim
+    type: CODE
+    options:
+    - DEBIT_NOTE
+    - NONE
+    - PRESCRIBED_DOCUMENT
+    - TAX_INVOICE
+    tier: T0
+  F_SUPPLIER_IS_REGISTERED:
+    name: Supplier is a registered person
+    type: BOOLEAN
+    tier: T0
+  F_CREDIT_NOTE_CONTAINS_PRESCRIBED_PARTICULARS:
+    name: Credit note contains all particulars prescribed in the Rules
+    type: BOOLEAN
+    tier: T1
+  F_DEBIT_NOTE_CONTAINS_PRESCRIBED_PARTICULARS:
+    name: Debit note contains all particulars prescribed in the Rules
+    type: BOOLEAN
+    tier: T1
+predicates:
+  A_ICPOD_POSSESS_DEBIT_NOTE:
+    statement: The person is in possession of a debit note issued by a supplier registered under this Act.
+    order: LOW
+    rule: F_ITC_DOCUMENT_TYPE = 'DEBIT_NOTE' AND F_SUPPLIER_IS_REGISTERED = TRUE
+  A_M_IOCNFEV_9:
+    statement: The credit note contains such particulars as may be prescribed
+    order: HIGH
+    interpretation: Does the credit note contain all the particulars prescribed under the CGST Rules?
+    grounding:
+    - F_CREDIT_NOTE_CONTAINS_PRESCRIBED_PARTICULARS
+  A_IODNFS_7:
+    statement: The debit note contains such particulars as may be prescribed.
+    order: LOW
+    rule: F_DEBIT_NOTE_CONTAINS_PRESCRIBED_PARTICULARS = TRUE
+groups: {}
+outcomes:
+  LE_ICPOD_POSSESS_DEBIT_NOTE:
+    outcome: ICPOD_POSSESS_DEBIT_NOTE
+    expr: A_ICPOD_POSSESS_DEBIT_NOTE
+    module: M_ICPOD
+    description: The person is in possession of a debit note issued by a supplier registered under this Act. (Section 16(2),
+      part of the law)
+  LE_M_IOCNFEV_9:
+    outcome: M_IOCNFEV_9
+    expr: A_M_IOCNFEV_9
+    module: M_IOCNFEV
+    description: The credit note contains such particulars as may be prescribed (Section 34(1), part of the law)
+  LE_IODNFS_7:
+    outcome: IODNFS_7
+    expr: A_IODNFS_7
+    module: M_IODNFS
+    description: The debit note contains such particulars as may be prescribed. (Section 34(3), part of the law)
+products:
+  PD_ICPOD_POSSESS_DEBIT_NOTE:
+    statement: The person is in possession of a debit note issued by a supplier registered under this Act.
+  PD_M_IOCNFEV_9:
+    statement: The credit note contains such particulars as may be prescribed
+  PD_IODNFS_7:
+    statement: The debit note contains such particulars as may be prescribed.
+compounds:
+- id: C_ICPOD
+  question: The person is in possession of a debit note issued by a supplier registered under this Act? (Section 16(2))
+  includes:
+  - LE_ICPOD_POSSESS_DEBIT_NOTE
+  produces:
+  - product: PD_ICPOD_POSSESS_DEBIT_NOTE
+    from:
+    - LE_ICPOD_POSSESS_DEBIT_NOTE
+- id: C_IOCNFEV
+  question: The credit note contains such particulars as may be prescribed? (Section 34(1))
+  includes:
+  - LE_M_IOCNFEV_9
+  produces:
+  - product: PD_M_IOCNFEV_9
+    from:
+    - LE_M_IOCNFEV_9
+- id: C_IODNFS
+  question: The debit note contains such particulars as may be prescribed? (Section 34(3))
+  includes:
+  - LE_IODNFS_7
+  produces:
+  - product: PD_IODNFS_7
+    from:
+    - LE_IODNFS_7

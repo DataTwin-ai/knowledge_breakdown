@@ -1,0 +1,915 @@
+# GOVERNANCE MASTER TSG01_05 Exempt, nil-rated & non-GST (TG01 Supply & Taxability)
+# LAW ARC - 18 laws - status NEEDS_REVIEW
+name: TSG01_05 Exempt, nil-rated & non-GST - GOVERNANCE MASTER rulebook
+version: TSG01_05
+facts:
+  F_SUPPLY_GOODS_TYPE:
+    name: Type of goods supplied
+    type: CODE
+    options:
+    - PETROLEUM_CRUDE
+    - HIGH_SPEED_DIESEL
+    - MOTOR_SPIRIT
+    - NATURAL_GAS
+    - AVIATION_TURBINE_FUEL
+    - OTHER
+    tier: T1
+  F_PETRO_LEVY_EFFECTIVE_DATE:
+    name: Notified effective date for levy on specified petroleum products
+    type: DATE
+    tier: T1
+  F_PETRO_LEVY_NOTIFICATION_HAS_COUNCIL_RECOMMENDATION:
+    name: Notification for levy on petroleum products states it is on Council's recommendation
+    type: BOOLEAN
+    tier: T1
+  F_SUPPLY_DATE:
+    name: Date of supply
+    type: DATE
+    tier: T1
+  F_SUPPLIER_ACTIVITY_DESCRIPTION:
+    name: Description of supplier's activity
+    type: TEXT
+    tier: T0
+  F_FINANCIAL_YEAR_START_DATE:
+    name: Start date of the relevant financial year
+    type: DATE
+    tier: T1
+  F_REGISTRATION_LIABILITY_DATE:
+    name: Date person becomes liable for registration
+    type: DATE
+    tier: T1
+  F_SUPPLY_IS_EXEMPT:
+    name: Supply is an exempt supply
+    type: BOOLEAN
+    tier: T1
+  F_SUPPLY_TYPE:
+    name: Type of supply
+    type: CODE
+    options:
+    - BOTH
+    - GOODS
+    - SERVICES
+    tier: T1
+  F_SERVICE_NATURE:
+    name: Nature of service provided
+    type: CODE
+    options:
+    - ADVANCE_EXTENSION
+    - DEPOSIT_EXTENSION
+    - LOAN_EXTENSION
+    - OTHER
+    tier: T1
+  F_CONSIDERATION_FORM:
+    name: Form of consideration for the supply
+    type: CODE
+    options:
+    - DISCOUNT
+    - INTEREST
+    - OTHER
+    tier: T1
+  F_PERSON_IS_COMPOSITION_TAXPAYER:
+    name: Person is a taxable person under Composition Levy (s10(1) or s10(2A))
+    type: BOOLEAN
+    tier: T0
+  F_SUPPLY_EXEMPT_BY_SPECIAL_ORDER_S11_2:
+    name: Supply is exempted by a special order under CGST Act s11(2)
+    type: BOOLEAN
+    tier: T1
+  F_NOTIFICATION_PREAMBLE_TEXT:
+    name: Preamble and context of the notification
+    type: TEXT
+    tier: T1
+  F_NOTIFICATION_COUNCIL_REC_STATED:
+    name: Notification states it is on Council's recommendation
+    type: BOOLEAN
+    tier: T1
+  F_NOTIFICATION_IS_ISSUED:
+    name: An exemption notification has been issued
+    type: BOOLEAN
+    tier: T1
+  F_NOTIFICATION_EXEMPTION_TYPE:
+    name: Nature of the exemption's conditions
+    type: CODE
+    options:
+    - ABSOLUTE
+    - CONDITIONAL
+    tier: T1
+  F_NOTIFICATION_SUBJECT_DESCRIPTION_EXISTS:
+    name: Notification specifies the description of goods/services
+    type: BOOLEAN
+    tier: T1
+  F_NOTIFICATION_EXEMPTION_EXTENT:
+    name: Extent of the tax exemption
+    type: CODE
+    options:
+    - WHOLE
+    - PART
+    tier: T1
+  F_NOTIFICATION_EFFECTIVE_DATE_EXISTS:
+    name: Notification specifies an effective date
+    type: BOOLEAN
+    tier: T1
+  F_SUPPLIER_ENGAGED_IN_NON_LEVIABLE_SUPPLY:
+    name: Supplier is engaged in making any supply of goods or services which are not leviable to tax under this Act
+    type: BOOLEAN
+    tier: T0
+  F_SUPPLIER_IS_A_PERSON:
+    name: Supplier is a 'person' under the Act
+    type: BOOLEAN
+    tier: T0
+  F_ACTIVITY_DESCRIPTION:
+    name: Description of the supplier's business activity
+    type: TEXT
+    tier: T1
+  F_SUPPLIER_MAKES_OTHER_SUPPLIES:
+    name: Supplier makes supplies that are liable to tax and not wholly exempt
+    type: BOOLEAN
+    tier: T0
+  F_SUPPLY_LEVIABLE_TO_TAX:
+    name: The supply is liable to tax under the CGST Act or the IGST Act
+    type: BOOLEAN
+    tier: T0
+  F_SUPPLY_EXEMPTION_STATUS:
+    name: Exemption status of the goods or services or both supplied by the person
+    type: CODE
+    options:
+    - NOT_EXEMPT
+    - PARTLY_EXEMPT
+    - WHOLLY_EXEMPT
+    tier: T1
+  F_PERSON_IS_REGISTERED:
+    name: Person using the goods or services is a registered person
+    type: BOOLEAN
+    tier: T0
+  F_SUPPLY_STATUS_CHANGED_EXEMPT_TO_TAXABLE:
+    name: An exempt supply by the registered person became a taxable supply
+    type: BOOLEAN
+    tier: T0
+  F_PERSON_SUPPLIES_TAXABLE_GOODS:
+    name: Person is engaged in the supply of taxable goods
+    type: BOOLEAN
+    tier: T0
+  F_SUPPLY_NATURE:
+    name: Nature of the supply as goods, services or both
+    type: CODE
+    options:
+    - BOTH
+    - GOODS
+    - SERVICES
+    tier: T1
+  F_SERVICE_TYPE_FINANCIAL:
+    name: Type of financial service provided
+    type: CODE
+    options:
+    - DEPOSIT
+    - LOAN
+    - ADVANCE
+    - OTHER
+    tier: T1
+  F_SERVICE_CONSIDERATION_FORM:
+    name: Form of consideration for the financial service
+    type: CODE
+    options:
+    - INTEREST
+    - DISCOUNT
+    - OTHER
+    tier: T1
+  F_TFOS:
+    name: Form of supply
+    type: CODE
+    options:
+    - SALE
+    - TRANSFER
+    - BARTER
+    - EXCHANGE
+    - LICENCE
+    - RENTAL
+    - LEASE
+    - DISPOSAL
+    - OTHER
+    tier: T1
+  F_SUPPLY_DESCRIPTION:
+    name: Description of supply
+    type: TEXT
+    tier: T1
+  F_SUPPLY_STATUS:
+    name: Status of supply
+    type: CODE
+    options:
+    - AGREED
+    - MADE
+    tier: T1
+  F_SUPPLY_CONSIDERATION_EXISTS:
+    name: Consideration exists for the supply
+    type: BOOLEAN
+    tier: T1
+  F_SUPPLIER_LOCATION:
+    name: Location of supplier
+    type: TEXT
+    tier: T1
+  F_RECIPIENT_LOCATION:
+    name: Location of recipient
+    type: TEXT
+    tier: T1
+  F_SUPPLY_PLACE:
+    name: Place of supply
+    type: TEXT
+    tier: T1
+  F_PERSON_IS_TAXABLE:
+    name: Person making the supply is a taxable person
+    type: BOOLEAN
+    tier: T0
+  F_SUPPLY_CAPACITY:
+    name: Capacity in which the supply is made
+    type: CODE
+    options:
+    - OWN_ACCOUNT
+    - AGENT_FOR_PRINCIPAL
+    tier: T1
+predicates:
+  A_SALE:
+    statement: The supply of goods or services or both is a sale
+    order: LOW
+    rule: F_TFOS = 'SALE'
+  A_TRANSFER:
+    statement: The supply of goods or services or both is a transfer
+    order: LOW
+    rule: F_TFOS = 'TRANSFER'
+  A_BARTER:
+    statement: The supply of goods or services or both is a barter
+    order: LOW
+    rule: F_TFOS = 'BARTER'
+  A_EXCHANGE:
+    statement: The supply of goods or services or both is an exchange
+    order: LOW
+    rule: F_TFOS = 'EXCHANGE'
+  A_LICENCE:
+    statement: The supply of goods or services or both is a licence
+    order: LOW
+    rule: F_TFOS = 'LICENCE'
+  A_RENTAL:
+    statement: The supply of goods or services or both is a rental
+    order: LOW
+    rule: F_TFOS = 'RENTAL'
+  A_LEASE:
+    statement: The supply of goods or services or both is a lease
+    order: LOW
+    rule: F_TFOS = 'LEASE'
+  A_DISPOSAL:
+    statement: The supply of goods or services or both is a disposal
+    order: LOW
+    rule: F_TFOS = 'DISPOSAL'
+  A_OTHER_FORM:
+    statement: The supply of goods or services or both is another qualifying form
+    order: HIGH
+    interpretation: Based on the description, is the transaction a form of supply similar in nature to sale, transfer, barter,
+      exchange, licence, rental, lease, or disposal?
+    grounding:
+    - F_TFOS
+    - F_SUPPLY_DESCRIPTION
+  A_MADE:
+    statement: The supply is made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'MADE'
+  A_AGREED:
+    statement: The supply is agreed to be made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'AGREED'
+  A_CONSIDERATION:
+    statement: The supply is for a consideration
+    order: LOW
+    rule: F_SUPPLY_CONSIDERATION_EXISTS = TRUE
+  A_PERSON:
+    statement: The supply is by a person
+    order: LOW
+    rule: F_SUPPLIER_IS_A_PERSON = TRUE
+  A_BUSINESS_SIAFOS:
+    statement: The supply is in the course or furtherance of business
+    order: HIGH
+    interpretation: Based on the supplier's activity description, is this supply made in the course or furtherance of their
+      business?
+    grounding:
+    - F_SUPPLIER_ACTIVITY_DESCRIPTION
+  A_M_IOSFC_1:
+    statement: The transaction is an import of services
+    order: HIGH
+    interpretation: Based on the supplier location, recipient location, and place of supply, is this an 'import of services'?
+    grounding:
+    - F_SUPPLIER_LOCATION
+    - F_RECIPIENT_LOCATION
+    - F_SUPPLY_PLACE
+  A_M_IOSFC_2:
+    statement: The import of services is for a consideration
+    order: LOW
+    rule: F_SUPPLY_CONSIDERATION_EXISTS = TRUE
+  A_SCHEDULE_I_ACTIVITY:
+    statement: The activity is specified in Schedule I
+    order: HIGH
+    interpretation: Is the described activity one of the activities specified in Schedule I of the CGST Act?
+    grounding:
+    - F_SUPPLIER_ACTIVITY_DESCRIPTION
+    - F_SUPPLY_DESCRIPTION
+  A_MADE_SISIA:
+    statement: The activity is made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'MADE'
+  A_AGREED_SISIA:
+    statement: The activity is agreed to be made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'AGREED'
+  A_NO_CONSIDERATION:
+    statement: The activity is without a consideration
+    order: LOW
+    rule: F_SUPPLY_CONSIDERATION_EXISTS = FALSE
+  A_TAXABLE_PERSON_S22:
+    statement: The supply is made by a taxable person
+    order: LOW
+    rule: F_PERSON_IS_TAXABLE = TRUE
+  A_OWN_ACCOUNT_SUPPLY_S22:
+    statement: The supply is made on the person's own account
+    order: LOW
+    rule: F_SUPPLY_CAPACITY = 'OWN_ACCOUNT'
+  A_PRINCIPAL_ACCOUNT_SUPPLY_S22:
+    statement: The supply is made on behalf of all the person's principals
+    order: LOW
+    rule: F_SUPPLY_CAPACITY = 'AGENT_FOR_PRINCIPAL'
+  A_M_LOCTOPP_1:
+    statement: The supply is of petroleum crude
+    order: LOW
+    rule: F_SUPPLY_GOODS_TYPE = 'PETROLEUM_CRUDE'
+  A_M_LOCTOPP_2:
+    statement: The supply is of high speed diesel
+    order: LOW
+    rule: F_SUPPLY_GOODS_TYPE = 'HIGH_SPEED_DIESEL'
+  A_M_LOCTOPP_3:
+    statement: The supply is of motor spirit (commonly known as petrol)
+    order: LOW
+    rule: F_SUPPLY_GOODS_TYPE = 'MOTOR_SPIRIT'
+  A_M_LOCTOPP_4:
+    statement: The supply is of natural gas
+    order: LOW
+    rule: F_SUPPLY_GOODS_TYPE = 'NATURAL_GAS'
+  A_M_LOCTOPP_5:
+    statement: The supply is of aviation turbine fuel
+    order: LOW
+    rule: F_SUPPLY_GOODS_TYPE = 'AVIATION_TURBINE_FUEL'
+  A_M_LOCTOPP_6:
+    statement: A date for the levy of central tax on the specified petroleum products has been notified by the Government
+    order: LOW
+    rule: F_PETRO_LEVY_EFFECTIVE_DATE IS_SET
+  A_M_LOCTOPP_7:
+    statement: The notification for the levy date was made on the recommendations of the Council
+    order: LOW
+    rule: F_PETRO_LEVY_NOTIFICATION_HAS_COUNCIL_RECOMMENDATION = TRUE
+  A_M_LOCTOPP_8:
+    statement: The supply takes place on or after the notified effective date
+    order: HIGH
+    interpretation: Does the date of supply occur on or after the notified effective date for the levy on specified petroleum
+      products?
+    grounding:
+    - F_SUPPLY_DATE
+    - F_PETRO_LEVY_EFFECTIVE_DATE
+  A_M_ECONS_1:
+    statement: The registered person is not engaged in making any supply of goods or services which are not leviable to tax
+      under this Act.
+    order: HIGH
+    interpretation: Based on the description of the person's business activities, is the person engaged in making any supply
+      of goods or services which are not leviable to tax under the CGST Act? A 'NO' answer to this question means the condition
+      is met and this atom is TRUE.
+    grounding:
+    - F_SUPPLIER_ACTIVITY_DESCRIPTION
+  A_ATFCE_1:
+    statement: For the purpose of determining eligibility to pay tax under this section, the aggregate turnover shall include
+      the value of supplies made by the person from the 1st day of April of a financial year up to the date when he becomes
+      liable for registration under this Act.
+    order: HIGH
+    interpretation: Does the calculation of 'aggregate turnover' for composition eligibility include the value of supplies
+      from the 1st day of April of the financial year up to the date the person becomes liable for registration?
+    grounding:
+    - F_FINANCIAL_YEAR_START_DATE
+    - F_REGISTRATION_LIABILITY_DATE
+  A_ATFCE_2:
+    statement: For the purpose of determining eligibility to pay tax under this section, the aggregate turnover shall not
+      include the value of an exempt supply of services provided by way of extending deposits, loans or advances where the
+      consideration is represented by way of interest or discount.
+    order: LOW
+    rule: F_SUPPLY_IS_EXEMPT = TRUE AND F_SUPPLY_TYPE = 'SERVICES' AND F_SERVICE_NATURE IN ['DEPOSIT_EXTENSION', 'LOAN_EXTENSION',
+      'ADVANCE_EXTENSION'] AND F_CONSIDERATION_FORM IN ['INTEREST', 'DISCOUNT']
+  A_M_EOIIFT_1:
+    statement: For the purpose of determining tax payable by a person under this section, the 'turnover in State or turnover
+      in Union territory' shall not include the value of the supply.
+    order: LOW
+    rule: F_PERSON_IS_COMPOSITION_TAXPAYER = TRUE
+  A_M_EOIIFT_2:
+    statement: The supply is an exempt supply of services.
+    order: LOW
+    rule: F_SUPPLY_IS_EXEMPT = TRUE AND F_SUPPLY_TYPE = 'SERVICES'
+  A_M_EOIIFT_3:
+    statement: The service is provided by way of extending deposits.
+    order: LOW
+    rule: F_SERVICE_NATURE = 'DEPOSIT_EXTENSION'
+  A_M_EOIIFT_4:
+    statement: The service is provided by way of extending loans.
+    order: LOW
+    rule: F_SERVICE_NATURE = 'LOAN_EXTENSION'
+  A_M_EOIIFT_5:
+    statement: The service is provided by way of extending advances.
+    order: LOW
+    rule: F_SERVICE_NATURE = 'ADVANCE_EXTENSION'
+  A_M_EOIIFT_6:
+    statement: The consideration for the supply is represented by way of interest.
+    order: LOW
+    rule: F_CONSIDERATION_FORM = 'INTEREST'
+  A_M_EOIIFT_7:
+    statement: The consideration for the supply is represented by way of discount.
+    order: LOW
+    rule: F_CONSIDERATION_FORM = 'DISCOUNT'
+  A_GPTEBSO_01:
+    statement: The Government, by special order in each case, exempts the specific supply of goods or services (or both) from
+      payment of tax.
+    order: LOW
+    rule: F_SUPPLY_EXEMPT_BY_SPECIAL_ORDER_S11_2 = TRUE
+  A_M_GPTGE_1:
+    statement: The Government is satisfied that it is necessary in the public interest to grant the exemption
+    order: HIGH
+    interpretation: Does the preamble or other evidence show the Government formed the necessary satisfaction about public
+      interest before issuing the notification?
+    grounding:
+    - F_NOTIFICATION_PREAMBLE_TEXT
+  A_M_GPTGE_2:
+    statement: The power to exempt is exercised on the recommendations of the Council
+    order: LOW
+    rule: F_NOTIFICATION_COUNCIL_REC_STATED = TRUE
+  A_M_GPTGE_3:
+    statement: The exemption is granted by notification
+    order: LOW
+    rule: F_NOTIFICATION_IS_ISSUED = TRUE
+  A_M_GPTGE_4:
+    statement: The exemption is granted absolutely
+    order: LOW
+    rule: F_NOTIFICATION_EXEMPTION_TYPE = 'ABSOLUTE'
+  A_M_GPTGE_5:
+    statement: The exemption is granted subject to specified conditions
+    order: LOW
+    rule: F_NOTIFICATION_EXEMPTION_TYPE = 'CONDITIONAL'
+  A_M_GPTGE_6:
+    statement: The exemption applies to goods or services or both of a specified description
+    order: LOW
+    rule: F_NOTIFICATION_SUBJECT_DESCRIPTION_EXISTS = TRUE
+  A_M_GPTGE_7:
+    statement: The exemption is from the whole of the tax leviable
+    order: LOW
+    rule: F_NOTIFICATION_EXEMPTION_EXTENT = 'WHOLE'
+  A_M_GPTGE_8:
+    statement: The exemption is from any part of the tax leviable
+    order: LOW
+    rule: F_NOTIFICATION_EXEMPTION_EXTENT = 'PART'
+  A_M_GPTGE_9:
+    statement: The notification specifies an effective date for the exemption
+    order: LOW
+    rule: F_NOTIFICATION_EFFECTIVE_DATE_EXISTS = TRUE
+  A_NO_NONLEVIABLE:
+    statement: The registered person is not engaged in making any supply of goods or services which are not leviable to tax
+      under this Act
+    order: LOW
+    rule: F_SUPPLIER_ENGAGED_IN_NON_LEVIABLE_SUPPLY = FALSE
+  A_EXEMPT_SVC:
+    statement: The supply is an exempt supply of services
+    order: LOW
+    if_false: the supply is not exempt, or is a supply of goods
+    rule: F_SUPPLY_IS_EXEMPT = TRUE AND F_SUPPLY_TYPE = 'SERVICES'
+  A_BUSINESS:
+    statement: The person is engaged in the business of supplying goods or services or both
+    order: HIGH
+    interpretation: Is the person engaged in the business of supplying goods or services or both?
+    grounding:
+    - F_SUPPLIER_IS_A_PERSON
+    - F_ACTIVITY_DESCRIPTION
+  A_EXCLUSIVE:
+    statement: The person is engaged exclusively in that business of supplying and makes no supply of goods or services or
+      both other than supplies that are not liable to tax or wholly exempt from tax under this Act or under the Integrated
+      Goods and Services Tax Act
+    order: LOW
+    rule: F_SUPPLIER_MAKES_OTHER_SUPPLIES = FALSE
+  A_NOT_LIABLE:
+    statement: The goods or services or both supplied are not liable to tax under this Act or under the Integrated Goods and
+      Services Tax Act
+    order: LOW
+    rule: F_SUPPLY_LEVIABLE_TO_TAX = FALSE
+  A_WHOLLY_EXEMPT:
+    statement: The goods or services or both supplied are wholly exempt from tax under this Act or under the Integrated Goods
+      and Services Tax Act
+    order: LOW
+    rule: F_SUPPLY_EXEMPTION_STATUS = 'WHOLLY_EXEMPT'
+  A_CWESBT_01:
+    statement: An exempt supply of goods or services or both by a registered person becomes a taxable supply
+    order: LOW
+    rule: F_PERSON_IS_REGISTERED = TRUE AND F_SUPPLY_STATUS_CHANGED_EXEMPT_TO_TAXABLE = TRUE
+  A_WHOLLY_EXEMPT_POOCOE:
+    statement: The goods or services or both supplied by the registered person become wholly exempt
+    order: LOW
+    rule: F_SUPPLY_EXEMPTION_STATUS = 'WHOLLY_EXEMPT'
+  A_M_ESOGE_0:
+    statement: A person is engaged in the supply of taxable goods
+    order: LOW
+    rule: F_PERSON_SUPPLIES_TAXABLE_GOODS = TRUE
+  A_M_ESOGE_1:
+    statement: The person is engaged in an exempt supply of services provided by way of extending deposits, loans or advances
+    order: LOW
+    rule: F_SUPPLY_NATURE = 'SERVICES' AND F_SUPPLY_EXEMPTION_STATUS = 'WHOLLY_EXEMPT' AND F_SERVICE_TYPE_FINANCIAL IN ['DEPOSIT',
+      'LOAN', 'ADVANCE']
+  A_M_ESOGE_2:
+    statement: The consideration for the exempt service is represented by way of interest or discount
+    order: LOW
+    rule: F_SERVICE_CONSIDERATION_FORM IN ['INTEREST', 'DISCOUNT']
+  A_RPTITI_02:
+    statement: The supply consists of taxable services
+    order: LOW
+    rule: F_SUPPLY_NATURE = 'SERVICES' AND F_SUPPLY_EXEMPTION_STATUS != 'WHOLLY_EXEMPT'
+  A_SUPPLYING_EXEMPTED:
+    statement: The registered person is supplying exempted goods or services or both.
+    order: LOW
+    rule: F_SUPPLY_IS_EXEMPT = TRUE
+groups:
+  G_FORMS:
+    name: Forms of Supply
+    logic: ANY
+    members:
+    - A_SALE
+    - A_TRANSFER
+    - A_BARTER
+    - A_EXCHANGE
+    - A_LICENCE
+    - A_RENTAL
+    - A_LEASE
+    - A_DISPOSAL
+    - A_OTHER_FORM
+    description: The supply must take one of the listed or other similar forms.
+  G_TIMING:
+    name: Supply Timing
+    logic: ANY
+    members:
+    - A_MADE
+    - A_AGREED
+    description: The supply must be either made or agreed to be made.
+  G_STATUS:
+    name: Supply Status
+    logic: ANY
+    members:
+    - A_MADE_SISIA
+    - A_AGREED_SISIA
+    description: The activity is either made or agreed to be made.
+  G_SUPPLY_CAPACITY_S22:
+    name: Supply capacity for Section 22 aggregate turnover
+    logic: ANY
+    members:
+    - A_OWN_ACCOUNT_SUPPLY_S22
+    - A_PRINCIPAL_ACCOUNT_SUPPLY_S22
+    description: The supply was made either on the person's own account or on behalf of their principals.
+  G_M_LOCTOPP_GOODS:
+    name: Supply is of a specified petroleum product
+    logic: ANY
+    members:
+    - A_M_LOCTOPP_1
+    - A_M_LOCTOPP_2
+    - A_M_LOCTOPP_3
+    - A_M_LOCTOPP_4
+    - A_M_LOCTOPP_5
+  G_M_LOCTOPP_CONDS:
+    name: Conditions for levy are met
+    logic: ALL
+    members:
+    - A_M_LOCTOPP_6
+    - A_M_LOCTOPP_7
+    - A_M_LOCTOPP_8
+  G_ATFCE_1:
+    name: Rules for computing aggregate turnover for composition eligibility
+    logic: ALL
+    members:
+    - A_ATFCE_1
+    - A_ATFCE_2
+  G_M_EOIIFT_ALL:
+    name: Conditions for excluding supply value from composition turnover
+    logic: ALL
+    members:
+    - A_M_EOIIFT_1
+    - A_M_EOIIFT_2
+    - G_M_EOIIFT_ANY1
+    - G_M_EOIIFT_ANY2
+  G_M_EOIIFT_ANY1:
+    name: Service is of extending deposits, loans, or advances
+    logic: ANY
+    members:
+    - A_M_EOIIFT_3
+    - A_M_EOIIFT_4
+    - A_M_EOIIFT_5
+  G_M_EOIIFT_ANY2:
+    name: Consideration is interest or discount
+    logic: ANY
+    members:
+    - A_M_EOIIFT_6
+    - A_M_EOIIFT_7
+  G_M_GPTGE_1:
+    name: Exemption is either absolute or conditional
+    logic: ANY
+    members:
+    - A_M_GPTGE_4
+    - A_M_GPTGE_5
+  G_M_GPTGE_2:
+    name: Exemption is from the whole or part of the tax
+    logic: ANY
+    members:
+    - A_M_GPTGE_7
+    - A_M_GPTGE_8
+  G_SUPPLY_KIND:
+    name: Supplies not liable to tax or wholly exempt
+    logic: ANY
+    members:
+    - A_NOT_LIABLE
+    - A_WHOLLY_EXEMPT
+    description: Either alternative qualifies the kind of supply; wholly exempt does not include partly exempt
+  G_M_ESOGE_1:
+    name: Conditions for exempt financial services
+    logic: ALL
+    members:
+    - A_M_ESOGE_1
+    - A_M_ESOGE_2
+    description: The person must be engaged in a qualifying exempt financial service for which the consideration is in a qualifying
+      form.
+outcomes:
+  LE_SIAFOS:
+    outcome: SUPPLY_INCLUDED_S7_1_a
+    expr: G_FORMS AND G_TIMING AND A_CONSIDERATION AND A_PERSON AND A_BUSINESS_SIAFOS
+    module: M_SIAFOS
+    description: The transaction is included in the definition of supply under Section 7(1)(a) if it meets all the specified
+      conditions.
+  LE_M_IOSFC:
+    outcome: SUPPLY_INCLUDED
+    expr: A_M_IOSFC_1 AND A_M_IOSFC_2
+    module: M_IOSFC
+  LE_SISIA:
+    outcome: SUPPLY_INCLUDED
+    expr: A_SCHEDULE_I_ACTIVITY AND G_STATUS AND A_NO_CONSIDERATION
+    module: M_SISIA
+    description: The transaction is included in the scope of supply if it is a Schedule I activity, made or agreed to be made,
+      and is without consideration.
+  LE_ATDFS22:
+    outcome: SUPPLY_INCLUDED_IN_AGGREGATE_TURNOVER_FOR_S22
+    expr: A_TAXABLE_PERSON_S22 AND G_SUPPLY_CAPACITY_S22
+    module: M_ATDFS22
+    description: A supply is included in the aggregate turnover for Section 22 if it is made by a taxable person, either on
+      their own account or on behalf of principals.
+  LE_M_LOCTOPP:
+    outcome: CENTRAL_TAX_LEVIABLE
+    expr: G_M_LOCTOPP_GOODS AND G_M_LOCTOPP_CONDS
+    module: M_LOCTOPP
+  LE_M_ECONS:
+    outcome: COMPOSITION_ELIGIBILITY_S10_2_B
+    expr: A_M_ECONS_1
+    module: M_ECONS
+    description: The condition regarding non-leviable supplies for composition scheme eligibility is met.
+  LE_ATFCE_1:
+    outcome: AGGREGATE_TURNOVER_FOR_COMPOSITION_ELIGIBILITY_DEFINED
+    expr: G_ATFCE_1
+    module: M_ATFCE
+    description: The method for computing aggregate turnover for composition eligibility is defined by the inclusion and exclusion
+      rules specified.
+  LE_M_EOIIFT:
+    outcome: IS_EXCLUDED_FROM_TURNOVER
+    expr: G_M_EOIIFT_ALL
+    module: M_EOIIFT
+  LE_GPTEBSO_01:
+    outcome: GPTEBSO_01
+    expr: A_GPTEBSO_01
+    module: M_GPTEBSO
+    description: The Government, by special order in each case, exempts the specific supply of goods or services (or both)
+      from payment of tax. (Section 11(2), part of the law)
+  LE_M_GPTGE:
+    outcome: POWER_TO_EXEMPT_VALIDLY_EXERCISED
+    expr: A_M_GPTGE_1 AND A_M_GPTGE_2 AND A_M_GPTGE_3 AND A_M_GPTGE_6 AND G_M_GPTGE_1 AND G_M_GPTGE_2 AND A_M_GPTGE_9
+    module: M_GPTGE
+  LE_NO_NONLEVIABLE:
+    outcome: NO_NONLEVIABLE
+    expr: A_NO_NONLEVIABLE
+    module: M_CIFNS
+    description: The registered person is not engaged in making any supply of goods or services which are not leviable to
+      tax under this Act (Section 10(2A), part of the law)
+  LE_EXEMPT_SVC:
+    outcome: EXEMPT_SVC
+    expr: A_EXEMPT_SVC
+    module: M_EOIFTFC
+    description: The supply is an exempt supply of services (Section 10(1), Explanation, part of the law)
+  LE_ESOES:
+    outcome: NOT_LIABLE_TO_REGISTRATION
+    expr: A_BUSINESS AND A_EXCLUSIVE AND G_SUPPLY_KIND
+    module: M_ESOES
+    description: The person is not liable to registration only when all three conditions are met
+  LE_CWESBT_01:
+    outcome: CWESBT_01
+    expr: A_CWESBT_01
+    module: M_CWESBT
+    description: An exempt supply of goods or services or both by a registered person becomes a taxable supply (Section 18(1),
+      part of the law)
+  LE_WHOLLY_EXEMPT:
+    outcome: WHOLLY_EXEMPT
+    expr: A_WHOLLY_EXEMPT_POOCOE
+    module: M_POOCOE
+    description: The goods or services or both supplied by the registered person become wholly exempt (Section 18(4), part
+      of the law)
+  LE_M_ESOGE:
+    outcome: PERSON_DEEMED_EXCLUSIVELY_GOODS_SUPPLIER
+    expr: A_M_ESOGE_0 AND G_M_ESOGE_1
+    module: M_ESOGE
+    description: The person is deemed to be engaged exclusively in the supply of goods for the purposes of Section 22(1).
+  LE_RPTITI_02:
+    outcome: RPTITI_02
+    expr: A_RPTITI_02
+    module: M_RPTITI
+    description: The supply consists of taxable services (Section 31(2), part of the law)
+  LE_SUPPLYING_EXEMPTED:
+    outcome: SUPPLYING_EXEMPTED
+    expr: A_SUPPLYING_EXEMPTED
+    module: M_BOSFEOC
+    description: The registered person is supplying exempted goods or services or both. (Section 31(3), part of the law)
+products:
+  PD_SIAFOS:
+    statement: The transaction is included in the definition of supply under Section 7(1)(a) if it meets all the specified
+      conditions.
+  PD_M_IOSFC:
+    statement: SUPPLY_INCLUDED
+  PD_SISIA:
+    statement: The transaction is included in the scope of supply if it is a Schedule I activity, made or agreed to be made,
+      and is without consideration.
+  PD_ATDFS22:
+    statement: A supply is included in the aggregate turnover for Section 22 if it is made by a taxable person, either on
+      their own account or on behalf of principals.
+  PD_M_LOCTOPP:
+    statement: CENTRAL_TAX_LEVIABLE
+  PD_M_ECONS:
+    statement: The condition regarding non-leviable supplies for composition scheme eligibility is met.
+  PD_ATFCE_1:
+    statement: The method for computing aggregate turnover for composition eligibility is defined by the inclusion and exclusion
+      rules specified.
+  PD_M_EOIIFT:
+    statement: IS_EXCLUDED_FROM_TURNOVER
+  PD_GPTEBSO_01:
+    statement: The Government, by special order in each case, exempts the specific supply of goods or services (or both) from
+      payment of tax.
+  PD_M_GPTGE:
+    statement: POWER_TO_EXEMPT_VALIDLY_EXERCISED
+  PD_NO_NONLEVIABLE:
+    statement: The registered person is not engaged in making any supply of goods or services which are not leviable to tax
+      under this Act
+  PD_EXEMPT_SVC:
+    statement: The supply is an exempt supply of services
+  PD_ESOES:
+    statement: The person is not liable to registration only when all three conditions are met
+  PD_CWESBT_01:
+    statement: An exempt supply of goods or services or both by a registered person becomes a taxable supply
+  PD_WHOLLY_EXEMPT:
+    statement: The goods or services or both supplied by the registered person become wholly exempt
+  PD_M_ESOGE:
+    statement: The person is deemed to be engaged exclusively in the supply of goods for the purposes of Section 22(1).
+  PD_RPTITI_02:
+    statement: The supply consists of taxable services
+  PD_SUPPLYING_EXEMPTED:
+    statement: The registered person is supplying exempted goods or services or both.
+compounds:
+- id: C_S7_SS1
+  question: 'Section 7(1): which clause applies?'
+  includes:
+  - LE_SIAFOS
+  - LE_M_IOSFC
+  - LE_SISIA
+  produces:
+  - product: PD_SIAFOS
+    from:
+    - LE_SIAFOS
+  - product: PD_M_IOSFC
+    from:
+    - LE_M_IOSFC
+  - product: PD_SISIA
+    from:
+    - LE_SISIA
+- id: C_ATDFS22
+  question: 'Section 22, Explanation (i): Aggregate Turnover Definition For Section 22?'
+  includes:
+  - LE_ATDFS22
+  produces:
+  - product: PD_ATDFS22
+    from:
+    - LE_ATDFS22
+- id: C_LOCTOPP
+  question: 'Section 9(2): Levy Of Central Tax On Petroleum Products?'
+  includes:
+  - LE_M_LOCTOPP
+  produces:
+  - product: PD_M_LOCTOPP
+    from:
+    - LE_M_LOCTOPP
+- id: C_ECONS
+  question: 'Section 10(2)(b): Eligibility Condition On Non-Leviable Supplies?'
+  includes:
+  - LE_M_ECONS
+  produces:
+  - product: PD_M_ECONS
+    from:
+    - LE_M_ECONS
+- id: C_ATFCE
+  question: 'Section 10(5), Explanation 1: Aggregate Turnover For Composition Eligibility?'
+  includes:
+  - LE_ATFCE_1
+  produces:
+  - product: PD_ATFCE_1
+    from:
+    - LE_ATFCE_1
+- id: C_EOIIFT
+  question: 'Section 10(5), Explanation 2(ii): Exclusion Of Interest Income From Turnover?'
+  includes:
+  - LE_M_EOIIFT
+  produces:
+  - product: PD_M_EOIIFT
+    from:
+    - LE_M_EOIIFT
+- id: C_GPTEBSO
+  question: The Government, by special order in each case, exempts the specific supply of goods or services (or both) from
+    payment of tax? (Section 11(2))
+  includes:
+  - LE_GPTEBSO_01
+  produces:
+  - product: PD_GPTEBSO_01
+    from:
+    - LE_GPTEBSO_01
+- id: C_GPTGE
+  question: 'Section 11(1): Government Power To Grant Exemption?'
+  includes:
+  - LE_M_GPTGE
+  produces:
+  - product: PD_M_GPTGE
+    from:
+    - LE_M_GPTGE
+- id: C_CIFNS
+  question: The registered person is not engaged in making any supply of goods or services which are not leviable to tax under
+    this Act? (Section 10(2A))
+  includes:
+  - LE_NO_NONLEVIABLE
+  produces:
+  - product: PD_NO_NONLEVIABLE
+    from:
+    - LE_NO_NONLEVIABLE
+- id: C_EOIFTFC
+  question: The supply is an exempt supply of services? (Section 10(1), Explanation)
+  includes:
+  - LE_EXEMPT_SVC
+  produces:
+  - product: PD_EXEMPT_SVC
+    from:
+    - LE_EXEMPT_SVC
+- id: C_ESOES
+  question: 'Section 23(1)(a): Exclusive Suppliers Of Exempt Supplies?'
+  includes:
+  - LE_ESOES
+  produces:
+  - product: PD_ESOES
+    from:
+    - LE_ESOES
+- id: C_CWESBT
+  question: An exempt supply of goods or services or both by a registered person becomes a taxable supply? (Section 18(1))
+  includes:
+  - LE_CWESBT_01
+  produces:
+  - product: PD_CWESBT_01
+    from:
+    - LE_CWESBT_01
+- id: C_POOCOE
+  question: The goods or services or both supplied by the registered person become wholly exempt? (Section 18(4))
+  includes:
+  - LE_WHOLLY_EXEMPT
+  produces:
+  - product: PD_WHOLLY_EXEMPT
+    from:
+    - LE_WHOLLY_EXEMPT
+- id: C_ESOGE
+  question: 'Explanation to Section 22(1): Exclusive Supply Of Goods Explained?'
+  includes:
+  - LE_M_ESOGE
+  produces:
+  - product: PD_M_ESOGE
+    from:
+    - LE_M_ESOGE
+- id: C_RPTITI
+  question: The supply consists of taxable services? (Section 31(2))
+  includes:
+  - LE_RPTITI_02
+  produces:
+  - product: PD_RPTITI_02
+    from:
+    - LE_RPTITI_02
+- id: C_BOSFEOC
+  question: The registered person is supplying exempted goods or services or both? (Section 31(3))
+  includes:
+  - LE_SUPPLYING_EXEMPTED
+  produces:
+  - product: PD_SUPPLYING_EXEMPTED
+    from:
+    - LE_SUPPLYING_EXEMPTED

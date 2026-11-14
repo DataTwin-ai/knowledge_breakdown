@@ -1,0 +1,130 @@
+# GOVERNANCE MASTER TSG14_05 Transitional provisions (TG14 Definitions & Effective Law)
+# LAW ARC - 2 laws - status NEEDS_REVIEW
+name: TSG14_05 Transitional provisions - GOVERNANCE MASTER rulebook
+version: TSG14_05
+facts:
+  F_PERSON_STATUS_PRE_APPOINTED_DAY:
+    name: Person's status under existing law on day preceding appointed day
+    type: CODE
+    options:
+    - REGISTERED
+    - LICENSED
+    - REGISTERED_AND_LICENSED
+    - NEITHER
+    tier: T0
+  F_ITC_TAKING_DATE:
+    name: Date on which the input tax credit is taken
+    type: DATE
+    tier: T0
+  F_RETURN_S39_DUE_DATE_SEP18:
+    name: Due date of S39 return for Sep 2018
+    type: DATE
+    tier: T1
+  F_RETURN_S39_DUE_DATE_MAR19:
+    name: Due date of S39 return for Mar 2019
+    type: DATE
+    tier: T1
+  F_SUPPLY_DATE:
+    name: Date of supply
+    type: DATE
+    tier: T1
+predicates:
+  A_M_ELRLFR_1:
+    statement: The person was registered under an existing law on the day immediately preceding the appointed day
+    order: LOW
+    rule: F_PERSON_STATUS_PRE_APPOINTED_DAY IN ['REGISTERED', 'REGISTERED_AND_LICENSED']
+  A_M_ELRLFR_2:
+    statement: The person held a licence under an existing law on the day immediately preceding the appointed day
+    order: LOW
+    rule: F_PERSON_STATUS_PRE_APPOINTED_DAY IN ['LICENSED', 'REGISTERED_AND_LICENSED']
+  A_2:
+    statement: The input tax credit is taken after the due date of furnishing of the return under section 39 for the month
+      of September, 2018
+    order: HIGH
+    interpretation: The date in F_ITC_TAKING_DATE must be after the date in F_RETURN_S39_DUE_DATE_SEP18.
+    grounding:
+    - F_ITC_TAKING_DATE
+    - F_RETURN_S39_DUE_DATE_SEP18
+  A_3:
+    statement: The input tax credit is taken on or before the due date of furnishing of the return under section 39 for the
+      month of March, 2019
+    order: HIGH
+    interpretation: The date in F_ITC_TAKING_DATE must be on or before the date in F_RETURN_S39_DUE_DATE_MAR19.
+    grounding:
+    - F_ITC_TAKING_DATE
+    - F_RETURN_S39_DUE_DATE_MAR19
+  A_6:
+    statement: The supply of goods or services or both was made during the financial year 2017-18
+    order: LOW
+    rule: F_SUPPLY_DATE >= '2017-07-01' AND F_SUPPLY_DATE <= '2018-03-31'
+groups:
+  G_M_ELRLFR_1:
+    name: Pre-GST Status
+    logic: ANY
+    members:
+    - A_M_ELRLFR_1
+    - A_M_ELRLFR_2
+    description: The person was either registered or held a licence under an existing law on the day before the appointed
+      day.
+outcomes:
+  LE_M_ELRLFR:
+    outcome: PERSON_LIABLE_FOR_REGISTRATION
+    expr: G_M_ELRLFR_1
+    module: M_ELRLFR
+    description: The person is liable to be registered under the Act with effect from the appointed day.
+  LE_2:
+    outcome: '2'
+    expr: A_2
+    module: M_ILFF1718
+    description: The input tax credit is taken after the due date of furnishing of the return under section 39 for the month
+      of September, 2018 (Proviso to Section 16(4), part of the law)
+  LE_3:
+    outcome: '3'
+    expr: A_3
+    module: M_ILFF1718
+    description: The input tax credit is taken on or before the due date of furnishing of the return under section 39 for
+      the month of March, 2019 (Proviso to Section 16(4), part of the law)
+  LE_6:
+    outcome: '6'
+    expr: A_6
+    module: M_ILFF1718
+    description: The supply of goods or services or both was made during the financial year 2017-18 (Proviso to Section 16(4),
+      part of the law)
+products:
+  PD_M_ELRLFR:
+    statement: The person is liable to be registered under the Act with effect from the appointed day.
+  PD_2:
+    statement: The input tax credit is taken after the due date of furnishing of the return under section 39 for the month
+      of September, 2018
+  PD_3:
+    statement: The input tax credit is taken on or before the due date of furnishing of the return under section 39 for the
+      month of March, 2019
+  PD_6:
+    statement: The supply of goods or services or both was made during the financial year 2017-18
+compounds:
+- id: C_ELRLFR
+  question: 'Section 22(2): Existing Law Registrants Liable For Registration?'
+  includes:
+  - LE_M_ELRLFR
+  produces:
+  - product: PD_M_ELRLFR
+    from:
+    - LE_M_ELRLFR
+- id: C_ILFF1718
+  question: The input tax credit is taken after the due date of furnishing of the return under section 39 for the month of
+    September, 2018; The input tax credit is taken on or before the due date of furnishing of the return under section 39
+    for the month of March, 2019; The supply of goods or services or both w
+  includes:
+  - LE_2
+  - LE_3
+  - LE_6
+  produces:
+  - product: PD_2
+    from:
+    - LE_2
+  - product: PD_3
+    from:
+    - LE_3
+  - product: PD_6
+    from:
+    - LE_6

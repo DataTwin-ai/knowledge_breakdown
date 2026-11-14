@@ -1,0 +1,509 @@
+# GOVERNANCE MASTER TSG10_02 Debit notes (TG10 Adjustments)
+# LAW ARC - 7 laws - status NEEDS_REVIEW
+name: TSG10_02 Debit notes - GOVERNANCE MASTER rulebook
+version: TSG10_02
+facts:
+  F_DOCUMENT_TYPE:
+    name: Type of document
+    type: CODE
+    options:
+    - ASSESSMENT_DOCUMENT
+    - BILL_OF_SUPPLY
+    - CREDIT_NOTE
+    - DEBIT_NOTE
+    - DELIVERY_CHALLAN
+    - OTHER
+    - OTHER_LIKE_DOCUMENT
+    - PAYMENT_VOUCHER
+    - RECEIPT_VOUCHER
+    - REFUND_VOUCHER
+    - REVISED_INVOICE
+    - SELF_INVOICE
+    - SUPPLEMENTARY_INVOICE
+    - TAX_INVOICE
+    tier: T1
+  F_INVOICE_TAXABLE_VALUE:
+    name: Taxable value charged in the tax invoice
+    type: AMOUNT
+    tier: T0
+  F_SUPPLY_CORRECT_TAXABLE_VALUE:
+    name: Correct taxable value of the supply
+    type: AMOUNT
+    tier: T1
+  F_INVOICE_TAX_CHARGED:
+    name: Tax charged in the tax invoice
+    type: AMOUNT
+    tier: T0
+  F_SUPPLY_CORRECT_TAX_PAYABLE:
+    name: Correct tax payable on the supply
+    type: AMOUNT
+    tier: T1
+  F_DEBIT_NOTE_RECIPIENT_IS_SUPPLY_RECIPIENT:
+    name: Debit note recipient is the recipient of the original supply
+    type: BOOLEAN
+    tier: T0
+  F_DEBIT_NOTE_COVERS_SINGLE_FY_SUPPLIES:
+    name: Debit note pertains to supplies made within a single financial year
+    type: BOOLEAN
+    tier: T0
+  F_DEBIT_NOTE_CONTAINS_PRESCRIBED_PARTICULARS:
+    name: Debit note contains all particulars prescribed in the Rules
+    type: BOOLEAN
+    tier: T1
+  F_TAX_INVOICE_EXISTS_FOR_SUPPLY:
+    name: One or more tax invoices were issued for the supply
+    type: BOOLEAN
+    tier: T0
+  F_SUPPLIER_IS_REGISTERED:
+    name: Supplier is a registered person
+    type: BOOLEAN
+    tier: T0
+  F_DEBIT_NOTE_RELATES_TO_SUPPLY:
+    name: Debit note relates to a supply of goods or services or both
+    type: BOOLEAN
+    tier: T1
+  F_DEBIT_NOTE_DECLARED_IN_ISSUE_MONTH_RETURN:
+    name: Debit note declared in the return for the month of issue
+    type: BOOLEAN
+    tier: T1
+  F_TAX_LIABILITY_ADJUSTED:
+    name: Tax liability has been adjusted
+    type: BOOLEAN
+    tier: T1
+  F_TAX_ADJUSTMENT_MANNER_IS_PRESCRIBED:
+    name: Tax liability adjustment follows the prescribed manner
+    type: BOOLEAN
+    tier: T0
+  F_TFOS:
+    name: Form of supply
+    type: CODE
+    options:
+    - SALE
+    - TRANSFER
+    - BARTER
+    - EXCHANGE
+    - LICENCE
+    - RENTAL
+    - LEASE
+    - DISPOSAL
+    - OTHER
+    tier: T1
+  F_SUPPLY_DESCRIPTION:
+    name: Description of supply
+    type: TEXT
+    tier: T1
+  F_SUPPLY_STATUS:
+    name: Status of supply
+    type: CODE
+    options:
+    - AGREED
+    - MADE
+    tier: T1
+  F_SUPPLY_CONSIDERATION_EXISTS:
+    name: Consideration exists for the supply
+    type: BOOLEAN
+    tier: T1
+  F_SUPPLIER_IS_A_PERSON:
+    name: Supplier is a 'person' under the Act
+    type: BOOLEAN
+    tier: T0
+  F_SUPPLIER_ACTIVITY_DESCRIPTION:
+    name: Description of supplier's activity
+    type: TEXT
+    tier: T0
+  F_SUPPLIER_LOCATION:
+    name: Location of supplier
+    type: TEXT
+    tier: T1
+  F_RECIPIENT_LOCATION:
+    name: Location of recipient
+    type: TEXT
+    tier: T1
+  F_SUPPLY_PLACE:
+    name: Place of supply
+    type: TEXT
+    tier: T1
+  F_DOCUMENT_ISSUER_ROLE:
+    name: Role of the entity that issued the document
+    type: CODE
+    options:
+    - SUPPLIER
+    - RECIPIENT
+    - AGENT
+    - OTHER
+    tier: T1
+  F_TAX_INVOICE_ISSUE_DATE:
+    name: Date of issue of the tax invoice relating to the supply
+    type: DATE
+    tier: T1
+  F_ORIGINAL_SUPPLY_DATE:
+    name: Date of the earlier supply
+    type: DATE
+    tier: T1
+predicates:
+  A_SALE:
+    statement: The supply of goods or services or both is a sale
+    order: LOW
+    rule: F_TFOS = 'SALE'
+  A_TRANSFER:
+    statement: The supply of goods or services or both is a transfer
+    order: LOW
+    rule: F_TFOS = 'TRANSFER'
+  A_BARTER:
+    statement: The supply of goods or services or both is a barter
+    order: LOW
+    rule: F_TFOS = 'BARTER'
+  A_EXCHANGE:
+    statement: The supply of goods or services or both is an exchange
+    order: LOW
+    rule: F_TFOS = 'EXCHANGE'
+  A_LICENCE:
+    statement: The supply of goods or services or both is a licence
+    order: LOW
+    rule: F_TFOS = 'LICENCE'
+  A_RENTAL:
+    statement: The supply of goods or services or both is a rental
+    order: LOW
+    rule: F_TFOS = 'RENTAL'
+  A_LEASE:
+    statement: The supply of goods or services or both is a lease
+    order: LOW
+    rule: F_TFOS = 'LEASE'
+  A_DISPOSAL:
+    statement: The supply of goods or services or both is a disposal
+    order: LOW
+    rule: F_TFOS = 'DISPOSAL'
+  A_OTHER_FORM:
+    statement: The supply of goods or services or both is another qualifying form
+    order: HIGH
+    interpretation: Based on the description, is the transaction a form of supply similar in nature to sale, transfer, barter,
+      exchange, licence, rental, lease, or disposal?
+    grounding:
+    - F_TFOS
+    - F_SUPPLY_DESCRIPTION
+  A_MADE:
+    statement: The supply is made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'MADE'
+  A_AGREED:
+    statement: The supply is agreed to be made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'AGREED'
+  A_CONSIDERATION:
+    statement: The supply is for a consideration
+    order: LOW
+    rule: F_SUPPLY_CONSIDERATION_EXISTS = TRUE
+  A_PERSON:
+    statement: The supply is by a person
+    order: LOW
+    rule: F_SUPPLIER_IS_A_PERSON = TRUE
+  A_BUSINESS:
+    statement: The supply is in the course or furtherance of business
+    order: HIGH
+    interpretation: Based on the supplier's activity description, is this supply made in the course or furtherance of their
+      business?
+    grounding:
+    - F_SUPPLIER_ACTIVITY_DESCRIPTION
+  A_M_IOSFC_1:
+    statement: The transaction is an import of services
+    order: HIGH
+    interpretation: Based on the supplier location, recipient location, and place of supply, is this an 'import of services'?
+    grounding:
+    - F_SUPPLIER_LOCATION
+    - F_RECIPIENT_LOCATION
+    - F_SUPPLY_PLACE
+  A_M_IOSFC_2:
+    statement: The import of services is for a consideration
+    order: LOW
+    rule: F_SUPPLY_CONSIDERATION_EXISTS = TRUE
+  A_SCHEDULE_I_ACTIVITY:
+    statement: The activity is specified in Schedule I
+    order: HIGH
+    interpretation: Is the described activity one of the activities specified in Schedule I of the CGST Act?
+    grounding:
+    - F_SUPPLIER_ACTIVITY_DESCRIPTION
+    - F_SUPPLY_DESCRIPTION
+  A_MADE_SISIA:
+    statement: The activity is made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'MADE'
+  A_AGREED_SISIA:
+    statement: The activity is agreed to be made
+    order: LOW
+    rule: F_SUPPLY_STATUS = 'AGREED'
+  A_NO_CONSIDERATION:
+    statement: The activity is without a consideration
+    order: LOW
+    rule: F_SUPPLY_CONSIDERATION_EXISTS = FALSE
+  A_M_DNISI_1:
+    statement: The document is a supplementary invoice.
+    order: LOW
+    rule: F_DOCUMENT_TYPE = 'SUPPLEMENTARY_INVOICE'
+  A_IODNFS_3:
+    statement: The taxable value charged in that tax invoice is found to be less than the taxable value payable in respect
+      of such supply.
+    order: HIGH
+    interpretation: Is the taxable value charged in the tax invoice (F_INVOICE_TAXABLE_VALUE) less than the taxable value
+      payable for the supply (F_SUPPLY_CORRECT_TAXABLE_VALUE)?
+    grounding:
+    - F_INVOICE_TAXABLE_VALUE
+    - F_SUPPLY_CORRECT_TAXABLE_VALUE
+  A_IODNFS_4:
+    statement: The tax charged in that tax invoice is found to be less than the tax payable in respect of such supply.
+    order: HIGH
+    interpretation: Is the tax charged in the tax invoice (F_INVOICE_TAX_CHARGED) less than the tax payable for the supply
+      (F_SUPPLY_CORRECT_TAX_PAYABLE)?
+    grounding:
+    - F_INVOICE_TAX_CHARGED
+    - F_SUPPLY_CORRECT_TAX_PAYABLE
+  A_IODNFS_5:
+    statement: The registered person shall issue one or more debit notes to the recipient.
+    order: LOW
+    rule: F_DEBIT_NOTE_RECIPIENT_IS_SUPPLY_RECIPIENT = TRUE
+  A_IODNFS_6:
+    statement: The debit note is for supplies made in a financial year.
+    order: LOW
+    rule: F_DEBIT_NOTE_COVERS_SINGLE_FY_SUPPLIES = TRUE
+  A_IODNFS_7:
+    statement: The debit note contains such particulars as may be prescribed.
+    order: LOW
+    rule: F_DEBIT_NOTE_CONTAINS_PRESCRIBED_PARTICULARS = TRUE
+  A_IODNFS_1:
+    statement: One or more tax invoices have been issued for the supply
+    order: LOW
+    rule: F_TAX_INVOICE_EXISTS_FOR_SUPPLY = TRUE
+  A_IODNFS_2:
+    statement: The person supplying such goods or services or both is a registered person.
+    order: LOW
+    rule: F_SUPPLIER_IS_REGISTERED = TRUE
+  A_REGISTERED_PERSON_ISSUES_DN:
+    statement: The debit note is issued by a registered person and the document is a debit note
+    order: LOW
+    rule: F_SUPPLIER_IS_REGISTERED = TRUE AND F_DOCUMENT_TYPE = 'DEBIT_NOTE'
+  A_DN_RELATES_TO_SUPPLY:
+    statement: The debit note is issued in relation to a supply of goods or services or both
+    order: LOW
+    rule: F_DEBIT_NOTE_RELATES_TO_SUPPLY = TRUE
+  A_DECLARE_DN_IN_ISSUE_MONTH_RETURN:
+    statement: The registered person shall declare the details of the debit note in the return for the month during which
+      the debit note has been issued
+    order: LOW
+    rule: F_DEBIT_NOTE_DECLARED_IN_ISSUE_MONTH_RETURN = TRUE
+  A_TAX_LIABILITY_ADJUSTED:
+    statement: The tax liability shall be adjusted
+    order: LOW
+    rule: F_TAX_LIABILITY_ADJUSTED = TRUE
+  A_ADJUSTMENT_IN_PRESCRIBED_MANNER:
+    statement: The tax liability is adjusted in the manner prescribed
+    order: HIGH
+    interpretation: Is the tax liability adjusted in the manner prescribed by the relevant Rules?
+    grounding:
+    - F_TAX_ADJUSTMENT_MANNER_IS_PRESCRIBED
+  A_TIIRI_1:
+    statement: The document is a revised invoice.
+    order: LOW
+    rule: F_DOCUMENT_TYPE = 'REVISED_INVOICE'
+  A_TIIRI_2:
+    statement: The revised invoice was issued by the supplier.
+    order: LOW
+    rule: F_DOCUMENT_ISSUER_ROLE = 'SUPPLIER'
+  A_TIIRI_3:
+    statement: The revised invoice is in respect of a supply made earlier.
+    order: HIGH
+    interpretation: Does the date of issue of the revised invoice (F_TAX_INVOICE_ISSUE_DATE) occur after the date of the supply
+      it pertains to (F_ORIGINAL_SUPPLY_DATE)?
+    grounding:
+    - F_TAX_INVOICE_ISSUE_DATE
+    - F_ORIGINAL_SUPPLY_DATE
+groups:
+  G_FORMS:
+    name: Forms of Supply
+    logic: ANY
+    members:
+    - A_SALE
+    - A_TRANSFER
+    - A_BARTER
+    - A_EXCHANGE
+    - A_LICENCE
+    - A_RENTAL
+    - A_LEASE
+    - A_DISPOSAL
+    - A_OTHER_FORM
+    description: The supply must take one of the listed or other similar forms.
+  G_TIMING:
+    name: Supply Timing
+    logic: ANY
+    members:
+    - A_MADE
+    - A_AGREED
+    description: The supply must be either made or agreed to be made.
+  G_STATUS:
+    name: Supply Status
+    logic: ANY
+    members:
+    - A_MADE_SISIA
+    - A_AGREED_SISIA
+    description: The activity is either made or agreed to be made.
+  G_IODNFS_TRIGGERS:
+    name: Trigger Conditions
+    logic: ALL
+    members:
+    - A_IODNFS_1
+    - A_IODNFS_2
+    - G_IODNFS_SHORTFALL
+    description: All conditions that trigger the obligation to issue a debit note.
+  G_IODNFS_SHORTFALL:
+    name: Shortfall Condition
+    logic: ANY
+    members:
+    - A_IODNFS_3
+    - A_IODNFS_4
+    description: There is a shortfall in either the taxable value or the tax charged in the original invoice.
+  G_IODNFS_COMPLIANCE:
+    name: Debit Note Compliance
+    logic: ALL
+    members:
+    - A_IODNFS_5
+    - A_IODNFS_6
+    - A_IODNFS_7
+    description: The characteristics required for a debit note issued under this provision.
+  G_ISSUE_TRIGGER:
+    name: Debit note issue trigger
+    logic: ALL
+    members:
+    - A_REGISTERED_PERSON_ISSUES_DN
+    - A_DN_RELATES_TO_SUPPLY
+    description: Registered person issues a debit note in relation to a supply
+  G_DECLARATION_OBLIGATIONS:
+    name: Declaration and adjustment duties
+    logic: ALL
+    members:
+    - A_DECLARE_DN_IN_ISSUE_MONTH_RETURN
+    - A_TAX_LIABILITY_ADJUSTED
+    - A_ADJUSTMENT_IN_PRESCRIBED_MANNER
+    description: Both the duty to declare the debit note and the duty to adjust tax liability must be met
+  G_TIIRI_CONDITIONS:
+    name: Conditions for a revised invoice to be treated as a tax invoice
+    logic: ALL
+    members:
+    - A_TIIRI_1
+    - A_TIIRI_2
+    - A_TIIRI_3
+outcomes:
+  LE_SIAFOS:
+    outcome: SUPPLY_INCLUDED_S7_1_a
+    expr: G_FORMS AND G_TIMING AND A_CONSIDERATION AND A_PERSON AND A_BUSINESS
+    module: M_SIAFOS
+    description: The transaction is included in the definition of supply under Section 7(1)(a) if it meets all the specified
+      conditions.
+  LE_M_IOSFC:
+    outcome: SUPPLY_INCLUDED
+    expr: A_M_IOSFC_1 AND A_M_IOSFC_2
+    module: M_IOSFC
+  LE_SISIA:
+    outcome: SUPPLY_INCLUDED
+    expr: A_SCHEDULE_I_ACTIVITY AND G_STATUS AND A_NO_CONSIDERATION
+    module: M_SISIA
+    description: The transaction is included in the scope of supply if it is a Schedule I activity, made or agreed to be made,
+      and is without consideration.
+  LE_M_DNISI:
+    outcome: DOCUMENT_IS_TREATED_AS_DEBIT_NOTE
+    expr: A_M_DNISI_1
+    module: M_DNISI
+    description: A document is treated as a debit note for the purposes of the Act if it is a supplementary invoice.
+  LE_IODNFS_1:
+    outcome: OBLIGATION_TO_ISSUE_DEBIT_NOTE_EXISTS
+    expr: G_IODNFS_TRIGGERS
+    module: M_IODNFS
+    description: An obligation to issue a debit note arises if the trigger conditions are met.
+  LE_IODNFS_2:
+    outcome: DEBIT_NOTE_IS_COMPLIANT
+    expr: G_IODNFS_COMPLIANCE
+    module: M_IODNFS
+    description: An issued debit note is compliant if it meets all the requirements of this section.
+  LE_DODNIR_1:
+    outcome: OBLIGATION_MET
+    expr: G_ISSUE_TRIGGER AND G_DECLARATION_OBLIGATIONS
+    module: M_DODNIR
+    description: Obligation is met only when the debit note trigger holds and both the declaration duty and the adjustment
+      duty are met
+  LE_TIIRI:
+    outcome: TAX_INVOICE_INCLUDES_REVISED_INVOICE
+    expr: G_TIIRI_CONDITIONS
+    module: M_TIIRI
+    description: For the purposes of Section 31, a document is included in the expression 'tax invoice' if it is a revised
+      invoice issued by the supplier for a supply made earlier.
+products:
+  PD_SIAFOS:
+    statement: The transaction is included in the definition of supply under Section 7(1)(a) if it meets all the specified
+      conditions.
+  PD_M_IOSFC:
+    statement: SUPPLY_INCLUDED
+  PD_SISIA:
+    statement: The transaction is included in the scope of supply if it is a Schedule I activity, made or agreed to be made,
+      and is without consideration.
+  PD_M_DNISI:
+    statement: A document is treated as a debit note for the purposes of the Act if it is a supplementary invoice.
+  PD_IODNFS_1:
+    statement: An obligation to issue a debit note arises if the trigger conditions are met.
+  PD_IODNFS_2:
+    statement: An issued debit note is compliant if it meets all the requirements of this section.
+  PD_DODNIR_1:
+    statement: Obligation is met only when the debit note trigger holds and both the declaration duty and the adjustment duty
+      are met
+  PD_TIIRI:
+    statement: For the purposes of Section 31, a document is included in the expression 'tax invoice' if it is a revised invoice
+      issued by the supplier for a supply made earlier.
+compounds:
+- id: C_S7_SS1
+  question: 'Section 7(1): which clause applies?'
+  includes:
+  - LE_SIAFOS
+  - LE_M_IOSFC
+  - LE_SISIA
+  produces:
+  - product: PD_SIAFOS
+    from:
+    - LE_SIAFOS
+  - product: PD_M_IOSFC
+    from:
+    - LE_M_IOSFC
+  - product: PD_SISIA
+    from:
+    - LE_SISIA
+- id: C_DNISI
+  question: 'Section 34, Explanation: Debit Note Includes Supplementary Invoice?'
+  includes:
+  - LE_M_DNISI
+  produces:
+  - product: PD_M_DNISI
+    from:
+    - LE_M_DNISI
+- id: C_IODNFS
+  question: 'Section 34(3): Issuance Of Debit Note For Shortfall?'
+  includes:
+  - LE_IODNFS_1
+  - LE_IODNFS_2
+  produces:
+  - product: PD_IODNFS_1
+    from:
+    - LE_IODNFS_1
+  - product: PD_IODNFS_2
+    from:
+    - LE_IODNFS_2
+- id: C_DODNIR
+  question: 'Section 34(4): Declaration Of Debit Note In Return?'
+  includes:
+  - LE_DODNIR_1
+  produces:
+  - product: PD_DODNIR_1
+    from:
+    - LE_DODNIR_1
+- id: C_TIIRI
+  question: 'Section 31, Explanation 1: Tax Invoice Includes Revised Invoice?'
+  includes:
+  - LE_TIIRI
+  produces:
+  - product: PD_TIIRI
+    from:
+    - LE_TIIRI

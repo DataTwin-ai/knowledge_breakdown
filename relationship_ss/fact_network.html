@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fact Network</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: the fact sits on the left; everything that depends on it fans out to the right, one column per kind:
+   atom -> group -> LE -> outcome (PD / OR / CT / TC) -> MKP -> TSG / governance master. Rows of kp_relation underneath. */
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14232b; --muted: #5b6b73; --line: #d6dde1; --soft: #eef2f4;
+  --fact: #b46a00; --atom: #0b6d6b; --group: #5a49b0; --le: #1f3f8f; --out: #9c2f63; --mkp: #3c4f5b; --tsg: #2d7a3a;
+  --edge: #a9b7be; --hi: #b46a00;
+  --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f171b; --panel: #162127; --ink: #e4ecef; --muted: #93a4ab; --line: #2a3a42; --soft: #1b2930;
+  --fact: #f0a63a; --atom: #4fc3bd; --group: #a99cf0; --le: #8fb0ff; --out: #f08cbb; --mkp: #a9bcc8; --tsg: #7fd18a;
+  --edge: #4a5d66; --hi: #f0a63a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f171b; --panel: #162127; --ink: #e4ecef; --muted: #93a4ab; --line: #2a3a42; --soft: #1b2930;
+  --fact: #f0a63a; --atom: #4fc3bd; --group: #a99cf0; --le: #8fb0ff; --out: #f08cbb; --mkp: #a9bcc8; --tsg: #7fd18a;
+  --edge: #4a5d66; --hi: #f0a63a; color-scheme: dark }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 var(--body); }
+.wrap { max-width: 1480px; margin: 0 auto; padding-block: 24px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 22px; }
+header { display: grid; gap: 8px; }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 800 clamp(26px, 4vw, 36px)/1.1 var(--display); margin: 0; }
+h2 { font: 700 18px/1.25 var(--display); margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 78ch; color: var(--muted); }
+.mono { font-family: var(--mono); }
+.stats { display: flex; flex-wrap: wrap; gap: 8px; }
+.stat { display: flex; align-items: baseline; gap: 7px; padding: 7px 11px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+.stat b { font: 700 19px/1 var(--display); font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: 12.5px; }
+.layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+aside { display: grid; gap: 10px; position: sticky; top: env(safe-area-inset-top, 0px); max-height: calc(100vh - 16px); overflow: auto; padding-bottom: 12px; }
+@media (max-width: 900px) { aside { position: static; max-height: none; } }
+label.h { font: 600 11.5px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+select, input[type=search] { font: 14px var(--body); padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); width: 100%; }
+select:focus-visible, input:focus-visible, button:focus-visible { outline: 2px solid var(--le); outline-offset: 1px; }
+.flist { display: grid; gap: 5px; }
+.fbtn { text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 7px 10px; cursor: pointer; font: inherit; color: inherit; display: grid; gap: 2px; }
+.fbtn:hover { border-color: var(--fact); }
+.fbtn.on { border-color: var(--fact); box-shadow: inset 3px 0 0 var(--fact); }
+.fbtn .id { font: 500 11.5px/1.3 var(--mono); color: var(--fact); word-break: break-all; }
+.fbtn .nm { font-size: 12.5px; }
+.fbtn .ct { font: 600 11.5px/1 var(--mono); color: var(--muted); }
+.types { display: flex; flex-wrap: wrap; gap: 6px; }
+.tchip { display: inline-flex; align-items: center; gap: 6px; font: 500 12px var(--mono); padding: 4px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+.tchip i { width: 9px; height: 9px; border-radius: 2px; background: var(--c); }
+.tchip[aria-pressed="false"] { opacity: .45; text-decoration: line-through; }
+.main { display: grid; gap: 14px; min-width: 0; }
+.card { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 14px 16px; display: grid; gap: 8px; }
+.card .id { font: 500 13px var(--mono); color: var(--c, var(--fact)); word-break: break-all; }
+.sum { display: flex; flex-wrap: wrap; gap: 6px; }
+.sum span { font: 600 12px/1 var(--mono); padding: 6px 9px; border-radius: 5px; background: var(--soft); border-left: 3px solid var(--c); }
+.sum span b { font-family: var(--display); font-size: 14px; margin-right: 4px; }
+.laws { font-size: 13px; color: var(--muted); }
+.scroller { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.graph { position: relative; min-width: 1320px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 30px; padding: 14px 16px 20px; }
+.graph svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.col { display: flex; flex-direction: column; gap: 5px; position: relative; z-index: 1; min-width: 0; }
+.colhead { font: 700 11.5px/1.2 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding-bottom: 6px; border-bottom: 2px solid var(--c); margin-bottom: 4px; }
+.colhead small { display: block; font: 400 11px var(--mono); letter-spacing: 0; text-transform: none; }
+.n { text-align: left; font: inherit; color: inherit; border: 1px solid var(--line); background: var(--panel); border-radius: 5px; padding: 5px 7px 5px 10px;
+  cursor: pointer; display: grid; gap: 1px; position: relative; }
+.n::before { content: ""; position: absolute; left: 0; top: 5px; bottom: 5px; width: 3px; border-radius: 2px; background: var(--c); }
+.n .ty { font: 600 10px/1 var(--mono); letter-spacing: .05em; color: var(--c); }
+.n .id { font: 500 11.5px/1.3 var(--mono); color: var(--ink); word-break: break-all; }
+.n .lb { font-size: 12px; line-height: 1.3; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.n.pick { border-color: var(--c); box-shadow: inset 0 0 0 1px var(--c); background: color-mix(in srgb, var(--c) 8%, var(--panel)); }
+.n:hover { border-color: var(--c); }
+[data-t="FACT"] { --c: var(--fact); } [data-t="ATOM"] { --c: var(--atom); } [data-t="GROUP"] { --c: var(--group); }
+[data-t="LE"] { --c: var(--le); } [data-t="PD"], [data-t="OR"], [data-t="CT"], [data-t="TC"] { --c: var(--out); }
+[data-t="MKP"] { --c: var(--mkp); } [data-t="TSG"], [data-t="GOVERNANCE_MASTER"] { --c: var(--tsg); }
+path.e { fill: none; stroke: var(--edge); stroke-width: 1.2; opacity: .85; }
+.empty { padding: 16px; color: var(--muted); }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.tab { font: 500 13px var(--body); padding: 6px 12px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 6px; cursor: pointer; }
+.tab[aria-selected="true"] { border-color: var(--le); box-shadow: inset 0 -2px 0 var(--le); }
+.tablebox { overflow: auto; max-height: 480px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; min-width: 900px; font-size: 12.5px; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 11px/1.2 var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); background: var(--soft); position: sticky; top: 0; }
+td.m { font-family: var(--mono); font-size: 12px; word-break: break-all; }
+td .rel { font: 600 11px/1 var(--mono); padding: 3px 6px; border-radius: 3px; background: var(--soft); white-space: nowrap; }
+td.t { font: 600 11.5px var(--mono); color: var(--c); }
+td.num { font-variant-numeric: tabular-nums; text-align: right; }
+pre.sql { margin: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); font: 12.5px/1.55 var(--mono); overflow-x: auto; white-space: pre; }
+.note { font-size: 12.5px; color: var(--muted); }
+</style>
+</head><body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">LAW ARC · kp_relation · built __BUILT__</div>
+    <h1>Fact Network</h1>
+    <p>Every law in the database is built on facts. Pick a fact to see everything that depends on it: the atoms that read it, the groups, LEs, products, otherwise outcomes, review questions and test cases built on those atoms, the MKPs they belong to, and the TSGs and governance masters that use them. Drawn only from the <span class="mono">kp_relation</span> table.</p>
+    <div class="stats" id="stats"></div>
+  </header>
+  <div class="layout">
+    <aside>
+      <label class="h" for="q">Find a fact, element or law</label>
+      <input id="q" type="search" placeholder="F_SUPPLY_STATUS, A_SALE or S7_SS1" autocomplete="off">
+      <label class="h" for="tsg">TSG / governance master</label>
+      <select id="tsg"></select>
+      <label class="h">Show these types</label>
+      <div class="types" id="types"></div>
+      <label class="h">Facts, most shared first</label>
+      <div class="flist" id="flist"></div>
+    </aside>
+    <div class="main">
+      <div class="card" id="card"></div>
+      <div class="scroller"><div class="graph" id="graph">
+        <svg id="edges" aria-hidden="true"></svg>
+      </div></div>
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" id="tab-fact" aria-selected="true" type="button">What depends on it</button>
+        <button class="tab" role="tab" id="tab-all" aria-selected="false" type="button">All links shown</button>
+        <span class="note" id="rowcount"></span>
+      </div>
+      <div class="tablebox"><table><thead id="thead"></thead><tbody id="rows"></tbody></table></div>
+      <pre class="sql" id="sql"></pre>
+    </div>
+  </div>
+</div>
+
+<script>
+const ROWS = __DATA__;
+const COLS = [
+  { key: "FACT", name: "Facts", hint: "inputs from the document", types: ["FACT"] },
+  { key: "ATOM", name: "Atoms", hint: "A - test one fact", types: ["ATOM"] },
+  { key: "GROUP", name: "Groups", hint: "G - ALL / ANY of atoms", types: ["GROUP"] },
+  { key: "LE", name: "Law expressions", hint: "LE - the outcome formula", types: ["LE"] },
+  { key: "OUT", name: "Products & others", hint: "PD · OR · CT · TC", types: ["PD", "OR", "CT", "TC"] },
+  { key: "MKP", name: "MKP (law)", hint: "the molecule", types: ["MKP"] },
+  { key: "TSG", name: "TSG & governance master", hint: "where it is used", types: ["TSG", "GOVERNANCE_MASTER", "TG"] },
+];
+const TYPE_NAME = { FACT: "FACT", ATOM: "ATOM", GROUP: "GROUP", LE: "LE", PD: "PD", OR: "OR", CT: "CT", TC: "TC",
+  MKP: "MKP", TSG: "TSG", GOVERNANCE_MASTER: "GOV. MASTER", TG: "TG" };
+const colOf = {}; COLS.forEach((c, i) => c.types.forEach(t => colOf[t] = i));
+// drawn left -> right: [relation] -> true when the edge goes from the row's "from" to its "to", false when reversed
+const DRAW = { READS: false, MEMBER_OF: true, USED_BY: true, PRODUCES: true, OTHERWISE_OF: false, TRIGGERED_BY: false,
+  TESTS: false, PART_OF: true, USED_IN: true, BELONGS_TO: true };
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// ---- nodes and edges from the rows
+const nodes = {}, fwd = {}, back = {}, edges = [], needs = {};
+function node(type, id, el, label, mol, cite, raw) {
+  const n = nodes[id] ||= { id, raw: raw || id, type, el: el || id, label: "", mols: new Set(), cite: "" };
+  if (label && !n.label) n.label = label;
+  if (mol && !["FACT", "TSG", "GOVERNANCE_MASTER", "TG"].includes(type)) { n.mols.add(mol); n.cite ||= cite; }
+  return n;
+}
+const molOf = {};                                         // MKP id -> citation
+ROWS.forEach(r => {
+  const a = node(r.from_type, r.from_id, r.from_element, r.from_label, r.molecule, r.citation, r.from_raw);
+  const b = node(r.to_type, r.to_id, r.to_element, r.to_label, r.molecule, r.citation, r.to_raw);
+  molOf[r.molecule] = r.citation || r.molecule;
+  if (r.relation === "NEEDS" || r.relation === "READS") (needs[r.to_id] ||= new Set()).add(r.from_id);
+  if (!(r.relation in DRAW)) return;
+  const [s, t] = DRAW[r.relation] ? [a.id, b.id] : [b.id, a.id];
+  if (s === t || (fwd[s] || []).includes(t)) return;
+  (fwd[s] ||= []).push(t); (back[t] ||= []).push(s); edges.push([s, t]);
+});
+// TSG membership of every node (through its MKP), for the TSG filter
+const tsgOfMol = {};
+ROWS.forEach(r => { if ((r.relation === "USED_IN" || r.relation === "GROUPED_IN") && (r.to_type === "TSG" || r.to_type === "GOVERNANCE_MASTER"))
+  (tsgOfMol[r.molecule] ||= new Set()).add(r.to_raw); });
+const tsgNames = {};
+Object.values(nodes).forEach(n => { if (n.type === "TSG" || n.type === "GOVERNANCE_MASTER") tsgNames[n.raw] ||= n.label; });
+const inTsg = (n, t) => !t || n.raw === t || [...n.mols].some(m => tsgOfMol[m]?.has(t)) ||
+  (n.type === "FACT" && [...(needs[n.id] || [])].some(x => nodes[x] && inTsg(nodes[x], t)));
+
+// ---- facts list, stats
+const lawsOfFact = f => new Set([...(needs[f] || [])].filter(x => nodes[x]?.type === "MKP"));
+const facts = Object.values(nodes).filter(n => n.type === "FACT").map(f => ({ f, laws: lawsOfFact(f.id).size }))
+  .sort((a, b) => b.laws - a.laws || a.f.id.localeCompare(b.f.id));
+const count = t => Object.values(nodes).filter(n => n.type === t).length;
+document.getElementById("stats").innerHTML = [[count("FACT"), "facts"], [count("ATOM"), "atoms"], [count("GROUP"), "groups"],
+  [count("LE"), "LEs"], [count("PD") + count("OR") + count("CT") + count("TC"), "PD / OR / CT / TC"],
+  [count("MKP"), "MKPs"], [Object.keys(tsgNames).length, "TSGs"], [facts.filter(x => x.laws > 1).length, "facts shared by 2+ MKPs"],
+  [ROWS.length, "rows"]].map(([n, l]) => `<div class="stat"><b>${n}</b><span>${l}</span></div>`).join("");
+
+const state = { pick: facts[0]?.f.id || null, tsg: "", q: "", hide: new Set(), tab: "fact" };
+const tsgSel = document.getElementById("tsg");
+tsgSel.innerHTML = `<option value="">All TSGs (${Object.keys(tsgNames).length})</option>` +
+  Object.keys(tsgNames).sort().map(t => `<option value="${esc(t)}">${esc(t)} ${esc(tsgNames[t].split(" · ")[0])}</option>`).join("");
+document.getElementById("types").innerHTML = ["ATOM", "GROUP", "LE", "PD", "OR", "CT", "TC", "MKP", "TSG", "GOVERNANCE_MASTER"]
+  .map(t => `<button class="tchip" type="button" data-type="${t}" data-t="${t}" aria-pressed="true"><i></i>${TYPE_NAME[t]}</button>`).join("");
+
+function drawList() {
+  const q = state.q.toLowerCase();
+  const list = facts.filter(x => inTsg(x.f, state.tsg) && (!q || x.f.id.toLowerCase().includes(q) || x.f.label.toLowerCase().includes(q))).slice(0, 200);
+  document.getElementById("flist").innerHTML = list.length ? list.map(x => `<button class="fbtn${x.f.id === state.pick ? " on" : ""}" type="button" data-id="${esc(x.f.id)}">
+    <span class="id">${esc(x.f.id)}</span><span class="nm">${esc(x.f.label)}</span><span class="ct">${x.laws} MKP(s)</span></button>`).join("")
+    : `<div class="note">No fact matches. Press Enter to search atoms, LEs and laws too.</div>`;
+}
+
+// ---- what to show: a fact -> everything that NEEDS / READS it; anything else -> its chain both ways
+function reach(id) {
+  const on = new Set([id]);
+  if (nodes[id]?.type === "FACT") { (needs[id] || []).forEach(x => on.add(x)); return on; }
+  const walk = (map) => { const st = [id]; while (st.length) { const x = st.pop(); (map[x] || []).forEach(y => { if (!on.has(y)) { on.add(y); st.push(y); } }); } };
+  walk(fwd); walk(back);
+  return on;
+}
+function visible() {
+  let ids = state.pick ? [...reach(state.pick)] : Object.keys(nodes).filter(i => state.tsg && inTsg(nodes[i], state.tsg));
+  if (state.tsg && state.pick) ids = ids.filter(i => inTsg(nodes[i], state.tsg));
+  return new Set(ids.filter(i => nodes[i] && (i === state.pick || !state.hide.has(nodes[i].type))));
+}
+
+const graph = document.getElementById("graph"), svg = document.getElementById("edges");
+function box(n) {
+  const sub = n.type === "MKP" ? n.id : (n.cite || [...n.mols][0] || "");
+  const title = n.type === "MKP" ? (molOf[n.id] || n.id) : n.el;
+  const lb = n.type === "MKP" ? "" : n.label;
+  return `<button class="n${n.id === state.pick ? " pick" : ""}" type="button" data-t="${n.type}" data-id="${esc(n.id)}" title="${esc(n.id)}">
+    <span class="ty">${TYPE_NAME[n.type] || n.type}${sub && n.type !== "MKP" ? " · " + esc(sub) : ""}</span>
+    <span class="id">${esc(title)}</span>${lb && lb !== title ? `<span class="lb">${esc(lb)}</span>` : ""}</button>`;
+}
+const LIMIT = 500;
+function draw() {
+  const vis = visible();
+  const ids = [...vis].slice(0, LIMIT);
+  const byCol = COLS.map(() => []);
+  ids.forEach(i => { const n = nodes[i]; if (n && colOf[n.type] !== undefined) byCol[colOf[n.type]].push(n); });
+  graph.querySelectorAll(".col").forEach(e => e.remove());
+  graph.insertAdjacentHTML("beforeend", COLS.map((c, k) => `<div class="col" data-t="${c.types[0]}">
+    <div class="colhead">${c.name} <span>(${byCol[k].length})</span><small>${c.hint}</small></div>
+    ${byCol[k].sort((a, b) => [...a.mols].join().localeCompare([...b.mols].join()) || a.type.localeCompare(b.type) || a.el.localeCompare(b.el)).map(box).join("")}</div>`).join(""));
+  const g = graph.getBoundingClientRect(), pos = {};
+  graph.querySelectorAll(".n").forEach(e => { const r = e.getBoundingClientRect();
+    pos[e.dataset.id] = { l: r.left - g.left, r: r.right - g.left, y: r.top + r.height / 2 - g.top }; });
+  svg.setAttribute("viewBox", `0 0 ${g.width} ${g.height}`);
+  svg.innerHTML = edges.filter(([a, b]) => pos[a] && pos[b] && colOf[nodes[a].type] < colOf[nodes[b].type]).map(([a, b]) => {
+    const A = pos[a], B = pos[b], x1 = A.r, x2 = B.l, k = Math.max(30, (x2 - x1) * 0.5);
+    return `<path class="e" d="M${x1},${A.y} C${x1 + k},${A.y} ${x2 - k},${B.y} ${x2},${B.y}"/>`; }).join("");
+  card(vis, vis.size > LIMIT); table(vis);
+}
+
+function card(vis, cut) {
+  const c = document.getElementById("card");
+  const of = t => [...vis].filter(x => nodes[x]?.type === t);
+  if (!state.pick) {
+    c.innerHTML = state.tsg ? `<span class="id" style="--c:var(--tsg)">${esc(state.tsg)}</span><h2>${esc(tsgNames[state.tsg] || "")}</h2>
+      <p>${of("MKP").length} MKP(s), ${of("ATOM").length} atom(s), ${of("FACT").length} fact(s). Click any box to follow its chain.</p>`
+      : `<p>Pick a fact on the left, or a TSG.</p>`;
+    return;
+  }
+  const n = nodes[state.pick];
+  const types = ["ATOM", "GROUP", "LE", "PD", "OR", "CT", "TC", "MKP", "TSG", "GOVERNANCE_MASTER"];
+  const sum = types.map(t => [t, of(t).length]).filter(([, k]) => k).map(([t, k]) =>
+    `<span data-t="${t}"><b>${k}</b>${TYPE_NAME[t]}</span>`).join("");
+  const laws = of("MKP").map(m => esc(molOf[m] || m));
+  let h = `<span class="id" data-t="${n.type}">${esc(TYPE_NAME[n.type] || n.type)} · ${esc(n.id)}</span>
+    <h2>${esc(n.type === "MKP" ? (molOf[n.id] || n.id) : (n.label || n.el))}</h2>`;
+  if (n.type === "FACT") h += `<p>${sum ? "Everything below depends on this fact. If a bill does not give it, these cannot be decided." : "Nothing depends on this fact yet."}</p>`;
+  else h += `<p>Its whole chain: the facts it is built on (left) and what it feeds (right).</p>`;
+  h += `<div class="sum">${sum}</div>`;
+  if (laws.length) h += `<div class="laws">MKPs: ${laws.slice(0, 40).join(", ")}${laws.length > 40 ? " …" : ""}</div>`;
+  if (cut) h += `<div class="note">Showing the first ${LIMIT} boxes.</div>`;
+  c.innerHTML = h;
+}
+
+function table(vis) {
+  const head = document.getElementById("thead"), body = document.getElementById("rows");
+  const n = state.pick && nodes[state.pick];
+  let rows;
+  if (state.tab === "fact" && n && n.type === "FACT") {
+    rows = ROWS.filter(r => r.to_id === n.id && (r.relation === "NEEDS" || r.relation === "READS") && !state.hide.has(r.from_type)
+      && (!state.tsg || inTsg(nodes[r.from_id], state.tsg)));
+    rows.sort((a, b) => (colOf[a.from_type] - colOf[b.from_type]) || a.citation.localeCompare(b.citation) || a.from_element.localeCompare(b.from_element));
+    head.innerHTML = `<tr><th>type</th><th>element</th><th>relation</th><th>fact</th><th>hops</th><th>how (via)</th><th>law</th></tr>`;
+    body.innerHTML = rows.map(r => `<tr><td class="t" data-t="${r.from_type}">${TYPE_NAME[r.from_type] || r.from_type}</td>
+      <td class="m">${esc(r.from_element)}</td><td><span class="rel">${r.relation}</span></td><td class="m">${esc(r.to_element)}</td>
+      <td class="num">${r.hops ?? ""}</td><td class="m">${esc(r.via)}</td><td class="m">${esc(r.citation)}</td></tr>`).join("");
+  } else {
+    rows = ROWS.filter(r => r.relation !== "NEEDS" && vis.has(r.from_id) && vis.has(r.to_id));
+    head.innerHTML = `<tr><th>law</th><th>from type</th><th>from</th><th>relation</th><th>to type</th><th>to</th></tr>`;
+    body.innerHTML = rows.slice(0, 1500).map(r => `<tr><td class="m">${esc(r.citation)}</td><td class="t" data-t="${r.from_type}">${TYPE_NAME[r.from_type] || r.from_type}</td>
+      <td class="m">${esc(r.from_element)}</td><td><span class="rel">${r.relation}</span></td>
+      <td class="t" data-t="${r.to_type}">${TYPE_NAME[r.to_type] || r.to_type}</td><td class="m">${esc(r.to_element)}</td></tr>`).join("");
+  }
+  document.getElementById("rowcount").textContent = `${rows.length} row(s)`;
+  document.getElementById("sql").textContent = !n
+    ? `-- how the MKPs of ${state.tsg || "a TSG"} are built\nSELECT mkp, from_type, from_id, relation, to_type, to_id\nFROM kp_relation WHERE is_latest AND link = 'DIRECT' AND mkp IN (\n  SELECT mkp FROM kp_relation WHERE to_id = '${state.tsg}' AND is_latest);`
+    : n.type === "FACT" ? `-- everything that depends on ${n.id}, every type\nSELECT from_type, from_id, from_name, relation, via, mkp\nFROM kp_relation\nWHERE to_id = '${n.id}' AND relation IN ('READS', 'NEEDS') AND is_latest\nORDER BY from_type, mkp;`
+    : `-- every fact ${n.el} depends on\nSELECT DISTINCT to_id AS fact, to_name, via\nFROM kp_relation\nWHERE from_id = '${n.raw}' AND from_type = '${n.type}' AND relation IN ('READS', 'NEEDS') AND is_latest;`;
+}
+
+function update() { drawList(); draw(); }
+document.addEventListener("click", e => {
+  const b = e.target.closest(".n, .fbtn");
+  if (b) { state.pick = state.pick === b.dataset.id && state.tsg ? null : b.dataset.id; update(); return; }
+  const t = e.target.closest(".tchip");
+  if (t) { const ty = t.dataset.type; state.hide.has(ty) ? state.hide.delete(ty) : state.hide.add(ty);
+    t.setAttribute("aria-pressed", String(!state.hide.has(ty))); draw(); return; }
+  if (e.target.id === "tab-fact" || e.target.id === "tab-all") {
+    state.tab = e.target.id === "tab-fact" ? "fact" : "all";
+    document.getElementById("tab-fact").setAttribute("aria-selected", String(state.tab === "fact"));
+    document.getElementById("tab-all").setAttribute("aria-selected", String(state.tab === "all"));
+    table(visible());
+  }
+});
+tsgSel.addEventListener("change", () => { state.tsg = tsgSel.value; state.pick = state.tsg ? null : (facts[0]?.f.id || null); update(); });
+const qIn = document.getElementById("q");
+qIn.addEventListener("input", () => { state.q = qIn.value.trim(); drawList(); });
+qIn.addEventListener("keydown", e => {
+  if (e.key !== "Enter") return;
+  const q = qIn.value.trim().toLowerCase(); if (!q) return;
+  const all = Object.values(nodes);
+  const hit = all.find(n => n.id.toLowerCase() === q || n.el.toLowerCase() === q)
+    || all.find(n => n.type === "MKP" && ((molOf[n.id] || "").toLowerCase().includes(q) || n.id.toLowerCase().includes(q)))
+    || all.find(n => n.id.toLowerCase().includes(q));
+  if (hit) { state.pick = hit.id; update(); }
+});
+update();
+window.addEventListener("resize", () => requestAnimationFrame(draw));
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+</script>
+</body></html>

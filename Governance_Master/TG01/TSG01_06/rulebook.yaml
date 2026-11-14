@@ -1,0 +1,289 @@
+# GOVERNANCE MASTER TSG01_06 Business test (TG01 Supply & Taxability)
+# LAW ARC - 8 laws - status APPROVED
+name: TSG01_06 Business test - GOVERNANCE MASTER rulebook
+version: TSG01_06
+facts:
+  F_SUPPLIER_ACTIVITY_DESCRIPTION:
+    name: Description of supplier's activity
+    type: TEXT
+    tier: T0
+  F_INPUT_USE_STATUS:
+    name: Whether the goods or services are actually used, only intended to be used, or neither
+    type: CODE
+    options:
+    - USED
+    - INTENDED_TO_BE_USED
+    - NONE
+    tier: T0
+  F_INPUT_USE_DESCRIPTION:
+    name: Description of how the goods or services or both are used across taxable, zero-rated and exempt supplies
+    type: TEXT
+    tier: T0
+  F_SUPPLIER_IS_A_PERSON:
+    name: Supplier is a 'person' under the Act
+    type: BOOLEAN
+    tier: T0
+  F_ACTIVITY_DESCRIPTION:
+    name: Description of the supplier's business activity
+    type: TEXT
+    tier: T0
+  F_SUPPLIER_ENGAGED_EXCLUSIVELY_IN_GOODS:
+    name: Supplier is engaged exclusively in the supply of goods
+    type: BOOLEAN
+    tier: T1
+  F_BUSINESS_COMMENCED_WITHIN_6_MONTHS:
+    name: Business was commenced within six months from the date of registration
+    type: BOOLEAN
+    tier: T0
+  F_IMPORT_IN_COURSE_OF_BUSINESS:
+    name: Imported services received in course or furtherance of business
+    type: BOOLEAN
+    tier: T1
+  F_PERSON_LIABLE_S24:
+    name: Person is liable to be registered under section 24
+    type: BOOLEAN
+    tier: T1
+  F_PERSON_REGISTRATION_TYPE:
+    name: Type of registration obtained by the person
+    type: CODE
+    options:
+    - VOLUNTARY
+    - COMPULSORY
+    - OTHER
+    tier: T0
+predicates:
+  A_BUSINESS:
+    statement: The supply is in the course or furtherance of business
+    order: HIGH
+    interpretation: Based on the supplier's activity description, is this supply made in the course or furtherance of their
+      business?
+    grounding:
+    - F_SUPPLIER_ACTIVITY_DESCRIPTION
+  A_USED:
+    statement: The goods or services or both on which input tax is charged are used in the course or furtherance of his business
+    order: HIGH
+    interpretation: On the described actual use, are the goods or services or both used in the course or furtherance of the
+      registered person's own business?
+    grounding:
+    - F_INPUT_USE_STATUS
+    - F_INPUT_USE_DESCRIPTION
+  A_INTENDED:
+    statement: The goods or services or both on which input tax is charged are intended to be used in the course or furtherance
+      of his business
+    order: HIGH
+    interpretation: On the described intended use, are the goods or services or both intended to be used in the course or
+      furtherance of the registered person's own business?
+    grounding:
+    - F_INPUT_USE_STATUS
+    - F_INPUT_USE_DESCRIPTION
+  A_BUSINESS_ESOES:
+    statement: The person is engaged in the business of supplying goods or services or both
+    order: HIGH
+    interpretation: Is the person engaged in the business of supplying goods or services or both?
+    grounding:
+    - F_SUPPLIER_IS_A_PERSON
+    - F_ACTIVITY_DESCRIPTION
+  A_SUPPLIER_SCOPE:
+    statement: The enhanced threshold applies to a supplier who is engaged exclusively in the supply of goods.
+    order: LOW
+    rule: F_SUPPLIER_ENGAGED_EXCLUSIVELY_IN_GOODS = TRUE
+  A_BUSINESS_SUPPLY:
+    statement: The supply is in the course or furtherance of business
+    order: HIGH
+    interpretation: Based on the supplier's activity description, is this supply made in the course or furtherance of their
+      business?
+    grounding:
+    - F_SUPPLIER_ACTIVITY_DESCRIPTION
+  A_BUSINESS_PURPOSE:
+    statement: The import of services is in the course or furtherance of business
+    order: HIGH
+    interpretation: Is the imported service received in the course or furtherance of business
+    grounding:
+    - F_IMPORT_IN_COURSE_OF_BUSINESS
+  A_NOT_LIABLE_S24:
+    statement: The person is not liable to be registered under section 24.
+    order: LOW
+    rule: F_PERSON_LIABLE_S24 = FALSE
+  A_PROVISIONS_APPLY:
+    statement: All provisions of this Act, as are applicable to a registered person, shall apply to a person who has registered
+      voluntarily.
+    order: LOW
+    rule: F_PERSON_REGISTRATION_TYPE = 'VOLUNTARY'
+  A_BUSINESS_NOT_COMMENCED:
+    statement: The person has not commenced business within six months from the date of registration.
+    order: LOW
+    rule: F_BUSINESS_COMMENCED_WITHIN_6_MONTHS = FALSE
+groups:
+  G_ELIGIBILITY_CONDITION:
+    name: Eligibility Condition
+    logic: ALL
+    members:
+    - PD_SUPPLIER_SCOPE
+    - A_NOT_LIABLE_S24
+    description: The person must not be liable for registration under either Section 22 or Section 24.
+  A_VOLUNTARY_REGISTRATION:
+    name: Any of the referred steps (A_VOLUNTARY_REGISTRATION)
+    logic: ANY
+    members:
+    - PD_CONSEQUENCE
+    - PD_PERMISSION
+    description: TRUE when any step of the law this check refers to is TRUE
+outcomes:
+  LE_BUSINESS:
+    outcome: BUSINESS
+    expr: A_BUSINESS
+    module: M_SIAFOS
+    description: The supply is in the course or furtherance of business (Section 7(1), part of the law)
+  LE_USED:
+    outcome: USED
+    expr: A_USED
+    module: M_EFITC
+    description: The goods or services or both on which input tax is charged are used in the course or furtherance of his
+      business (Section 16(1), part of the law)
+  LE_INTENDED:
+    outcome: INTENDED
+    expr: A_INTENDED
+    module: M_EFITC
+    description: The goods or services or both on which input tax is charged are intended to be used in the course or furtherance
+      of his business (Section 16(1), part of the law)
+  LE_BUSINESS_ESOES:
+    outcome: BUSINESS
+    expr: A_BUSINESS_ESOES
+    module: M_ESOES
+    description: The person is engaged in the business of supplying goods or services or both (Section 23(1), part of the
+      law)
+  LE_SUPPLIER_SCOPE:
+    outcome: SUPPLIER_SCOPE
+    expr: A_SUPPLIER_SCOPE
+    module: M_PTETFG
+    description: The enhanced threshold applies to a supplier who is engaged exclusively in the supply of goods. (Third Proviso
+      to Section 22(1), part of the law)
+  LE_BUSINESS_SUPPLY:
+    outcome: BUSINESS_SUPPLY
+    expr: A_BUSINESS_SUPPLY
+    module: M_SBRODP
+    description: The supply is in the course or furtherance of business (Schedule I, paragraph 2, part of the law)
+  LE_BUSINESS_PURPOSE:
+    outcome: BUSINESS_PURPOSE
+    expr: A_BUSINESS_PURPOSE
+    module: M_IOSFRP
+    description: The import of services is in the course or furtherance of business (Schedule I, paragraph 4, part of the
+      law)
+  LE_PERMISSION:
+    outcome: VOLUNTARY_REGISTRATION_PERMITTED
+    expr: G_ELIGIBILITY_CONDITION
+    module: M_VRAIC
+    description: The person is permitted to register for GST voluntarily if they are not liable for mandatory registration.
+  LE_CONSEQUENCE:
+    outcome: ALL_PROVISIONS_APPLY
+    expr: A_PROVISIONS_APPLY
+    module: M_VRAIC
+    description: All provisions of the GST Act that apply to a registered person will apply to the voluntarily registered
+      person.
+  LE_POWER_TO_CANCEL:
+    outcome: POWER_TO_CANCEL_REGISTRATION_EXISTS
+    expr: A_VOLUNTARY_REGISTRATION AND A_BUSINESS_NOT_COMMENCED
+    module: M_CFNCB
+    description: The proper officer has the power to cancel the registration if a person with voluntary registration has not
+      commenced business within six months from the date of registration. The officer may set the cancellation date, including
+      retrospectively, as deemed fit.
+products:
+  PD_BUSINESS:
+    statement: The supply is in the course or furtherance of business
+  PD_USED:
+    statement: The goods or services or both on which input tax is charged are used in the course or furtherance of his business
+  PD_INTENDED:
+    statement: The goods or services or both on which input tax is charged are intended to be used in the course or furtherance
+      of his business
+  PD_BUSINESS_ESOES:
+    statement: The person is engaged in the business of supplying goods or services or both
+  PD_SUPPLIER_SCOPE:
+    statement: The enhanced threshold applies to a supplier who is engaged exclusively in the supply of goods.
+  PD_BUSINESS_SUPPLY:
+    statement: Business Furtherance Supply
+  PD_BUSINESS_PURPOSE:
+    statement: The import of services is in the course or furtherance of business
+  PD_PERMISSION:
+    statement: The person is permitted to register for GST voluntarily if they are not liable for mandatory registration.
+  PD_CONSEQUENCE:
+    statement: All provisions of the GST Act that apply to a registered person will apply to the voluntarily registered person.
+  PD_POWER_TO_CANCEL:
+    statement: The proper officer has the power to cancel the registration if a person with voluntary registration has not
+      commenced business within six months from the date of registration. The officer may set the cancellation date, including
+      retrospectively, as deemed fit.
+compounds:
+- id: C_SIAFOS
+  question: The supply is in the course or furtherance of business? (Section 7(1))
+  includes:
+  - LE_BUSINESS
+  produces:
+  - product: PD_BUSINESS
+    from:
+    - LE_BUSINESS
+- id: C_EFITC
+  question: The goods or services or both on which input tax is charged are used in the course or furtherance of his business;
+    The goods or services or both on which input tax is charged are intended to be used in the course or furtherance of his
+    business? (Section 16(1))
+  includes:
+  - LE_USED
+  - LE_INTENDED
+  produces:
+  - product: PD_USED
+    from:
+    - LE_USED
+  - product: PD_INTENDED
+    from:
+    - LE_INTENDED
+- id: C_ESOES
+  question: The person is engaged in the business of supplying goods or services or both? (Section 23(1))
+  includes:
+  - LE_BUSINESS_ESOES
+  produces:
+  - product: PD_BUSINESS_ESOES
+    from:
+    - LE_BUSINESS_ESOES
+- id: C_PTETFG
+  question: The enhanced threshold applies to a supplier who is engaged exclusively in the supply of goods? (Third Proviso
+    to Section 22(1))
+  includes:
+  - LE_SUPPLIER_SCOPE
+  produces:
+  - product: PD_SUPPLIER_SCOPE
+    from:
+    - LE_SUPPLIER_SCOPE
+- id: C_SBRODP
+  question: The supply is in the course or furtherance of business? (Schedule I, paragraph 2)
+  includes:
+  - LE_BUSINESS_SUPPLY
+  produces:
+  - product: PD_BUSINESS_SUPPLY
+    from:
+    - LE_BUSINESS_SUPPLY
+- id: C_IOSFRP
+  question: The import of services is in the course or furtherance of business? (Schedule I, paragraph 4)
+  includes:
+  - LE_BUSINESS_PURPOSE
+  produces:
+  - product: PD_BUSINESS_PURPOSE
+    from:
+    - LE_BUSINESS_PURPOSE
+- id: C_VRAIC
+  question: 'Section 25(3): Voluntary Registration And Its Consequences?'
+  includes:
+  - LE_PERMISSION
+  - LE_CONSEQUENCE
+  produces:
+  - product: PD_PERMISSION
+    from:
+    - LE_PERMISSION
+  - product: PD_CONSEQUENCE
+    from:
+    - LE_CONSEQUENCE
+- id: C_CFNCB
+  question: 'Section 29(2)(d): Cancellation For Not Commencing Business?'
+  includes:
+  - LE_POWER_TO_CANCEL
+  produces:
+  - product: PD_POWER_TO_CANCEL
+    from:
+    - LE_POWER_TO_CANCEL
