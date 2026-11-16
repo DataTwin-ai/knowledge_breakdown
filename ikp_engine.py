@@ -36,6 +36,11 @@ ROW_TYPES = {"DOC", "NODE", "REF", "XREF", "DEF", "SUM", "C", "CM", "UNC"}
 LLM_MODES = {"OFF", "ON_FAIL", "ALWAYS"}
 
 
+def _db_schema() -> str:
+    from db_insert import get_db_schema
+    return get_db_schema()
+
+
 def validate_ikp_settings(settings: dict) -> dict:
     if not isinstance(settings, dict):
         raise ValueError("permission.json: ikp must be a JSON object")
@@ -57,7 +62,8 @@ def validate_ikp_settings(settings: dict) -> dict:
     out["excel_file"] = str(out.get("excel_file", "ikp.xlsx")).strip()
     if not out["excel_file"].lower().endswith(".xlsx"):
         raise ValueError("ikp.excel_file must end in .xlsx")
-    out["schema"] = str(out.get("schema", "public")).strip()
+    # "" = the database schema of Credentials/.env LEGAL_DB_SCHEMA, the same one AKP / GKP use (central database)
+    out["schema"] = str(out.get("schema") or "").strip() or _db_schema()
     out["table_prefix"] = str(out.get("table_prefix", "ikp")).strip()
     for value in (out["schema"], out["table_prefix"]):
         if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", value):

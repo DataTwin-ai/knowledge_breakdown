@@ -36,20 +36,51 @@ p { margin: 0; max-width: 78ch; color: var(--muted); }
 .stat { display: flex; align-items: baseline; gap: 7px; padding: 7px 11px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
 .stat b { font: 700 19px/1 var(--display); font-variant-numeric: tabular-nums; }
 .stat span { color: var(--muted); font-size: 12.5px; }
-.layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 20px; align-items: start; }
-@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
-aside { display: grid; gap: 10px; position: sticky; top: env(safe-area-inset-top, 0px); max-height: calc(100vh - 16px); overflow: auto; padding-bottom: 12px; }
-@media (max-width: 900px) { aside { position: static; max-height: none; } }
+.layout { display: grid; grid-template-columns: minmax(440px, 600px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 1100px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+aside { display: grid; gap: 10px; position: sticky; top: env(safe-area-inset-top, 0px); max-height: calc(100vh - 16px);
+  grid-template-rows: auto minmax(0, 1fr); padding-bottom: 8px; min-width: 0; }
+@media (max-width: 1100px) { aside { position: static; max-height: none; } }
+.filters { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; align-items: end; }
+.filters .full { grid-column: 1 / -1; }
+.filters label.h { display: block; margin-bottom: 4px; }
+@media (max-width: 520px) { .filters { grid-template-columns: minmax(0, 1fr); } }
+/* the fact centre line: every fact on one vertical line; atoms that read it branch left, everything built on
+   them (groups, LEs, PD / OR / CT / TC, MKP, TSG / governance master) branches right. Ids only. */
+.spinebox { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); display: grid;
+  grid-template-rows: auto minmax(0, 1fr); min-height: 0; }
+.spinehead { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--line); }
+.spinehead b { font: 700 13px/1.2 var(--display); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font: 500 10.5px/1.2 var(--mono); color: var(--muted); }
+.legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: var(--c); margin-right: 4px; }
+.spinescroll { overflow: auto; min-height: 0; max-height: calc(100vh - 280px); }
+@media (max-width: 1100px) { .spinescroll { max-height: 70vh; } }
+.spine { position: relative; display: grid; gap: 12px; padding: 12px 10px 16px; }
+.spine::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 3px; transform: translateX(-50%);
+  background: var(--fact); opacity: .35; border-radius: 2px; }
+.spine svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.fb { display: grid; grid-template-columns: minmax(0, 1fr) 132px minmax(0, 1fr); gap: 16px; align-items: center;
+  position: relative; z-index: 1; }
+.fb .lft { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; min-width: 0; }
+.fb .rgt { display: flex; flex-wrap: wrap; gap: 3px; align-content: center; min-width: 0; }
+.fnode { font: inherit; color: var(--ink); cursor: pointer; border: 2px solid var(--fact); background: var(--panel);
+  border-radius: 999px; padding: 5px 8px; display: grid; gap: 1px; justify-items: center; text-align: center; }
+.fnode .id { font: 600 11.5px/1.2 var(--mono); color: var(--fact); word-break: break-all; }
+.fnode .ct { font: 500 10px/1 var(--mono); color: var(--muted); }
+.fnode.on { background: var(--fact); }
+.fnode.on .id, .fnode.on .ct { color: var(--panel); }
+.chip { font: 500 10.5px/1.25 var(--mono); color: var(--ink); cursor: pointer; padding: 2px 6px; border-radius: 4px;
+  border: 1px solid var(--line); border-left: 3px solid var(--c); background: var(--panel); max-width: 100%;
+  overflow-wrap: anywhere; text-align: left; }
+.chip.shared { box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--c) 45%, transparent); }
+.chip.hl, .chip:hover { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--panel)); }
+.chip.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 22%, var(--panel)); }
+.none { font: 500 10.5px var(--mono); color: var(--muted); }
+path.s { fill: none; stroke: var(--edge); stroke-width: 1.1; opacity: .9; }
 label.h { font: 600 11.5px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
 select, input[type=search] { font: 14px var(--body); padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); width: 100%; }
 select:focus-visible, input:focus-visible, button:focus-visible { outline: 2px solid var(--le); outline-offset: 1px; }
-.flist { display: grid; gap: 5px; }
-.fbtn { text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 7px 10px; cursor: pointer; font: inherit; color: inherit; display: grid; gap: 2px; }
-.fbtn:hover { border-color: var(--fact); }
-.fbtn.on { border-color: var(--fact); box-shadow: inset 3px 0 0 var(--fact); }
-.fbtn .id { font: 500 11.5px/1.3 var(--mono); color: var(--fact); word-break: break-all; }
-.fbtn .nm { font-size: 12.5px; }
-.fbtn .ct { font: 600 11.5px/1 var(--mono); color: var(--muted); }
 .types { display: flex; flex-wrap: wrap; gap: 6px; }
 .tchip { display: inline-flex; align-items: center; gap: 6px; font: 500 12px var(--mono); padding: 4px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
 .tchip i { width: 9px; height: 9px; border-radius: 2px; background: var(--c); }
@@ -72,11 +103,15 @@ select:focus-visible, input:focus-visible, button:focus-visible { outline: 2px s
 .n::before { content: ""; position: absolute; left: 0; top: 5px; bottom: 5px; width: 3px; border-radius: 2px; background: var(--c); }
 .n .ty { font: 600 10px/1 var(--mono); letter-spacing: .05em; color: var(--c); }
 .n .id { font: 500 11.5px/1.3 var(--mono); color: var(--ink); word-break: break-all; }
+.n .bd { display: flex; flex-wrap: wrap; gap: 4px; }
+.n .bd span { font: 600 10px/1 var(--mono); padding: 2px 5px; border-radius: 4px; border: 1px solid var(--line); color: var(--muted); }
+.n .bd .new { color: var(--hi); border-color: var(--hi); }
+.chk { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 .n .lb { font-size: 12px; line-height: 1.3; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .n.pick { border-color: var(--c); box-shadow: inset 0 0 0 1px var(--c); background: color-mix(in srgb, var(--c) 8%, var(--panel)); }
 .n:hover { border-color: var(--c); }
 [data-t="FACT"] { --c: var(--fact); } [data-t="ATOM"] { --c: var(--atom); } [data-t="GROUP"] { --c: var(--group); }
-[data-t="LE"] { --c: var(--le); } [data-t="PD"], [data-t="OR"], [data-t="CT"], [data-t="TC"] { --c: var(--out); }
+[data-t="LE"] { --c: var(--le); } [data-t="TG"] { --c: var(--tsg); } [data-t="PD"], [data-t="OR"], [data-t="CT"], [data-t="TC"] { --c: var(--out); }
 [data-t="MKP"] { --c: var(--mkp); } [data-t="TSG"], [data-t="GOVERNANCE_MASTER"] { --c: var(--tsg); }
 path.e { fill: none; stroke: var(--edge); stroke-width: 1.2; opacity: .85; }
 .empty { padding: 16px; color: var(--muted); }
@@ -99,19 +134,29 @@ pre.sql { margin: 0; padding: 12px 14px; border: 1px solid var(--line); border-r
   <header>
     <div class="eyebrow">LAW ARC · kp_relation · built __BUILT__</div>
     <h1>Fact Network</h1>
-    <p>Every law in the database is built on facts. Pick a fact to see everything that depends on it: the atoms that read it, the groups, LEs, products, otherwise outcomes, review questions and test cases built on those atoms, the MKPs they belong to, and the TSGs and governance masters that use them. Drawn only from the <span class="mono">kp_relation</span> table.</p>
+    <p>Every law in the database is built on facts. The centre line on the left holds every fact: the atoms that read it branch left, everything built on them branches right (groups, LEs, products, outcomes, test cases, the MKP, the TSG and governance master). Hover an id to see where else it is used; click a fact or an id to see its whole chain on the right. Drawn only from the <span class="mono">kp_relation</span> table.</p>
     <div class="stats" id="stats"></div>
   </header>
   <div class="layout">
     <aside>
-      <label class="h" for="q">Find a fact, element or law</label>
-      <input id="q" type="search" placeholder="F_SUPPLY_STATUS, A_SALE or S7_SS1" autocomplete="off">
-      <label class="h" for="tsg">TSG / governance master</label>
-      <select id="tsg"></select>
-      <label class="h">Show these types</label>
-      <div class="types" id="types"></div>
-      <label class="h">Facts, most shared first</label>
-      <div class="flist" id="flist"></div>
+      <div class="filters">
+        <div class="full"><label class="h" for="q">Find a fact, element or law</label>
+          <input id="q" type="search" placeholder="F_FOS, M_SIAFOS_A_SIAS or M_SIAFOS (Enter)" autocomplete="off"></div>
+        <div><label class="h" for="tsg">TSG / governance master</label><select id="tsg"></select></div>
+        <div><label class="h" for="doc">Document</label><select id="doc"></select></div>
+        <div><label class="h" for="hdl">Who checks the atom</label>
+          <select id="hdl"><option value="">All handlers</option><option value="python">python - a plain check</option>
+          <option value="light">light - a light model reads it</option><option value="heavy">heavy - the judge decides</option></select></div>
+        <label class="chk"><input type="checkbox" id="fresh"> Only new since the last run</label>
+        <div class="full"><label class="h">Show these types</label><div class="types" id="types"></div></div>
+      </div>
+      <div class="spinebox">
+        <div class="spinehead"><b id="spinetitle">Fact centre line</b>
+          <div class="legend"><span data-t="ATOM"><i></i>atom</span><span data-t="GROUP"><i></i>group</span>
+            <span data-t="LE"><i></i>LE</span><span data-t="OR"><i></i>PD / OR / CT / TC</span><span data-t="MKP"><i></i>MKP</span>
+            <span data-t="TSG"><i></i>TSG / gov. master</span></div></div>
+        <div class="spinescroll"><div class="spine" id="spine"></div></div>
+      </div>
     </aside>
     <div class="main">
       <div class="card" id="card"></div>
@@ -156,7 +201,8 @@ function node(type, id, el, label, mol, cite, raw) {
   if (mol && !["FACT", "TSG", "GOVERNANCE_MASTER", "TG"].includes(type)) { n.mols.add(mol); n.cite ||= cite; }
   return n;
 }
-const molOf = {};                                         // MKP id -> citation
+const molOf = {};                                         // MKP key (citation_key#part) -> citation
+const lawName = id => (nodes[id]?.type === "MKP" && nodes[id].label) || molOf[id] || id;   // MKP short id -> citation
 ROWS.forEach(r => {
   const a = node(r.from_type, r.from_id, r.from_element, r.from_label, r.molecule, r.citation, r.from_raw);
   const b = node(r.to_type, r.to_id, r.to_element, r.to_label, r.molecule, r.citation, r.to_raw);
@@ -167,6 +213,18 @@ ROWS.forEach(r => {
   if (s === t || (fwd[s] || []).includes(t)) return;
   (fwd[s] ||= []).push(t); (back[t] ||= []).push(s); edges.push([s, t]);
 });
+// what the observer filters on: document, handler and time window of atoms, new since the last run
+ROWS.forEach(r => {
+  [[r.from_id, true], [r.to_id, false]].forEach(([id, isFrom]) => {
+    const n = nodes[id]; if (!n) return;
+    (n.docs ||= new Set()); if (r.document && !["FACT", "TSG", "GOVERNANCE_MASTER", "TG"].includes(n.type)) n.docs.add(r.document);
+    if (r.fresh) n.fresh = true;
+    if (isFrom && r.handler) n.handler ||= r.handler;
+    if (isFrom && r.in_force) n.window ||= r.in_force;
+    if (isFrom && r.relation === "GROUPED_IN") (n.tsgs ||= new Set()).add(r.to_raw);
+  });
+});
+const docsAll = [...new Set(ROWS.map(r => r.document).filter(Boolean))].sort();
 // TSG membership of every node (through its MKP), for the TSG filter
 const tsgOfMol = {};
 ROWS.forEach(r => { if ((r.relation === "USED_IN" || r.relation === "GROUPED_IN") && (r.to_type === "TSG" || r.to_type === "GOVERNANCE_MASTER"))
@@ -178,28 +236,91 @@ const inTsg = (n, t) => !t || n.raw === t || [...n.mols].some(m => tsgOfMol[m]?.
 
 // ---- facts list, stats
 const lawsOfFact = f => new Set([...(needs[f] || [])].filter(x => nodes[x]?.type === "MKP"));
-const facts = Object.values(nodes).filter(n => n.type === "FACT").map(f => ({ f, laws: lawsOfFact(f.id).size }))
-  .sort((a, b) => b.laws - a.laws || a.f.id.localeCompare(b.f.id));
+const atomsOfFact = f => [...(needs[f] || [])].filter(x => nodes[x]?.type === "ATOM");
+// most shared first: the atoms that read it, then the laws (MKPs) it reaches
+const facts = Object.values(nodes).filter(n => n.type === "FACT").map(f => ({ f, laws: lawsOfFact(f.id).size, atoms: atomsOfFact(f.id).length }))
+  .sort((a, b) => b.atoms - a.atoms || b.laws - a.laws || a.f.id.localeCompare(b.f.id));
 const count = t => Object.values(nodes).filter(n => n.type === t).length;
 document.getElementById("stats").innerHTML = [[count("FACT"), "facts"], [count("ATOM"), "atoms"], [count("GROUP"), "groups"],
   [count("LE"), "LEs"], [count("PD") + count("OR") + count("CT") + count("TC"), "PD / OR / CT / TC"],
   [count("MKP"), "MKPs"], [Object.keys(tsgNames).length, "TSGs"], [facts.filter(x => x.laws > 1).length, "facts shared by 2+ MKPs"],
   [ROWS.length, "rows"]].map(([n, l]) => `<div class="stat"><b>${n}</b><span>${l}</span></div>`).join("");
 
-const state = { pick: facts[0]?.f.id || null, tsg: "", q: "", hide: new Set(), tab: "fact" };
+const state = { pick: facts[0]?.f.id || null, tsg: "", q: "", hide: new Set(), tab: "fact", doc: "", handler: "", fresh: false };
+const own = n => n && (!state.doc || n.docs?.has(state.doc)) && (!state.handler || n.type !== "ATOM" || n.handler === state.handler)
+  && (!state.fresh || n.fresh);
+// a fact (or a TSG / governance master) passes when something that needs it passes
+const passes = n => !n ? false : (["FACT", "TSG", "GOVERNANCE_MASTER", "TG"].includes(n.type)
+  ? (!state.doc && !state.handler && !state.fresh) || (n.type === "FACT"
+      ? [...(needs[n.id] || [])].some(x => nodes[x]?.type === "ATOM" && own(nodes[x]))
+      : true)
+  : own(n));
+document.getElementById("doc").innerHTML = `<option value="">All documents (${docsAll.length})</option>` +
+  docsAll.map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join("");
 const tsgSel = document.getElementById("tsg");
 tsgSel.innerHTML = `<option value="">All TSGs (${Object.keys(tsgNames).length})</option>` +
   Object.keys(tsgNames).sort().map(t => `<option value="${esc(t)}">${esc(t)} ${esc(tsgNames[t].split(" · ")[0])}</option>`).join("");
 document.getElementById("types").innerHTML = ["ATOM", "GROUP", "LE", "PD", "OR", "CT", "TC", "MKP", "TSG", "GOVERNANCE_MASTER"]
   .map(t => `<button class="tchip" type="button" data-type="${t}" data-t="${t}" aria-pressed="true"><i></i>${TYPE_NAME[t]}</button>`).join("");
 
+// ---- the fact centre line (left): every fact, its atoms on the left, everything built on them on the right
+const RIGHT = ["GROUP", "LE", "PD", "OR", "CT", "TC", "MKP", "TSG", "GOVERNANCE_MASTER", "TG"];
+const spine = document.getElementById("spine");
+const usedIn = {};                                       // element id -> how many facts it hangs under (shared ids)
+facts.forEach(x => (needs[x.f.id] || new Set()).forEach(i => usedIn[i] = (usedIn[i] || 0) + 1));
+function rightIds(fid) {
+  const out = [], at = {};
+  RIGHT.forEach(t => [...(needs[fid] || [])].filter(i => nodes[i]?.type === t).sort().forEach(i => {
+    const n = nodes[i], key = (t === "GOVERNANCE_MASTER" || t === "TSG") ? "T:" + n.raw : i;
+    if (key in at) {                                     // a TSG and its governance master: one chip (the master)
+      if (t === "GOVERNANCE_MASTER") out[at[key]] = i;
+      return;
+    }
+    at[key] = out.length; out.push(i);
+  }));
+  return out;
+}
+function chip(i) {
+  const n = nodes[i], label = (n.type === "MKP" || n.type === "GOVERNANCE_MASTER") ? n.raw : n.el;
+  const tip = n.type === "MKP" ? lawName(i) : (n.label || "");
+  const more = usedIn[i] > 1 ? " · under " + usedIn[i] + " facts" : "";
+  return `<button class="chip${usedIn[i] > 1 ? " shared" : ""}${i === state.pick ? " on" : ""}" type="button" data-t="${n.type}"
+    data-id="${esc(i)}" title="${esc(TYPE_NAME[n.type] + " · " + label + (tip && tip !== label ? " - " + tip : "") + more)}">${esc(label)}</button>`;
+}
 function drawList() {
   const q = state.q.toLowerCase();
-  const list = facts.filter(x => inTsg(x.f, state.tsg) && (!q || x.f.id.toLowerCase().includes(q) || x.f.label.toLowerCase().includes(q))).slice(0, 200);
-  document.getElementById("flist").innerHTML = list.length ? list.map(x => `<button class="fbtn${x.f.id === state.pick ? " on" : ""}" type="button" data-id="${esc(x.f.id)}">
-    <span class="id">${esc(x.f.id)}</span><span class="nm">${esc(x.f.label)}</span><span class="ct">${x.laws} MKP(s)</span></button>`).join("")
-    : `<div class="note">No fact matches. Press Enter to search atoms, LEs and laws too.</div>`;
+  const list = facts.filter(x => inTsg(x.f, state.tsg) && passes(x.f) && (!q || x.f.id.toLowerCase().includes(q) || x.f.label.toLowerCase().includes(q)));
+  document.getElementById("spinetitle").textContent = `Fact centre line · ${list.length} of ${facts.length} fact(s)`;
+  const keep = i => nodes[i] && !state.hide.has(nodes[i].type) && passes(nodes[i]) && (!state.tsg || inTsg(nodes[i], state.tsg));
+  spine.innerHTML = `<svg id="sedges" aria-hidden="true"></svg>` + (list.length ? list.map(x => {
+    const atoms = atomsOfFact(x.f.id).filter(keep).sort();
+    const right = rightIds(x.f.id).filter(keep);
+    return `<div class="fb" data-f="${esc(x.f.id)}">
+      <div class="lft">${atoms.length ? atoms.map(chip).join("") : `<span class="none">no atom</span>`}</div>
+      <button class="fnode${x.f.id === state.pick ? " on" : ""}" type="button" data-id="${esc(x.f.id)}" title="${esc(x.f.label)}">
+        <span class="id">${esc(x.f.id)}</span><span class="ct">${x.atoms} atom · ${x.laws} MKP</span></button>
+      <div class="rgt">${right.length ? right.map(chip).join("") : `<span class="none">nothing yet</span>`}</div></div>`;
+  }).join("") : `<div class="note">No fact matches. Press Enter to search atoms, LEs and laws too.</div>`);
+  requestAnimationFrame(spineEdges);
 }
+function spineEdges() {
+  const sv = document.getElementById("sedges"); if (!sv) return;
+  const g = spine.getBoundingClientRect(); let d = "";
+  spine.querySelectorAll(".fb").forEach(b => {
+    const f = b.querySelector(".fnode").getBoundingClientRect(), fy = f.top + f.height / 2 - g.top;
+    b.querySelectorAll(".lft .chip").forEach(c => { const r = c.getBoundingClientRect(), y = r.top + r.height / 2 - g.top;
+      const x1 = r.right - g.left, x2 = f.left - g.left, k = Math.max(8, (x2 - x1) * .5);
+      d += `M${x1},${y} C${x1 + k},${y} ${x2 - k},${fy} ${x2},${fy} `; });
+    if (b.querySelector(".rgt .chip")) { const rg = b.querySelector(".rgt").getBoundingClientRect();
+      const x1 = f.right - g.left, x2 = rg.left - g.left - 2, y2 = rg.top + rg.height / 2 - g.top;
+      d += `M${x1},${fy} C${x1 + 8},${fy} ${x2 - 8},${y2} ${x2},${y2} `; }
+  });
+  sv.setAttribute("viewBox", `0 0 ${g.width} ${g.height}`);
+  sv.innerHTML = d ? `<path class="s" d="${d}"/>` : "";
+}
+spine.addEventListener("mouseover", e => { const c = e.target.closest(".chip"); if (!c) return;
+  spine.querySelectorAll(`.chip[data-id="${CSS.escape(c.dataset.id)}"]`).forEach(x => x.classList.add("hl")); });
+spine.addEventListener("mouseout", e => { if (e.target.closest(".chip")) spine.querySelectorAll(".chip.hl").forEach(x => x.classList.remove("hl")); });
 
 // ---- what to show: a fact -> everything that NEEDS / READS it; anything else -> its chain both ways
 function reach(id) {
@@ -212,17 +333,25 @@ function reach(id) {
 function visible() {
   let ids = state.pick ? [...reach(state.pick)] : Object.keys(nodes).filter(i => state.tsg && inTsg(nodes[i], state.tsg));
   if (state.tsg && state.pick) ids = ids.filter(i => inTsg(nodes[i], state.tsg));
-  return new Set(ids.filter(i => nodes[i] && (i === state.pick || !state.hide.has(nodes[i].type))));
+  return new Set(ids.filter(i => nodes[i] && (i === state.pick || (!state.hide.has(nodes[i].type) && passes(nodes[i])))));
 }
 
 const graph = document.getElementById("graph"), svg = document.getElementById("edges");
 function box(n) {
-  const sub = n.type === "MKP" ? n.id : (n.cite || [...n.mols][0] || "");
-  const title = n.type === "MKP" ? (molOf[n.id] || n.id) : n.el;
+  const sub = n.type === "MKP" ? n.raw : (n.cite || [...n.mols][0] || "");
+  const title = n.type === "MKP" ? lawName(n.id) : n.el;
   const lb = n.type === "MKP" ? "" : n.label;
   return `<button class="n${n.id === state.pick ? " pick" : ""}" type="button" data-t="${n.type}" data-id="${esc(n.id)}" title="${esc(n.id)}">
     <span class="ty">${TYPE_NAME[n.type] || n.type}${sub && n.type !== "MKP" ? " · " + esc(sub) : ""}</span>
-    <span class="id">${esc(title)}</span>${lb && lb !== title ? `<span class="lb">${esc(lb)}</span>` : ""}</button>`;
+    <span class="id">${esc(title)}</span>${lb && lb !== title ? `<span class="lb">${esc(lb)}</span>` : ""}${badges(n)}</button>`;
+}
+function badges(n) {
+  const b = [];
+  if (n.fresh) b.push(`<span class="new">new</span>`);
+  if (n.type === "ATOM" && n.handler) b.push(`<span>${esc(n.handler)}</span>`);
+  if (n.type === "ATOM" && n.tsgs) [...n.tsgs].sort().forEach(t => b.push(`<span>${esc(t)}</span>`));
+  if (n.window) { const [f, t] = n.window.split(".."); b.push(`<span>in force ${esc(f || "…")} → ${esc(t || "now")}</span>`); }
+  return b.length ? `<span class="bd">${b.join("")}</span>` : "";
 }
 const LIMIT = 500;
 function draw() {
@@ -257,9 +386,9 @@ function card(vis, cut) {
   const types = ["ATOM", "GROUP", "LE", "PD", "OR", "CT", "TC", "MKP", "TSG", "GOVERNANCE_MASTER"];
   const sum = types.map(t => [t, of(t).length]).filter(([, k]) => k).map(([t, k]) =>
     `<span data-t="${t}"><b>${k}</b>${TYPE_NAME[t]}</span>`).join("");
-  const laws = of("MKP").map(m => esc(molOf[m] || m));
+  const laws = of("MKP").map(m => esc(`${lawName(m)} (${m})`));
   let h = `<span class="id" data-t="${n.type}">${esc(TYPE_NAME[n.type] || n.type)} · ${esc(n.id)}</span>
-    <h2>${esc(n.type === "MKP" ? (molOf[n.id] || n.id) : (n.label || n.el))}</h2>`;
+    <h2>${esc(n.type === "MKP" ? lawName(n.id) : (n.label || n.el))}</h2>`;
   if (n.type === "FACT") h += `<p>${sum ? "Everything below depends on this fact. If a bill does not give it, these cannot be decided." : "Nothing depends on this fact yet."}</p>`;
   else h += `<p>Its whole chain: the facts it is built on (left) and what it feeds (right).</p>`;
   h += `<div class="sum">${sum}</div>`;
@@ -296,11 +425,11 @@ function table(vis) {
 
 function update() { drawList(); draw(); }
 document.addEventListener("click", e => {
-  const b = e.target.closest(".n, .fbtn");
+  const b = e.target.closest(".n, .fbtn, .fnode, .chip");
   if (b) { state.pick = state.pick === b.dataset.id && state.tsg ? null : b.dataset.id; update(); return; }
   const t = e.target.closest(".tchip");
   if (t) { const ty = t.dataset.type; state.hide.has(ty) ? state.hide.delete(ty) : state.hide.add(ty);
-    t.setAttribute("aria-pressed", String(!state.hide.has(ty))); draw(); return; }
+    t.setAttribute("aria-pressed", String(!state.hide.has(ty))); update(); return; }
   if (e.target.id === "tab-fact" || e.target.id === "tab-all") {
     state.tab = e.target.id === "tab-fact" ? "fact" : "all";
     document.getElementById("tab-fact").setAttribute("aria-selected", String(state.tab === "fact"));
@@ -309,6 +438,9 @@ document.addEventListener("click", e => {
   }
 });
 tsgSel.addEventListener("change", () => { state.tsg = tsgSel.value; state.pick = state.tsg ? null : (facts[0]?.f.id || null); update(); });
+["doc", "hdl"].forEach(id => document.getElementById(id).addEventListener("change", e => {
+  state[id === "doc" ? "doc" : "handler"] = e.target.value; update(); }));
+document.getElementById("fresh").addEventListener("change", e => { state.fresh = e.target.checked; update(); });
 const qIn = document.getElementById("q");
 qIn.addEventListener("input", () => { state.q = qIn.value.trim(); drawList(); });
 qIn.addEventListener("keydown", e => {
@@ -316,12 +448,12 @@ qIn.addEventListener("keydown", e => {
   const q = qIn.value.trim().toLowerCase(); if (!q) return;
   const all = Object.values(nodes);
   const hit = all.find(n => n.id.toLowerCase() === q || n.el.toLowerCase() === q)
-    || all.find(n => n.type === "MKP" && ((molOf[n.id] || "").toLowerCase().includes(q) || n.id.toLowerCase().includes(q)))
+    || all.find(n => n.type === "MKP" && (lawName(n.id).toLowerCase().includes(q) || n.id.toLowerCase().includes(q)))
     || all.find(n => n.id.toLowerCase().includes(q));
   if (hit) { state.pick = hit.id; update(); }
 });
 update();
-window.addEventListener("resize", () => requestAnimationFrame(draw));
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+window.addEventListener("resize", () => requestAnimationFrame(() => { draw(); spineEdges(); }));
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { draw(); spineEdges(); });
 </script>
 </body></html>

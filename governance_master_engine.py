@@ -5,8 +5,8 @@ A governance master holds everything the Decision Graph Engine needs for one TSG
 
     Governance_Master/                (outside Output/)
       index.xlsx                      every governance master: name, status, number of laws, last changed
-      TG01/TSG01_03/rulebook.yaml     the file the engine reads (the engine requires this file name)
-      TG01/TSG01_03/report.xlsx       why each law is in, what was left out, what to review
+      TG01/TSG01_03_rulebook.yaml     the file the engine reads (dg validate / dg run take this file path)
+      TG01/report/TSG01_03_report.xlsx  why each law is in, what was left out, what to review (one report folder per TG)
     PostgreSQL
       governance_master               the current content of every governance master, one row per element
       governance_master_history       one row per change (old content is never lost)
@@ -37,7 +37,11 @@ from kp_console import log, say
 BASE_DIR = Path(__file__).resolve().parent
 REQUIRED = ("enabled", "use_cache", "save_to_db", "tsgs", "table", "history_table",
             "output_dir", "spine_rulebook", "map_file", "prerequisite_depth", "tables")
-PACK_FILE = "rulebook.yaml"            # the file name the Decision Graph Engine looks for inside a pack folder
+PACK_FILE = "{tsg}_rulebook.yaml"      # one file per TSG in its TG folder (notes section 12; the engine takes a file path)
+REPORT_FILE = "{tsg}_report.xlsx"
+REPORT_DIR = "report"
+# part of every fingerprint: a change in how the governance master is built rewrites each one once (not only new laws)
+BUILD_VERSION = "2026-11-15c"                  # Governance_Master/<TG>/report/<TSG>_report.xlsx
 
 
 def _permission() -> dict:
@@ -64,6 +68,12 @@ def validate_governance_master_settings(raw: dict) -> dict:
     s["merge_clauses"] = bool(s.get("merge_clauses", True))
     s["prerequisite_depth"] = int(s["prerequisite_depth"])
     s["law_as_on"] = str(s.get("law_as_on") or "").strip()
+    if s["law_as_on"]:
+        # every check now carries its own valid_from / valid_to and the invoice date picks the law (notes section 6);
+        # law_as_on would leave out whole laws instead - keep it empty unless one fixed date is really wanted
+        from kp_console import say
+        say(f"  GOVERNANCE MASTER : law_as_on {s['law_as_on']} is set - laws not in force that day are left out "
+            "(empty = the invoice date decides, recommended)")
     for k in ("akp", "fact", "gkp", "time_fact", "mkp", "ikp"):
         if k not in s["tables"]:
             raise KeyError(f"Config/settings.json governance_master.tables.{k} is required")
@@ -97,11 +107,16 @@ def fingerprint(snapshot: Snapshot, built: Built, tsg: str, cfg: dict, spine: di
     times = [t for t in snapshot.time_facts if any(str(t.get("target_citation_key", "")).startswith(c) or
                                                    c.startswith(str(t.get("target_citation_key", ""))) for c in cites)]
     qs = {k: v for k, v in snapshot.questions.items() if k in keys}
-    return _sha(rows, facts, gkp, times, qs, cfg, spine, s["prerequisite_depth"], s["law_as_on"], tsg)
+    return _sha(rows, facts, gkp, times, qs, cfg, spine, s["prerequisite_depth"], s["law_as_on"], tsg, BUILD_VERSION)
 
 
 def pack_folder(s: dict, names: dict) -> Path:
-    return _path(s["output_dir"]) / names["tg"] / names["tsg"]
+    """Governance_Master/<TG> - no sub-folder per TSG: TG01/TSG01_03_rulebook.yaml; the reports in TG01/report/."""
+    return _path(s["output_dir"]) / names["tg"]
+
+
+def pack_file(s: dict, names: dict) -> Path:
+    return pack_folder(s, names) / PACK_FILE.format(tsg=names["tsg"])
 
 
 def _in_scope(mkp: str, scope_key: str) -> bool:
@@ -170,6 +185,7 @@ def build_governance_master(tsg: str, snapshot: Snapshot, conn, permission: dict
     rep = built.report
     fp = fingerprint(snapshot, built, tsg, cfg, spine, s)
     folder = pack_folder(s, n)
+    pack = pack_file(s, n)
     latest = (store.latest_all().get(tsg) if store else None)
     counts = rep.get("counts", {})
     size = (f"{counts.get('compounds', 0)} steps, {counts.get('predicates', 0)} checks, {counts.get('facts', 0)} facts | "
@@ -179,7 +195,7 @@ def build_governance_master(tsg: str, snapshot: Snapshot, conn, permission: dict
     if not built.rulebook.get("compounds"):    # e.g. only amendment records: nothing the engine can run
         say(f"  {tsg} : no operative law in this TSG - no governance master written")
         return {"tsg": tsg, "status": "EMPTY", "pack_status": "", "counts": counts}
-    if s["use_cache"] and latest and latest["fingerprint"] == fp and (folder / PACK_FILE).is_file():
+    if s["use_cache"] and latest and latest["fingerprint"] == fp and pack.is_file():
         say(f"  {tsg} : unchanged (same laws as before) - {size}")
         return {"tsg": tsg, "status": "UNCHANGED", "pack_status": latest["pack_status"], "counts": counts}
     problems = pack_mod.check_pack(built.rulebook)
@@ -197,13 +213,14 @@ def build_governance_master(tsg: str, snapshot: Snapshot, conn, permission: dict
             r["attributes"] = dict(r.get("attributes") or {}, stands_for=partners[r["element_id"]])
     old = store.current_rows(tsg) if store else {}
     ch = pack_mod.change(old, rows)
-    file_changed = not (folder / PACK_FILE).is_file() or \
-        re.sub(r"^#.*\n", "", (folder / PACK_FILE).read_text(encoding="utf-8"), flags=re.M) != \
+    file_changed = not pack.is_file() or \
+        re.sub(r"^#.*\n", "", pack.read_text(encoding="utf-8"), flags=re.M) != \
         re.sub(r"^#.*\n", "", text, flags=re.M)
     folder.mkdir(parents=True, exist_ok=True)
     if file_changed or not s["use_cache"]:
-        (folder / PACK_FILE).write_text(text, encoding="utf-8")
-    excel_mod.write(folder / "report.xlsx", built.rulebook, rep, built.id_map, problems, status)
+        pack.write_text(text, encoding="utf-8")
+    (folder / REPORT_DIR).mkdir(parents=True, exist_ok=True)
+    excel_mod.write(folder / REPORT_DIR / REPORT_FILE.format(tsg=tsg), built.rulebook, rep, built.id_map, problems, status)
     version = None
     if store and (ch["added"] or ch["changed"] or ch["removed"] or not latest or not s["use_cache"]
                   or latest["fingerprint"] != fp):
@@ -214,7 +231,7 @@ def build_governance_master(tsg: str, snapshot: Snapshot, conn, permission: dict
         from governance_master_ss.views import ensure_views
         ensure_views(conn, get_db_schema(), s["tables"], s["table"])
     say(f"  {tsg} : done - {size} - {status}"
-        + (f" ({len(problems) + len(rep['blocking'])} to review, see report.xlsx)" if status != "APPROVED" else ""))
+        + (f" ({len(problems) + len(rep['blocking'])} to review, see {REPORT_DIR}/{REPORT_FILE.format(tsg=tsg)})" if status != "APPROVED" else ""))
     for p_ in (rep["blocking"] + problems)[:3]:
         say(f"        review: {p_}")
     for p_ in (rep["blocking"] + problems)[3:]:
@@ -222,7 +239,7 @@ def build_governance_master(tsg: str, snapshot: Snapshot, conn, permission: dict
     for w in rep.get("warnings", []):
         log(f"NOTE {tsg}: {w}")
     log(f"CHANGE {tsg}: {len(ch['added'])} added, {len(ch['changed'])} changed, {len(ch['removed'])} removed | "
-        f"{folder / PACK_FILE}" + (f" | history v{version}" if version else ""))
+        f"{pack}" + (f" | history v{version}" if version else ""))
     return {"tsg": tsg, "status": "WRITTEN", "pack_status": status, "folder": str(folder), "laws": len(built.included),
             "change": ch, "problems": problems, "version": version, "counts": counts}
 
@@ -235,7 +252,7 @@ def write_index(s: dict, store: Optional[GovernanceMasterStore], permission: dic
     for tsg, lp in sorted(store.latest_all().items()):
         n = names.get(tsg, {"tsg": tsg, "tsg_name": lp.get("tsg_name"), "tg": lp.get("tg"), "tg_name": lp.get("tg_name")})
         packs.append({"tsg": tsg, **lp, "tg": n["tg"], "tg_name": n["tg_name"],
-                      "file": str(pack_folder(s, n) / PACK_FILE)})
+                      "file": str(pack_file(s, n))})
     return excel_mod.write_index(_path(s["output_dir"]) / "index.xlsx", packs)
 
 

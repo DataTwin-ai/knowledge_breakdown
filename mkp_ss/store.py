@@ -15,7 +15,8 @@ from typing import Callable, List, Optional
 
 from psycopg2 import sql
 
-from transport import clean, find_row_type, get_field, mkp_bundles, row_element
+from kp_ids import unique_mkp_id
+from transport import clean, find_row_type, get_field, row_element
 
 TABLE = "mkp"
 
@@ -166,6 +167,9 @@ class MkpStore:
                     cur.execute(sql.SQL("SELECT COALESCE(max(mkp_version), 0) FROM {} WHERE version_id=%s AND cluster=%s "
                                         "AND type IN ('BATCH','SUM')").format(self.t()), (version, cluster))
                     unit_prior = int(cur.fetchone()[0] or 0)
+                    mkp_ids = self._assign_mkp_ids(cur, [r for r in standard if find_row_type(r) == "MKP"
+                                                         and row_element(r) in changed])
+                    stats["mkp_ids"] = mkp_ids
                     cur.execute(sql.SQL("UPDATE {} SET is_latest=false WHERE version_id=%s AND is_latest AND (element = ANY(%s) "
                                         "OR (cluster=%s AND type IN ('BATCH','SUM')))").format(self.t()),
                                 (version, changed, cluster))
@@ -179,7 +183,7 @@ class MkpStore:
                             result += (f"; source_hash: {source_hash}; document_hash: {document_hash}; "
                                        f"source_input: IKP_INDEX_V2; scope_key: {scope_key}")
                             r["RESULTS"] = result
-                        mkp_id = mkp_bundles([r])[0]["mkp_id"] if kind == "MKP" else None
+                        mkp_id = mkp_ids.get(element) if kind == "MKP" else None
                         v = vectors.get(element) if kind == "MKP" else None
                         mver = (prior.get(element, 0) + 1) if element in elements else (unit_prior + 1)
                         if kind == "MKP":
@@ -205,6 +209,30 @@ class MkpStore:
             self.conn.rollback()
             raise
         return stats
+
+    def _assign_mkp_ids(self, cur, mkp_rows: List[dict]) -> dict:
+        """element -> MKP id, unique across ALL laws (notes section 3, kp_ids.unique_mkp_id).
+
+        One lock for the id registry, so two workers never give the same id to two laws. A provision keeps the id
+        it already has while its concept name gives the same acronym; a clash with another law gets a second
+        letter of the first differing word, then a number."""
+        if not mkp_rows:
+            return {}
+        cur.execute("SELECT pg_advisory_xact_lock(hashtext('mkp_id_registry'))")
+        cur.execute(sql.SQL("SELECT mkp_id, element, results FROM {} WHERE type='MKP' AND is_latest "
+                            "AND mkp_id IS NOT NULL AND BTRIM(mkp_id) <> '' ORDER BY ctid").format(self.t()))
+        taken, own = {}, {}
+        for mid, el, res in cur.fetchall():
+            taken.setdefault(mid, (el, get_field({"RESULTS": res}, "concept")))
+            own[el] = mid
+        out = {}
+        for r in mkp_rows:
+            el = row_element(r)
+            mid = unique_mkp_id(get_field(r, "concept"), el, taken, own.get(el))
+            taken = {k: v for k, v in taken.items() if not (v[0] == el and k != mid)}
+            taken[mid] = (el, get_field(r, "concept"))
+            out[el] = mid
+        return out
 
     def fill_extras(self, version: str, extras: dict) -> None:
         """References of MKPs saved before these columns existed (or reused from the database) are filled in once;

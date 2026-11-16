@@ -29,15 +29,16 @@ PDF ─► IKP ─► worker pool [ MKP ─► AKP (+ fact network) ─► GKP ]
 |---|---|
 | IKP | `law_arc_ikp_map_prompt.txt` (LLM assist, only for chapters that fail the gate) |
 | MKP | `law_arc_mkp_prompt.txt`, `law_arc_mkp_judge_prompt.txt` |
-| AKP | `law_arc_akp_prompt.txt`, `law_arc_akp_judge_prompt.txt`, `law_arc_akp_comparison_prompt.txt`, `law_arc_akp_same_prompt.txt` |
+| AKP | `law_arc_akp_prompt.txt`, `law_arc_akp_judge_prompt.txt`, `law_arc_akp_comparison_prompt.txt`, `law_arc_akp_same_prompt.txt`, `law_arc_akp_fact_prompt.txt` (fact check: is a new fact really new?), `law_arc_akp_time_prompt.txt` (time step: old / new law of an amended provision) |
 | GKP | `law_arc_gkp_prompt.txt` (VERIFY, JUDGE, CREATE) |
 
 ## IDs and words that must not be mixed up
 
 - **`G_`** is a logic group inside one MKP (AKP).
-- **`TG01`… / `TSG01_01`…** are taxonomy groups (TG) and sub-groups (TSG): 15 TG / 81 TSG in `Config/gst_taxonomy.json` plus the ones GKP created (`created_by: GKP`); columns `tg_id` and `tsg_id`. MKP rows (`groups`, `mkp.group_names`) and AKP atoms (`groups` field) carry TSG ids too.
+- **`TG01`… / `TSG01_01`…** are taxonomy groups (TG) and sub-groups (TSG): 15 TG / 81 TSG in `Config/gst_taxonomy.json` plus the ones GKP created (`created_by: GKP`); columns `tg_id` and `tsg_id`. MKP rows (`groups`, `mkp.group_names`) and AKP atoms (`groups` field, saved in `akp.group_names`) carry TSG ids too.
 - **Reference IDs** (`ref_ss/ids.py`) are made by Python, never by the LLM: `N_CTR_04_2018`, `CIR_47_2018`, `ACT_31_2018`, or a document code (`CGSTR17`).
-- **Facts (`F_<ENTITY>_<ATTRIBUTE>`)** are inputs, never conclusions. One fact keeps one id across all laws. `akp_atom_fact` is the fact network.
+- **Abbreviated ids (`kp_ids.py`, made by Python only):** MKP `M_<acronym of the concept name>` (unique across all laws), every AKP element `<MKP id>_<TYPE>_<acronym>` (TYPE A, G, LE, PD, OR, CT, TC, LK; `akp.akp_id`, there is no element column), facts `F_<acronym of the fact name>` with no prefix; an LK row is named by its relation (`M_IOSFC_LK_AMENDS`). The models keep their own working ids; `akp_ss/ids.py` rewrites them just before saving.
+- **Facts (`F_...`)** are raw inputs, never conclusions. One fact keeps one id across all laws (a registered fact keeps its id; the same name or a saved alias reuses it). `akp_atom_fact` is the fact network.
 - **Two kinds of version:**
   - **Run version** (`version_no`, `mkp_version`, `akp_version`, `gkp_version`) is our own output.
   - **Law version** (`akp_time_fact.effective_from`, AMENDMENT MKPs) is when the law itself changed.
@@ -45,7 +46,7 @@ PDF ─► IKP ─► worker pool [ MKP ─► AKP (+ fact network) ─► GKP ]
 ## Governance master
 
 See `docs/GOVERNANCE_MASTER.md`.
-- One governance master per TSG, in `Governance_Master/<TG>/<TSG>/` (outside `Output/`). Call it a "governance master", never "rulebook". The file inside stays `rulebook.yaml`, because the engine requires that name.
+- One governance master per TSG, in `Governance_Master/<TG>/` as `<TSG>_rulebook.yaml`, with its report in `Governance_Master/<TG>/report/<TSG>_report.xlsx` (outside `Output/`, no sub-folder per TSG; the engine CLI takes the file path). Call it a "governance master", never "rulebook". Every predicate carries `handler: python | light | heavy` (from the AKP atom).
 - It uses no LLM and no engine. The governance master is checked in Python (`governance_master_ss/pack.py`).
 - The main table is `governance_master`, with one row per element; history goes to `governance_master_history`.
 - It runs once when the worker pool is done, with no user input, for every TSG that got laws in the run (spine-only TSGs too).

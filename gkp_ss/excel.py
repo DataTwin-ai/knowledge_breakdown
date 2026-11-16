@@ -48,7 +48,10 @@ def write(path: Path, store, by_id: dict) -> Path:
                        ("  - decided by judge", sum(1 for r in approved if r[13] == "JUDGE")),
                        ("  - inherited from SAME atom", sum(1 for r in approved if r[13] == "SAME_INHERITED")),
                        ("  - amendment rule / target", sum(1 for r in approved if r[13].startswith("AMENDMENT"))),
-                       ("  - groups given by MKP / AKP judges (no GKP LLM)", sum(1 for r in approved if r[13] == "AKP_GROUP")),
+                       ("  - AKP group confirmed by Python (no GKP LLM)", sum(1 for r in approved if r[13] == "AKP_GROUP_CONFIRMED")),
+                       ("  - AKP group kept by the GKP LLM (Python not sure / audit)",
+                        sum(1 for r in approved if r[13] == "AKP_GROUP_CONFIRMED_LLM")),
+                       ("  - AKP group changed by the GKP LLM", sum(1 for r in approved if r[13] == "AKP_GROUP_CHANGED")),
                        ("  - MKP / document group (notification, circular)", sum(1 for r in approved if r[13] in
                                                                                ("MKP_GROUP", "DOCUMENT_GROUP"))),
                        ("  - created or placed by GKP CREATE", sum(1 for r in approved if r[13].startswith(("GKP_CREATED", "CREATE_")))),

@@ -43,7 +43,7 @@ def akp_table(src: dict, flip=False) -> str:
         f"{mkp_id}|MKP|{mkp_id}|NA|citation_key: {get_field(src['mkp'], 'citation_key')}; frame: OPERATIVE",
         f'{mkp_id}|LE|LE_MAIN|NA|outcome: PROVISION_APPLIES; expr: "A_MAIN"',
         f'{mkp_id}|A|A_MAIN|Provision Condition Test|family: "Provision Test"; statement: {_q(statement)}; phrases: [SP1]; '
-        f'scope: TRANSACTION; role: CONDITION; order: LOW; resolver: EXPRESSION; facts: [F_SUPPLY_CONSIDERATION]; rule: "{rule}"; '
+        f'scope: TRANSACTION; role: CONDITION; order: LOW; handler: python; resolver: EXPRESSION; facts: [F_SUPPLY_CONSIDERATION]; rule: "{rule}"; '
         f'nl: "test"',
         f'TXN|FACTS|F_SUPPLY_CONSIDERATION|NA|name: "Consideration for the supply"; entity: SUPPLY; type: CODE; '
         f'options: [PAID, AGREED, NONE]; evidence: [invoice, contract]; registry: {"EXISTING" if reused else "NEW"}; used_by: [A_MAIN]',
@@ -257,6 +257,19 @@ def test_time_fact_footnote_styles(note, kind, by, dated, wef):
     row = {"RESULTS": 'text: "Footnote 3 states: %s"; citation_key: K' % note.replace('"', '\\"')}
     tf = time_fact(row, "D", "K#AMD1")
     assert (tf["kind"], tf["amended_by"], tf["instrument_date"], tf["effective_from"]) == (kind, by, dated, wef)
+
+
+def test_time_fact_keeps_both_dates_and_old_words():
+    """s.7(3): brought into force 01.02.2019 (MKP valid_from), but the change applies w.e.f. 01.07.2017."""
+    from akp_ss.facts import time_fact
+    note = ("Substituted by The Central Goods and Services Tax (Amendment) Act, 2018 (No. 31 of 2018) w.e.f. "
+            "01st July, 2017 for the words ‘sub-sections (1) and (2)’.")
+    row = {"RESULTS": 'text: "Footnote 9 states: %s"; citation_key: K; valid_from: 2019-02-01' % note}
+    tf = time_fact(row, "D", "K#AMD1")
+    assert (tf["effective_from"], tf["in_force_from"]) == ("2017-07-01", "2019-02-01")
+    assert tf["replaced_text"] == "sub-sections (1) and (2)"
+    same = time_fact({"RESULTS": 'text: "Footnote 1 states: Inserted w.e.f. 01.02.2019"; valid_from: 2019-02-01'}, "D", "K#AMD2")
+    assert (same["effective_from"], same["in_force_from"]) == ("2019-02-01", None)
 
 
 

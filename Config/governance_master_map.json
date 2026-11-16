@@ -86,6 +86,12 @@
   ],
   "default": "T1"
  },
+ "law_date": {
+  "_about": "The DATE fact that picks the law in force for a document (notes section 6: the invoice date). Every governance master gets time: law_date: <fact>; checks with valid_from / valid_to apply only when this date is inside their window. AKP is given the same fact, so all laws use one invoice-date fact.",
+  "fact": "F_DOI",
+  "name": "Date Of Invoice",
+  "tier": "T0"
+ },
  "fact_aliases": {
   "_about": "AKP fact id -> spine fact id, only where the meaning AND the options are the same.",
   "F_SUPPLY_SUBJECT": "F_SOS",

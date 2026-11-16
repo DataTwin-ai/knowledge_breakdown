@@ -4,7 +4,8 @@ A FACT is an observable input about a real case, with its evidence (e.g. F_PERSO
 F_SUPPLY_CONSIDERATION = PAID / NONE, evidence invoice). Atoms TEST facts. Atoms of different laws that test
 the same fact are connected through it - so the same fact must keep ONE id everywhere.
 
-akp_fact        one row per canonical fact: id, name, entity, type, unit, options, evidence, derived_from, embedding
+akp_fact        one row per canonical fact: id, name, entity, type, unit, options, evidence, derived_from, embedding,
+                aliases (other names of the same fact), source_kind (DOCUMENT / WORKED_OUT / LOOKUP / ASK), derivation
 akp_atom_fact   edge atom -> fact (with the atom's rule), per AKP version, is_latest
 """
 from __future__ import annotations
@@ -21,6 +22,7 @@ from .parse import field_list, rfield
 
 DATA_TYPES = {"BOOL", "BOOLEAN", "CODE", "ENUM", "AMOUNT", "MONEY", "NUMBER", "INTEGER", "PERCENT", "RATE", "DATE",
               "PERIOD", "DURATION", "TEXT", "STRING", "LIST", "ID", "QUANTITY"}
+SOURCE_KINDS = {"DOCUMENT", "WORKED_OUT", "LOOKUP", "ASK"}    # where a fact's value comes from (notes section 2)
 CANON_TYPE = {"BOOLEAN": "BOOL", "ENUM": "CODE", "MONEY": "AMOUNT", "INTEGER": "NUMBER", "RATE": "PERCENT",
               "STRING": "TEXT", "DURATION": "PERIOD"}
 
@@ -32,6 +34,35 @@ def canon_type(t: str) -> str:
 
 def _vec(v) -> Optional[str]:
     return "[" + ",".join(str(float(x)) for x in v) + "]" if v else None
+
+
+_SMALL = {"of", "the", "a", "an", "for", "to", "by", "in", "on", "and", "or", "is", "at"}
+
+
+def _concept(row: dict) -> str:
+    """The 2-3 word concept of a FACTS row (its CONCEPT column), without small words ("Form Of Supply" ->
+    "Form Supply"); '' when the model wrote none (NA)."""
+    c = " ".join(str(row.get("CONCEPT") or "").replace('"', "").split())
+    if c.upper() in ("", "NA", "N/A", "NONE"):
+        return ""
+    return " ".join(w for w in c.split() if w.lower() not in _SMALL)[:80] or c[:80]
+
+
+def concept_warnings(rows: List[dict]) -> List[str]:
+    """FACTS rows whose concept will not help the search: missing, more than 3 words, or the name repeated."""
+    from transport import get_field
+    out = []
+    for r in rows:
+        if r.get("TYPE") != "FACTS":
+            continue
+        c, name = _concept(r), get_field(r, "name")
+        if not c:
+            out.append(f"{r['ELEMENT']}: no concept")
+        elif len(c.split()) > 3:
+            out.append(f"{r['ELEMENT']}: concept '{c}' has more than 3 words")
+        elif c.lower() == " ".join(w for w in str(name).split() if w.lower() not in _SMALL).lower():
+            out.append(f"{r['ELEMENT']}: concept '{c}' only repeats the name")
+    return out
 
 
 class FactRegistry:
@@ -60,6 +91,12 @@ class FactRegistry:
                 atom text NOT NULL, fact_id text NOT NULL, rule text, is_latest boolean NOT NULL DEFAULT true,
                 inserted_at timestamptz NOT NULL DEFAULT now(),
                 PRIMARY KEY (instrument, version_id, source_mkp, akp_version, atom, fact_id))""").format(self.t(self.edge_t)))
+            # fact flow (notes section 8): other names of the same fact, where its value comes from, its formula
+            # + the fact's 2-3 word concept and its own embedding: a new fact is compared by name + nl AND by concept
+            for col, typ in (("aliases", "jsonb NOT NULL DEFAULT '[]'"), ("source_kind", "text"), ("derivation", "text"),
+                             ("concept", "text"), ("concept_embedding", "vector")):
+                cur.execute(sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS {} " + typ).format(
+                    self.t(self.fact_t), sql.Identifier(col)))
             cur.execute(sql.SQL("CREATE INDEX IF NOT EXISTS {} ON {} (fact_id) WHERE is_latest").format(
                 sql.Identifier(f"{self.edge_t}_fact_idx"), self.t(self.edge_t)))
         self.conn.commit()
@@ -67,13 +104,19 @@ class FactRegistry:
     # ---------------- reads
     def all_ids(self) -> Dict[str, dict]:
         with self.conn.cursor() as cur:
-            cur.execute(sql.SQL("SELECT fact_id, name, data_type FROM {}").format(self.t(self.fact_t)))
-            return {f: {"name": n, "type": t} for f, n, t in cur.fetchall()}
+            cur.execute(sql.SQL("SELECT fact_id, name, data_type, aliases, entity, options FROM {}")
+                        .format(self.t(self.fact_t)))
+            # entity + options: Python's SAME gate also runs on a match by name (fact flow layer 2)
+            return {f: {"name": n, "type": t, "aliases": list(al or []) if isinstance(al, list) else [],
+                        "entity": e or "", "options": list(o or []) if isinstance(o, list) else []}
+                    for f, n, t, al, e, o in cur.fetchall()}
 
-    def slice(self, unit_prefix: str, vector=None, limit: int = 30) -> List[dict]:
-        """Facts the models should reuse: those already used in the same unit, then the nearest by meaning,
-        then the most used."""
-        cols = "f.fact_id, f.name, f.entity, f.data_type, f.unit, f.options, f.evidence"
+    def slice(self, unit_prefix: str, vector=None, limit: int = 30, tsgs: Optional[List[str]] = None,
+              gkp_table: str = "", ref_keys: Optional[List[str]] = None) -> List[dict]:
+        """Fact flow layer 1 (notes section 8) - the facts the models should reuse: those already used in the same
+        unit, then by the provisions this MKP refers to, then by atoms of the MKP's TSGs, then the nearest by
+        meaning, then the most used."""
+        cols = "f.fact_id, f.name, f.entity, f.data_type, f.unit, f.options, f.evidence, f.concept"
         out, seen = [], set()
 
         def add(rows):
@@ -81,12 +124,28 @@ class FactRegistry:
                 if r[0] not in seen and len(out) < limit:
                     seen.add(r[0])
                     out.append({"fact_id": r[0], "name": r[1], "entity": r[2], "type": r[3], "unit": r[4],
-                                "options": r[5], "evidence": r[6]})
+                                "options": r[5], "evidence": r[6], "concept": r[7] or ""})
         with self.conn.cursor() as cur:
             cur.execute(sql.SQL(f"SELECT DISTINCT {cols} FROM {{}} f JOIN {{}} e ON e.fact_id=f.fact_id "
                                 "WHERE e.is_latest AND e.source_mkp LIKE %s").format(self.t(self.fact_t), self.t(self.edge_t)),
                         (unit_prefix + "%",))
             add(cur.fetchall())
+            for ref in ref_keys or []:          # 'as defined in section 2(52)', 'Schedule II' ...
+                cur.execute(sql.SQL(f"SELECT DISTINCT {cols} FROM {{}} f JOIN {{}} e ON e.fact_id=f.fact_id "
+                                    "WHERE e.is_latest AND (e.source_mkp LIKE %s OR e.source_mkp LIKE %s)")
+                            .format(self.t(self.fact_t), self.t(self.edge_t)), (ref + "#%", ref + "\\_%"))
+                add(cur.fetchall())
+            if tsgs and gkp_table:
+                try:
+                    cur.execute(sql.SQL(f"SELECT {cols} FROM {{}} f JOIN {{}} e ON e.fact_id=f.fact_id AND e.is_latest "
+                                        "JOIN {} g ON g.instrument=e.instrument AND g.version_id=e.version_id "
+                                        "AND g.source_mkp=e.source_mkp AND g.akp_element=e.atom AND g.is_latest "
+                                        "AND g.status='APPROVED' WHERE g.tsg_id = ANY(%s) "
+                                        "GROUP BY f.fact_id ORDER BY count(*) DESC, f.fact_id LIMIT %s")
+                                .format(self.t(self.fact_t), self.t(self.edge_t), self.t(gkp_table)), (list(tsgs), limit))
+                    add(cur.fetchall())
+                except Exception:              # GKP has not run yet
+                    self.conn.rollback()
             if vector:
                 try:
                     cur.execute(sql.SQL(f"SELECT {cols} FROM {{}} f WHERE embedding IS NOT NULL AND vector_dims(embedding)=%s "
@@ -101,10 +160,43 @@ class FactRegistry:
             add(cur.fetchall())
         return out
 
+    def nearest(self, vector, k: int, min_similarity: float, concept_vector=None) -> List[dict]:
+        """Fact flow layer 3: the registered facts nearest in meaning to a new fact (all facts, not only a slice) -
+        by name + nl (embedding) AND by concept (concept_embedding), like atoms. similarity = the higher of both."""
+        found: Dict[str, dict] = {}
+        for col, vec in (("embedding", vector), ("concept_embedding", concept_vector)):
+            if not vec:
+                continue
+            with self.conn.cursor() as cur:
+                try:
+                    cur.execute(sql.SQL("""SELECT fact_id, name, entity, data_type, unit, options, nl, aliases, concept,
+                        1 - ({c} <=> %s::vector) FROM {t} WHERE {c} IS NOT NULL AND vector_dims({c})=%s
+                        ORDER BY {c} <=> %s::vector LIMIT %s""").format(c=sql.Identifier(col), t=self.t(self.fact_t)),
+                                (_vec(vec), len(vec), _vec(vec), k))
+                    rows = cur.fetchall()
+                except Exception:
+                    self.conn.rollback()
+                    continue
+            key = "similarity" if col == "embedding" else "concept_similarity"
+            for r in rows:
+                if r[9] is None:
+                    continue
+                item = found.setdefault(r[0], {"fact_id": r[0], "name": r[1], "entity": r[2], "type": r[3],
+                                               "unit": r[4], "options": r[5], "nl": r[6], "aliases": r[7],
+                                               "concept": r[8] or ""})
+                item[key] = round(float(r[9]), 4)
+        out = []
+        for item in found.values():
+            best = max(item.get("similarity", 0.0), item.get("concept_similarity", 0.0))
+            if best >= min_similarity:
+                item["similarity"] = best
+                out.append(item)
+        return sorted(out, key=lambda x: (-x["similarity"], x["fact_id"]))[:k]
+
     def export_rows(self):
         with self.conn.cursor() as cur:
             cur.execute(sql.SQL("""SELECT f.fact_id, f.name, f.entity, f.data_type, f.unit, f.options::text, f.evidence::text,
-                count(e.atom), f.possible_duplicate_of, f.first_source_mkp FROM {} f LEFT JOIN {} e
+                count(e.atom), f.possible_duplicate_of, f.first_source_mkp, COALESCE(f.concept, '') FROM {} f LEFT JOIN {} e
                 ON e.fact_id=f.fact_id AND e.is_latest GROUP BY f.fact_id ORDER BY f.fact_id""")
                         .format(self.t(self.fact_t), self.t(self.edge_t)))
             return cur.fetchall()
@@ -137,20 +229,40 @@ class FactRegistry:
             evidence = field_list(r, "evidence") or ([get_field(r, "evidence")] if get_field(r, "evidence") else [])
             derived = field_list(r, "derived_from")
             if fid in known:
+                # the same fact under another name in this law: that name is kept as an alias (fact flow)
+                other = get_field(r, "name")
+                alias = [other] if other and other.strip().lower() != str(known[fid].get("name") or "").strip().lower() else []
+                concept = _concept(r)
+                if concept:                      # a fact saved before it had a concept gets this law's concept
+                    cv = None
+                    if embed:
+                        try:
+                            cv = embed(concept)
+                        except Exception:
+                            cv = None
+                    cur.execute(sql.SQL("""UPDATE {} SET concept=%s, concept_embedding=%s::vector
+                        WHERE fact_id=%s AND COALESCE(concept, '') = ''""").format(self.t(self.fact_t)),
+                                (concept, _vec(cv), fid))
                 cur.execute(sql.SQL("""UPDATE {} SET
                     options = (SELECT COALESCE(jsonb_agg(DISTINCT x), '[]') FROM jsonb_array_elements(options || %s::jsonb) x),
                     evidence = (SELECT COALESCE(jsonb_agg(DISTINCT x), '[]') FROM jsonb_array_elements(evidence || %s::jsonb) x),
+                    aliases = (SELECT COALESCE(jsonb_agg(DISTINCT x), '[]') FROM jsonb_array_elements(aliases || %s::jsonb) x),
                     updated_at = now() WHERE fact_id=%s""").format(self.t(self.fact_t)),
-                            (json.dumps(options), json.dumps(evidence), fid))
+                            (json.dumps(options), json.dumps(evidence), json.dumps(alias), fid))
                 continue
             name = get_field(r, "name") or fid
             nl = get_field(r, "nl")
-            vector, dup = None, None
+            concept = _concept(r)
+            vector, cvector, dup = None, None, None
             if embed:
                 try:
                     vector = embed(f"{name} - {nl}".strip(" -"))
                 except Exception:
                     vector = None
+                try:
+                    cvector = embed(concept) if concept else None
+                except Exception:
+                    cvector = None
             if vector:
                 cur.execute(sql.SQL("SELECT fact_id, 1 - (embedding <=> %s::vector) FROM {} WHERE embedding IS NOT NULL "
                                     "AND vector_dims(embedding)=%s ORDER BY embedding <=> %s::vector LIMIT 1")
@@ -159,12 +271,17 @@ class FactRegistry:
                 if hit and hit[1] is not None and float(hit[1]) >= 0.93:
                     dup = hit[0]
             entity = get_field(r, "entity") or (fid.split("_")[1] if fid.count("_") >= 2 else "")
+            kind = (rfield(r, "source_kind") or "").upper().replace(" ", "_") or None
             cur.execute(sql.SQL("""INSERT INTO {} (fact_id, name, entity, data_type, unit, options, evidence, derived_from, nl,
-                first_instrument, first_source_mkp, possible_duplicate_of, embedding)
-                VALUES (%s,%s,%s,%s,%s,%s::jsonb,%s::jsonb,%s::jsonb,%s,%s,%s,%s,%s::vector) ON CONFLICT (fact_id) DO NOTHING""")
+                first_instrument, first_source_mkp, possible_duplicate_of, embedding, source_kind, derivation,
+                concept, concept_embedding)
+                VALUES (%s,%s,%s,%s,%s,%s::jsonb,%s::jsonb,%s::jsonb,%s,%s,%s,%s,%s::vector,%s,%s,%s,%s::vector)
+                ON CONFLICT (fact_id) DO NOTHING""")
                         .format(self.t(self.fact_t)),
                         (fid, name, entity, canon_type(rfield(r, "type")), get_field(r, "unit") or None, json.dumps(options),
-                         json.dumps(evidence), json.dumps(derived), nl or None, instrument, source_mkp, dup, _vec(vector)))
+                         json.dumps(evidence), json.dumps(derived), nl or None, instrument, source_mkp, dup, _vec(vector),
+                         kind if kind in SOURCE_KINDS else None, get_field(r, "derivation") or None,
+                         concept or None, _vec(cvector)))
             new += 1
             known[fid] = {"name": name, "type": canon_type(rfield(r, "type"))}
         # edges atom -> fact; earlier AKP versions of this MKP are no longer the latest
@@ -217,13 +334,20 @@ def time_fact(mkp_row: dict, instrument: str, source_mkp: str) -> dict:
     dated = re.search(r"\b(?:dt|dated)\.?\s*(" + DATE + ")", note, re.I)
     wef = re.search(r"(?:w\.?\s*e\.?\s*f\.?|with effect from)\s*(?:the\s+)?(" + DATE + ")", note, re.I)
     valid = get_field(mkp_row, "valid_from")
-    effective = valid if re.fullmatch(r"\d{4}-\d{2}-\d{2}", valid or "") else (_iso(wef.group(1)) if wef else None)
-    replaced = re.search(r"\bfor\s+[―\"“]\s*(.+?)\s*[‖\"”]", note, re.S)
+    valid = valid if re.fullmatch(r"\d{4}-\d{2}-\d{2}", valid or "") else None
+    # effective_from: the w.e.f. date the footnote gives (a change can apply from an earlier date than the day it
+    # was brought into force, e.g. s.7(3) w.e.f. 01.07.2017 by the 2018 Amendment Act); in_force_from: the day the
+    # amending law was brought into force (MKP valid_from) when that is a different date (notes section 6)
+    effective = (_iso(wef.group(1)) if wef else None) or valid
+    in_force = valid if valid and valid != effective else None
+    replaced = re.search(r"\bfor\s+(?:the\s+(?:words?|figures?|letters?|brackets?)[^―\"“‘']{0,40}?)?"
+                         r"[―\"“‘']\s*(.+?)\s*[‖\"”’'](?=[\s,.;)]|$)", note, re.S)
     citation_key = get_field(mkp_row, "citation_key") or source_mkp.split("#", 1)[0]
     return {"time_fact_id": "T_" + source_mkp.replace("#", "_"), "target": citation_key, "kind": kind,
             "amended_by": re.sub(r"\s+", " ", by.group(1)).strip(" .") if by else None,
             "instrument_date": _iso(dated.group(1)) if dated else None,
-            "effective_from": effective, "replaced_text": replaced.group(1).strip() if replaced else None, "note": note}
+            "effective_from": effective, "in_force_from": in_force,
+            "replaced_text": replaced.group(1).strip() if replaced else None, "note": note}
 
 
 def skip_rows(bundle: dict, knowledge_type: str, tfact: Optional[dict] = None) -> List[dict]:
@@ -240,7 +364,9 @@ def skip_rows(bundle: dict, knowledge_type: str, tfact: Optional[dict] = None) -
                          f"part: {get_field(row, 'part')}; knowledge_type: {knowledge_type}; frame: {knowledge_type}; "
                          f"skip: {q(reason)}; nl: {q(get_field(row, 'text'))}")}]
     if tfact:
-        rows.append({"MKP": mkp_id, "TYPE": "LK", "ELEMENT": "LK_" + tfact["time_fact_id"], "CONCEPT": "NA",
+        # the link to the time fact: an abbreviated id like every element (TF = time fact); the time fact keeps its
+        # citation key (T_CGSTA17_S7_SS1_Cb_AMD1) in the RESULTS, which joins it to akp_time_fact
+        rows.append({"MKP": mkp_id, "TYPE": "LK", "ELEMENT": f"{mkp_id}_LK_AMENDS", "CONCEPT": "NA",
                      "RESULTS": (f"relation: AMENDS; target: {tfact['target']}; status: TIME_FACT; time_fact: {tfact['time_fact_id']}; "
                                  f"kind: {tfact['kind']}; effective_from: {tfact['effective_from'] or 'NA'}; "
                                  f"instrument_date: {tfact['instrument_date'] or 'NA'}; "

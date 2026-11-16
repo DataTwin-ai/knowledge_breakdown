@@ -20,6 +20,35 @@ _RX = re.compile("|".join(f"(?P<{n}>{p})" for n, p in _SPEC))
 ID_TOKEN = re.compile(r"\b[A-Z][A-Z0-9_]*\b")
 
 
+_NEW_ID = re.compile(r"^(M_[A-Z0-9]+)_(A|G|LE|PD|OR|CT|TC|LK)_([A-Z0-9]+)$")
+
+
+def kind_of(tok: str) -> str:
+    """Element type of an id: the abbreviated ids (M_SIAFOS_PD_SOG -> PD, notes section 3) and the short
+    working / spine ids (PD_SOG -> PD, A_T_X -> A, F_X -> F)."""
+    m = _NEW_ID.match(tok or "")
+    if m:
+        return m.group(2)
+    return (tok or "").split("_", 1)[0] if "_" in (tok or "") else ""
+
+
+def is_kind(tok: str, kind: str) -> bool:
+    return kind_of(tok) == kind
+
+
+def as_kind(tok: str, kind: str) -> str:
+    """The same element name as another type: M_X_LE_SOG -> M_X_PD_SOG, LE_SOG -> PD_SOG."""
+    m = _NEW_ID.match(tok or "")
+    if m:
+        return f"{m.group(1)}_{kind}_{m.group(3)}"
+    return f"{kind}_{tok.split('_', 1)[1]}" if "_" in (tok or "") else f"{kind}_{tok}"
+
+
+def tail(tok: str) -> str:
+    """The name part of an id, for derived names (PD_SOG -> SOG; an abbreviated id is unique, so all of it)."""
+    return tok if _NEW_ID.match(tok or "") else (tok.split("_", 1)[1] if "_" in (tok or "") else tok)
+
+
 class RuleError(ValueError):
     pass
 

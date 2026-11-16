@@ -15,7 +15,7 @@ PDF ─► IKP ─► worker pool [ MKP ─► AKP ─► GKP ] ─► GOVERNANC
 | MKP | One molecule per provision (exact legal text + source phrases), its **groups** (TSG ids) and its **references** (same document / outside documents) | `mkp`, `mkp_ref`, `ref_document` |
 | AKP | The molecule split into concept atoms, logic groups, law expressions, outcomes, catalysts, test cases and facts; every atom carries its groups | `akp`, `akp_fact`, `akp_atom_fact`, `akp_time_fact` |
 | GKP | Every atom in the GST taxonomy (15 TG / 81 TSG). Groups given by MKP / AKP are taken as they are; the LLM is asked only for the rest; when nothing fits GKP **creates** a sub-group (never "unclassified") | `gkp`, `gkp_taxonomy` |
-| GOVERNANCE MASTER | One `rulebook.yaml` per TSG (the engine's format): its laws + the laws they point to + the spine | `governance_master` (+ `_history`), `Governance_Master/<TG>/<TSG>/rulebook.yaml` |
+| GOVERNANCE MASTER | One `<TSG>_rulebook.yaml` per TSG (the engine's format): its laws + the laws they point to + the spine | `governance_master` (+ `_history`), `Governance_Master/<TG>/<TSG>_rulebook.yaml` |
 | FACT CATALOG | Every fact, how it is obtained (document / derived / lookup / ask) and every law it can check | `fact_catalog`, `fact_index`, `Governance_Master/fact_catalog.yaml` |
 
 ## Quick start
@@ -37,6 +37,12 @@ PDF ─► IKP ─► worker pool [ MKP ─► AKP ─► GKP ] ─► GOVERNANC
 Other commands: `python kp_delete.py --unit CGSTA17_S7` (delete wrong MKPs and everything made from them),
 `python ref_engine.py` (web scraping of cited notifications / circulars; off by default),
 `python fact_catalog_engine.py --facts F_A,F_B` (which TSGs those facts can check).
+
+## The 2026-11-15 rebuild
+
+Abbreviated ids for every type, the fact flow (one fact, one id), handler per atom, the law in force on the
+invoice date, GKP Python score, run waves, scraper for amending documents and the fact flow observer:
+see `docs/HOW_IT_WORKS.md` section 14.
 
 ## Documentation
 

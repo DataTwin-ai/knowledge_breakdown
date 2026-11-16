@@ -2,8 +2,12 @@
 
 ref_document  one row per outside document (fixed ID from ref_ss/ids.py): kind, number, year, link, status
               status: PENDING -> LINK_FOUND / LINK_BAD -> DOWNLOADED -> VERIFIED -> INSERTED
-                      SKIPPED (amending: already inside the consolidated Act / Rules), NOT_FOUND, FAILED
+                      NOT_FOUND, FAILED  (amending documents are no longer SKIPPED: notes section 13)
+              link_status (set while splitting by ref_ss/link.py, or by ref_engine.py): OK / BAD / NOT_FOUND
+              The document status says only whether we have the document's file - not whether a law of it is made.
 mkp_ref       which MKP refers to which document (and to which provision of it): one row per reference.
+              target_status: INSERTED when the exact law it points to has a saved MKP, else PENDING
+              (update_target_status, at the end of every run).
               Deleting an MKP deletes its mkp_ref rows (db_migrate.py trigger); the ref_document row stays.
 """
 from __future__ import annotations
@@ -44,6 +48,9 @@ class RefStore:
                 mention text NOT NULL DEFAULT '', where_found text NOT NULL DEFAULT '',
                 inserted_at timestamptz NOT NULL DEFAULT now(),
                 PRIMARY KEY (version_id, mkp_element, scope, ref_id, target_key))""").format(self.t(self.link_t)))
+            # the status of the exact law each reference points to (INSERTED = it has a saved MKP; else PENDING)
+            cur.execute(sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS target_status text NOT NULL DEFAULT 'PENDING'")
+                        .format(self.t(self.link_t)))
             cur.execute(sql.SQL("CREATE INDEX IF NOT EXISTS {} ON {} (ref_id)").format(
                 sql.Identifier(f"{self.link_t}_ref_idx"), self.t(self.link_t)))
             cur.execute(sql.SQL("CREATE INDEX IF NOT EXISTS {} ON {} (status)").format(
@@ -72,15 +79,16 @@ class RefStore:
         # documents in one fixed order: two workers never wait on each other's rows (no deadlock)
         for element, r in sorted(docs, key=lambda x: x[1]["ref_id"]):
             code = held.get(r["ref_id"], "")
-            status = ("INSERTED" if code else
-                      "SKIPPED" if r["amending"] and not push_amending else "PENDING")
+            # amending documents are needed too (the law before / after a change, notes section 13): never skipped
+            status = "INSERTED" if code else "PENDING"
             cur.execute(sql.SQL("""INSERT INTO {} (ref_id, kind, title, number, year, series, status, doc_code,
                 first_seen_in, mentions) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,1)
                 ON CONFLICT (ref_id) DO UPDATE SET mentions = {}.mentions + 1, updated_at = now(),
+                title = CASE WHEN length(EXCLUDED.title) > length({}.title) THEN EXCLUDED.title ELSE {}.title END,
                 doc_code = CASE WHEN EXCLUDED.doc_code <> '' THEN EXCLUDED.doc_code ELSE {}.doc_code END,
                 status = CASE WHEN EXCLUDED.status = 'INSERTED' THEN 'INSERTED'
                               WHEN {}.status = 'SKIPPED' AND EXCLUDED.status = 'PENDING' THEN 'PENDING'
-                              ELSE {}.status END""").format(self.t(self.doc_t), *[sql.Identifier(self.doc_t)] * 4),
+                              ELSE {}.status END""").format(self.t(self.doc_t), *[sql.Identifier(self.doc_t)] * 6),
                         (r["ref_id"], r["kind"], r["mention"], r.get("number"), r.get("year"), r.get("series"),
                          status, code, element))
         return n
@@ -102,22 +110,70 @@ class RefStore:
                 [fields[c] for c in cols] + [ref_id])
         self.conn.commit()
 
-    def pending(self, kinds: Iterable[str] = ("NOTIFICATION", "CIRCULAR"), limit: int = 200) -> List[dict]:
+    def pending(self, kinds: Iterable[str] = ("NOTIFICATION", "CIRCULAR", "AMENDING_ACT"), limit: int = 200) -> List[dict]:
+        """Each outside document ONCE (ref_document has one row per document, however many laws cite it)."""
         with self.conn.cursor() as cur:
             cur.execute(sql.SQL("""SELECT ref_id, kind, title, number, year, series, link, status, mentions FROM {}
-                WHERE status IN ('PENDING','LINK_BAD','LINK_FOUND','DOWNLOADED') AND kind = ANY(%s)
+                WHERE status IN ('PENDING','SKIPPED','LINK_BAD','LINK_FOUND','DOWNLOADED') AND kind = ANY(%s)
                 ORDER BY mentions DESC, ref_id LIMIT %s""").format(self.t(self.doc_t)), (list(kinds), limit))
             cols = ["ref_id", "kind", "title", "number", "year", "series", "link", "status", "mentions"]
             return [dict(zip(cols, r)) for r in cur.fetchall()]
 
-    def for_mkp(self, version: str, element: str) -> List[dict]:
-        """The references of one MKP with their document status (what Section 7 needs when it is validated)."""
+    def link_state(self, ref_ids: Iterable[str]) -> List[dict]:
+        """The documents with their link and status (the link finder while splitting: ref_ss/link.py)."""
         with self.conn.cursor() as cur:
-            cur.execute(sql.SQL("""SELECT l.scope, l.ref_id, l.target_key, l.relation, l.mention,
-                COALESCE(d.status, CASE WHEN l.scope='SELF' THEN 'INSERTED' ELSE '' END), COALESCE(d.doc_code, '')
+            cur.execute(sql.SQL("""SELECT ref_id, kind, title, number, year, series, link, link_status, status, doc_code
+                FROM {} WHERE ref_id = ANY(%s) ORDER BY ref_id""").format(self.t(self.doc_t)), (list(ref_ids),))
+            cols = ["ref_id", "kind", "title", "number", "year", "series", "link", "link_status", "status", "doc_code"]
+            rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+        self.conn.commit()               # a read only: no open transaction is left while the web search runs
+        return rows
+
+    def needed_by(self, ref_id: str, mkp_table: str, limit: int = 3) -> List[dict]:
+        """The laws (MKPs) that cite this document, with their text - for the content check of a download."""
+        with self.conn.cursor() as cur:
+            try:
+                cur.execute(sql.SQL("""SELECT DISTINCT ON (l.mkp_element) l.mkp_element, l.mention, m.results
+                    FROM {} l JOIN {} m ON m.element = l.mkp_element AND m.version_id = l.version_id
+                    AND m.type = 'MKP' AND m.is_latest WHERE l.ref_id = %s ORDER BY l.mkp_element LIMIT %s""")
+                            .format(self.t(self.link_t), self.t(mkp_table)), (ref_id, limit))
+                rows = cur.fetchall()
+            except Exception:
+                self.conn.rollback()
+                return []
+        from transport import get_field
+        return [{"mkp": e, "mention": m, "text": get_field({"RESULTS": r or ""}, "text")[:1500]} for e, m, r in rows]
+
+    def update_target_status(self, mkp_table: str) -> int:
+        """mkp_ref.target_status for every reference, at the end of every run: INSERTED when the exact law it points
+        to has a saved (latest) MKP - target_key CGSTA17_SCHI needs an MKP of CGSTA17_SCHI or of a part of it; a
+        reference to a whole outside document (no target_key) needs an MKP of that document. Else PENDING."""
+        m = self.t(mkp_table)
+        with self.conn.cursor() as cur:
+            cur.execute(sql.SQL(r"""UPDATE {} l SET target_status = CASE WHEN EXISTS (
+                    SELECT 1 FROM {} m WHERE m.type = 'MKP' AND COALESCE(m.is_latest, true)
+                    AND (split_part(m.element, '#', 1) = l.target_key
+                         OR split_part(m.element, '#', 1) LIKE replace(l.target_key, '_', '\_') || '\_%'))
+                THEN 'INSERTED' ELSE 'PENDING' END WHERE l.target_key <> ''""").format(self.t(self.link_t), m))
+            n = cur.rowcount
+            cur.execute(sql.SQL("""UPDATE {} l SET target_status = CASE WHEN EXISTS (
+                    SELECT 1 FROM {} d JOIN {} m ON m.instrument_code = d.doc_code AND m.type = 'MKP'
+                    AND COALESCE(m.is_latest, true) WHERE d.ref_id = l.ref_id AND d.doc_code <> '')
+                THEN 'INSERTED' ELSE 'PENDING' END WHERE l.target_key = ''""").format(
+                self.t(self.link_t), self.t(self.doc_t), m))
+            n += cur.rowcount
+        self.conn.commit()
+        return n
+
+    def for_mkp(self, version: str, element: str) -> List[dict]:
+        """The references of one MKP: status = the status of the exact law it points to (target_status),
+        doc_status = the status of the document's file (ref_document)."""
+        with self.conn.cursor() as cur:
+            cur.execute(sql.SQL("""SELECT l.scope, l.ref_id, l.target_key, l.relation, l.mention, l.target_status,
+                COALESCE(d.status, ''), COALESCE(d.doc_code, '')
                 FROM {} l LEFT JOIN {} d ON d.ref_id = l.ref_id WHERE l.version_id=%s AND l.mkp_element=%s
                 ORDER BY l.scope, l.ref_id""").format(self.t(self.link_t), self.t(self.doc_t)), (version, element))
-            cols = ["scope", "ref_id", "target_key", "relation", "mention", "status", "doc_code"]
+            cols = ["scope", "ref_id", "target_key", "relation", "mention", "status", "doc_status", "doc_code"]
             return [dict(zip(cols, r)) for r in cur.fetchall()]
 
 

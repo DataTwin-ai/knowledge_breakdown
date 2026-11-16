@@ -4,8 +4,9 @@ SELF  = another part of the same document (sub-section (1), Schedule II, section
         of the provision, its lead-ins and closing line, which IKP already resolved to keys.
 CROSS = anything outside the document: notifications, circulars, amending Acts, and the Act / Rules of the corpus
         ("section 15 of the Act" in the Rules, "rule 27 of the Central Goods and Services Tax Rules").
-A footnote "Ins. by / Subs. by / Omitted by ..." is an AMENDING reference: its text is already inside the
-consolidated Act / Rules, so it is recorded and SKIPPED (permission.json features.push_amending_notifications).
+A footnote "Ins. by / Subs. by / Omitted by ..." is an AMENDING reference (relation AMENDED_BY). It is recorded
+as PENDING like any other outside document: ref_engine.py fetches it (Law/Amendments), because the law before / after
+the change is needed (notes section 13; features.push_amending_notifications is no longer used).
 """
 from __future__ import annotations
 
@@ -18,6 +19,26 @@ AMEND_CUE = re.compile(r"\b(ins\.|inserted|subs\.|substituted|omitted|amended|w\
 SECTION_OF_ACT = re.compile(r"\b(?P<kind>section|rule)\s+(?P<no>\d{1,3}[A-Z]{0,2})(?P<chain>(?:\s*\(\s*\w{1,5}\s*\))*)"
                             r"\s+of\s+the\s+(?P<doc>[A-Za-z ()]{3,90}?(?:Act|Rules))", re.I)
 SAME_DOC_WORDS = re.compile(r"^(?:this|the said)\b", re.I)
+# the full name of an amending Act: "The Central Goods and Services Tax (Amendment) Act, 2018 (No. 31 of 2018)"
+FULL_ACT = re.compile(r"(?:\bThe\s+)?[A-Z][A-Za-z&,()'\s-]*?\bAct\b,?\s*(?:19|20)\d{2}\s*\(\s*No\.?\s*\d{1,3}\s+of\s+"
+                      r"(?:19|20)\d{2}\s*\)")
+# the date after a notification / circular number: "..., dated 25.01.2018" / "dt. 24.09.2021"
+DATED = re.compile(r"^\s*,?\s*(?:dated|dt\.?)\s*(\d{1,2}\s*[./-]\s*\d{1,2}\s*[./-]\s*\d{4})", re.I)
+
+
+def full_name(text: str, m: "re.Match", kind: str) -> str:
+    """The whole name of the document the match `m` found in `text` (the title of ref_document): an amending Act
+    with its own name and number, a notification / circular with its date. Falls back to the match itself."""
+    short = " ".join(m.group(0).split())
+    if kind == "AMENDING_ACT":
+        for f in FULL_ACT.finditer(text or ""):
+            if f.start() <= m.start() < f.end():
+                return " ".join(f.group(0).split())
+        return short.rstrip(" (") + (")" if short.count("(") > short.count(")") else "")
+    d = DATED.match((text or "")[m.end():m.end() + 40])
+    if not d:
+        return short
+    return short.rstrip(" ,") + " dated " + re.sub(r"\s+", "", d.group(1))
 
 
 def _key(doc: str, kind: str, no: str, chain: str) -> str:
@@ -30,8 +51,11 @@ def _key(doc: str, kind: str, no: str, chain: str) -> str:
     return key
 
 
-def _outside(text: str, own_doc: str, relation: str, where: str) -> List[dict]:
+def _outside(text: str, own_doc: str, relation: str, where: str, name: str = "") -> List[dict]:
+    """name: the full name of the document IKP read from the footnote (its `instrument` field), used as the title
+    when it is the same document."""
     out = []
+    named = parse(name) if name else None
     for rx in (NOTIF_RE, CIRC_RE, ACT_RE):
         for m in rx.finditer(text or ""):
             found = parse(m.group(0))
@@ -39,7 +63,8 @@ def _outside(text: str, own_doc: str, relation: str, where: str) -> List[dict]:
                 continue
             rid, kind, info = found
             amending = where == "FOOTNOTE" and bool(AMEND_CUE.search(text)) or kind == "AMENDING_ACT"
-            out.append({"ref_id": rid, "scope": "CROSS", "kind": kind, "mention": " ".join(m.group(0).split())[:200],
+            title = " ".join(name.split()) if named and named[0] == rid else full_name(text, m, kind)
+            out.append({"ref_id": rid, "scope": "CROSS", "kind": kind, "mention": title[:300],
                         "relation": "AMENDED_BY" if amending else relation, "target_key": "", "where": where,
                         "amending": amending, **info})
     for m in SECTION_OF_ACT.finditer(text or ""):
@@ -71,8 +96,12 @@ def detect(own_doc: str, text: str, footnotes: Iterable[str] = (), xrefs: Iterab
                       "kind": "PROVISION" if scope == "SELF" else "ACT", "mention": str(x.get("cue") or "")[:200],
                       "relation": "REFERS", "target_key": to, "where": "TEXT", "amending": False})
     found += _outside(text, own_doc, "REFERS", "TEXT")
-    for f in footnotes or []:
-        found += _outside(str(f), own_doc, "REFERS", "FOOTNOTE")
+    for f in footnotes or []:            # a footnote text, or IKP's amendment {"text", "instrument"}
+        if isinstance(f, dict):
+            name = str(f.get("instrument") or "")
+            found += _outside(f"{f.get('text') or ''} {name}".strip(), own_doc, "REFERS", "FOOTNOTE", name)
+        else:
+            found += _outside(str(f), own_doc, "REFERS", "FOOTNOTE")
     for label in llm_refs or []:
         if parse(label):
             found += _outside(label, own_doc, "REFERS", "TEXT")

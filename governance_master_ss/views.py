@@ -31,7 +31,7 @@ def ensure_views(conn, schema: str, tables: dict, governance_master_table: str) 
     have_edge, have_gkp = _exists(conn, schema, edge), _exists(conn, schema, gkp)
     have_rb = _exists(conn, schema, governance_master_table)
     parts = [sql.SQL("""
-        SELECT a.source_mkp AS molecule, a.mkp_id, a.instrument, a.type AS element_type, a.element AS element_id,
+        SELECT a.source_mkp AS molecule, a.mkp_id, a.instrument, a.type AS element_type, a.akp_id AS element_id,
                NULLIF(a.concept, 'NA') AS concept, left(a.results, 300) AS detail, a.akp_version AS version, a.inserted_at
         FROM {akp} a WHERE a.is_latest AND a.type IN ('MKP','LE','OR','G','PD','A','A_REF','CT','LK','TC')""").format(akp=T(akp))]
     if have_edge:
@@ -54,28 +54,28 @@ def ensure_views(conn, schema: str, tables: dict, governance_master_table: str) 
 
     links = [sql.SQL("""
         SELECT a.source_mkp AS molecule, 'MKP' AS parent_type, a.source_mkp AS parent_id, 'HAS' AS relation,
-               a.type AS child_type, a.element AS child_id
+               a.type AS child_type, a.akp_id AS child_id
         FROM {akp} a WHERE a.is_latest AND a.type IN ('LE','OR','CT','TC')""").format(akp=T(akp)),
         sql.SQL("""
-        SELECT a.source_mkp, 'LE', a.element, 'USES', split_part(t.tok[1], '_', 1), t.tok[1]
+        SELECT a.source_mkp, 'LE', a.akp_id, 'USES', (regexp_match(t.tok[1], '_(A|G|PD)_[A-Z0-9]+$'))[1], t.tok[1]
         FROM {akp} a CROSS JOIN LATERAL regexp_matches(
                COALESCE(substring(a.results from 'expr:\\s*"([^"]*)"'), substring(a.results from 'expr:\\s*([^;]*)'), ''),
-               '\\m(?:A|G|PD)_[A-Z0-9_]+', 'g') AS t(tok)
+               '\\mM_[A-Z0-9]+_(?:A|G|PD)_[A-Z0-9]+', 'g') AS t(tok)
         WHERE a.is_latest AND a.type = 'LE'""").format(akp=T(akp)),
         sql.SQL("""
-        SELECT a.source_mkp, 'G', a.element, 'MEMBER', split_part(m.child, '_', 1), m.child
+        SELECT a.source_mkp, 'G', a.akp_id, 'MEMBER', (regexp_match(m.child, '_(A|G|LE|PD|OR|CT|TC)_[A-Z0-9]+$'))[1], m.child
         FROM {akp} a CROSS JOIN LATERAL (
                SELECT btrim(x, ' ''"') AS child
                FROM regexp_split_to_table(COALESCE(substring(a.results from 'members:\\s*\\[([^\\]]*)\\]'), ''), ',') AS x
              ) m
         WHERE a.is_latest AND a.type = 'G' AND m.child <> ''""").format(akp=T(akp)),
         sql.SQL("""
-        SELECT a.source_mkp, 'LE', a.element, 'FEEDS', 'PD', m.child
+        SELECT a.source_mkp, 'LE', a.akp_id, 'FEEDS', 'PD', m.child
         FROM {akp} a CROSS JOIN LATERAL (
                SELECT btrim(x, ' ''"') AS child
                FROM regexp_split_to_table(COALESCE(substring(a.results from 'feeds:\\s*\\[([^\\]]*)\\]'), ''), ',') AS x
              ) m
-        WHERE a.is_latest AND a.type = 'LE' AND m.child LIKE 'PD\\_%'""").format(akp=T(akp))]
+        WHERE a.is_latest AND a.type = 'LE' AND m.child LIKE '%\\_PD\\_%'""").format(akp=T(akp))]
     if have_edge:
         links.append(sql.SQL("""
         SELECT e.source_mkp, 'A', e.atom, 'READS', 'F', e.fact_id FROM {edge} e WHERE e.is_latest""").format(edge=T(edge)))

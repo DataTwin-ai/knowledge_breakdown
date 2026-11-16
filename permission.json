@@ -6,13 +6,13 @@
     "akp": true,
     "gkp": true,
     "governance_master": true,
-    "fact_catalog": true
+    "fact_catalog": false
   },
   "use_cache": {
     "ikp": true,
     "mkp": true,
-    "akp": true,
-    "gkp": true,
+    "akp": false,
+    "gkp": false,
     "governance_master": true
   },
   "read": {
@@ -195,6 +195,11 @@
     "ref_link": {
       "llm": "CLAUDE",
       "model": "claude-haiku-5-5"
+    },
+    "ref_link_retry": {
+      "_about": "Searches once more for a document's official link, only when ref_link found nothing (stronger, costs more).",
+      "llm": "CLAUDE",
+      "model": "claude-sonnet-5-5"
     },
     "fallback": {
       "_about": "When Claude has no credit / the key expired or is wrong, the run does not stop: that call and every later Claude call use the Gemini model listed here. second_opinion: the other Gemini model, used when both models of a pair (generator_1 + generator_2, verifier_1 + verifier_2) would be the same.",

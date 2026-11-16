@@ -47,6 +47,9 @@ class Cur:
             ver, cl = p
             self.res = [(max([r["mkp_version"] for r in ROWS if r["version_id"] == ver and r["cluster"] == cl
                               and r["type"] in ("BATCH", "SUM")] or [0]),)]
+        elif q.startswith("SELECT mkp_id, element, results"):
+            self.res = [(r["mkp_id"], r["element"], r["results"]) for r in ROWS
+                        if r["type"] == "MKP" and r["is_latest"] and r["mkp_id"]]
         elif q.startswith("UPDATE"):
             ver, els, cl = p
             for r in ROWS:
@@ -92,3 +95,21 @@ def test_rerun_inserts_next_version_and_keeps_history():
     latest = [r for r in ROWS if r["is_latest"]]
     assert len(ROWS) == 12 and len(latest) == 4
     assert all(r["mkp_version"] == 3 for r in latest)
+
+
+def test_mkp_id_unique_across_laws():
+    """Two laws with the same concept name never share an MKP id; a re-run keeps each law's id."""
+    ROWS.clear()
+    store = MkpStore(Conn(), "public", "mkp")
+    other = [dict(r, CLUSTER="C_X_S8", ELEMENT=r["ELEMENT"].replace("S7", "S8"),
+                  RESULTS=r["RESULTS"].replace("X_S7", "X_S8")) for r in copy.deepcopy(STD)]
+    a = store.commit("X", "V_1", "C_X_S7", copy.deepcopy(STD), {}, "X_S7", "sha", "h", "dh", lambda t: None)
+    b = store.commit("X", "V_1", "C_X_S8", copy.deepcopy(other), {}, "X_S8", "sha", "h", "dh", lambda t: None)
+    assert a["mkp_ids"] == {"X_S7#TEXT": "M_AB"} and b["mkp_ids"] == {"X_S8#TEXT": "M_AB2"}
+    changed = copy.deepcopy(other)
+    changed[1]["RESULTS"] = changed[1]["RESULTS"].replace('"t1"', '"t2"')
+    changed[2]["RESULTS"] = changed[2]["RESULTS"].replace('"t1"', '"t2"')
+    c = store.commit("X", "V_1", "C_X_S8", changed, {}, "X_S8", "sha", "h", "dh", lambda t: None)
+    assert c["mkp_ids"] == {"X_S8#TEXT": "M_AB2"}          # new text, same concept -> keeps its id
+    latest = {r["element"]: r["mkp_id"] for r in ROWS if r["is_latest"] and r["type"] == "MKP"}
+    assert latest == {"X_S7#TEXT": "M_AB", "X_S8#TEXT": "M_AB2"}

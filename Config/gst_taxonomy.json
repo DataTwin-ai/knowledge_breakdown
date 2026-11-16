@@ -156,6 +156,27 @@
       "CGSTA17_S2_C17",
       "CGSTA17_S7_SS1_Ca"
      ]
+    },
+    {
+     "tsg_id": "TSG01_07",
+     "name": "Goods or Services Characterisation by Notification",
+     "definition": "Government power to specify by notification, on Council recommendation, that transactions are treated as a supply of services and not of goods.",
+     "include": [
+      "Goods or Services Characterisation by Notification",
+      "transactions notified as services",
+      "Council-recommended notification of treatment",
+      "characterisation of a transaction as goods or services"
+     ],
+     "exclude": [
+      "Supply with consideration (TSG01_01)",
+      "Composite and mixed supply (TSG01_04)",
+      "Neither supply, Schedule III (TSG01_03)",
+      "HSN / SAC classification (TSG02_01)"
+     ],
+     "key_provisions": [],
+     "anchors": [],
+     "created_by": "GKP",
+     "created_for": "CGSTA17_S7_SS3_Cb#TEXT"
     }
    ]
   },

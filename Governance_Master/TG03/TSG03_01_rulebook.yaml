@@ -1,0 +1,125 @@
+# GOVERNANCE MASTER TSG03_01 Intra / inter-State (TG03 Location & Tax Type)
+# LAW ARC - 2 laws - status APPROVED
+name: TSG03_01 Intra / inter-State - GOVERNANCE MASTER rulebook
+version: TSG03_01
+facts:
+  F_SISS:
+    name: Supply Intra State Status
+    type: CODE
+    options:
+    - INTRA_STATE
+    - INTER_STATE
+    - UNKNOWN
+    tier: T0
+  F_TCM:
+    name: Tax Collection Method
+    type: TEXT
+    tier: T0
+  F_TPS:
+    name: Tax Payer Status
+    type: CODE
+    options:
+    - TAXABLE_PERSON
+    - OTHER_PERSON
+    - UNKNOWN
+    tier: T0
+  F_SOSL:
+    name: State Of Supplier Location
+    type: TEXT
+    tier: T1
+  F_SOPOS:
+    name: State Of Place Of Supply
+    type: TEXT
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_LOCGAST_A_SIAISS:
+    statement: The supply is an intra-State supply
+    order: LOW
+    rule: F_SISS = 'INTRA_STATE'
+    handler: python
+  M_LOCGAST_A_TCAP:
+    statement: The tax is collected in such manner as may be prescribed
+    order: HIGH
+    interpretation: Is the tax collected in the manner laid down by the rules prescribed for its collection?
+    grounding:
+    - F_TCM
+    handler: light
+  M_LOCGAST_A_TPPT:
+    statement: The tax is paid by the taxable person
+    order: HIGH
+    interpretation: Is the person who pays the tax the taxable person liable to pay it?
+    grounding:
+    - F_TPS
+    handler: light
+  M_ECOPNST_A_SIIS:
+    statement: The supply of the services is an intra-State supply
+    order: HIGH
+    interpretation: On the supplier's State and the State of the place of supply, is this supply of services an intra-State
+      supply as the Act's own provisions determine?
+    grounding:
+    - F_SOSL
+    - F_SOPOS
+    handler: heavy
+groups: {}
+outcomes:
+  M_LOCGAST_LE_SIAISS:
+    outcome: SUPPLY_IS_AN_INTRA_STATE_SUPPLY
+    expr: M_LOCGAST_A_SIAISS
+    module: M_LOCGAST
+    description: The supply is an intra-State supply (Section 9(1), part of the law)
+  M_LOCGAST_LE_TCAP:
+    outcome: TAX_COLLECTED_AS_PRESCRIBED
+    expr: M_LOCGAST_A_TCAP
+    module: M_LOCGAST
+    description: The tax is collected in such manner as may be prescribed (Section 9(1), part of the law)
+  M_LOCGAST_LE_TPPT:
+    outcome: TAXABLE_PERSON_PAYS_TAX
+    expr: M_LOCGAST_A_TPPT
+    module: M_LOCGAST
+    description: The tax is paid by the taxable person (Section 9(1), part of the law)
+  M_ECOPNST_LE_SIIS:
+    outcome: SUPPLY_IS_INTRA_STATE
+    expr: M_ECOPNST_A_SIIS
+    module: M_ECOPNST
+    description: The supply of the services is an intra-State supply (Section 9(5), part of the law)
+products:
+  M_LOCGAST_PD_SIAISS:
+    statement: The supply is an intra-State supply
+  M_LOCGAST_PD_TCAP:
+    statement: The tax is collected in such manner as may be prescribed
+  M_LOCGAST_PD_TPPT:
+    statement: The tax is paid by the taxable person
+  M_ECOPNST_PD_SIIS:
+    statement: The supply of the services is an intra-State supply
+compounds:
+- id: C_LOCGAST
+  question: The supply is an intra-State supply; The tax is collected in such manner as may be prescribed; The tax is paid
+    by the taxable person? (Section 9(1))
+  includes:
+  - M_LOCGAST_LE_SIAISS
+  - M_LOCGAST_LE_TCAP
+  - M_LOCGAST_LE_TPPT
+  produces:
+  - product: M_LOCGAST_PD_SIAISS
+    from:
+    - M_LOCGAST_LE_SIAISS
+  - product: M_LOCGAST_PD_TCAP
+    from:
+    - M_LOCGAST_LE_TCAP
+  - product: M_LOCGAST_PD_TPPT
+    from:
+    - M_LOCGAST_LE_TPPT
+- id: C_ECOPNST
+  question: The supply of the services is an intra-State supply? (Section 9(5))
+  includes:
+  - M_ECOPNST_LE_SIIS
+  produces:
+  - product: M_ECOPNST_PD_SIIS
+    from:
+    - M_ECOPNST_LE_SIIS
+time:
+  law_date: F_DOI

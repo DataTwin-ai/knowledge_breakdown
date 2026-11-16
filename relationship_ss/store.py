@@ -34,6 +34,11 @@ class RelationStore:
         cur.execute("SELECT to_regclass(%s)", (f'"{self.schema}"."{name}"',))
         return cur.fetchone()[0] is not None
 
+    def _cols(self, cur, name: str) -> set:
+        cur.execute("SELECT column_name FROM information_schema.columns WHERE table_schema=%s AND table_name=%s",
+                    (self.schema, name))
+        return {r[0] for r in cur.fetchall()}
+
     def ensure(self) -> None:
         with self.conn.cursor() as cur:
             cur.execute(sql.SQL("""CREATE TABLE IF NOT EXISTS {} (
@@ -50,7 +55,8 @@ class RelationStore:
                 if old in have and new not in have:
                     cur.execute(sql.SQL("ALTER TABLE {} RENAME COLUMN {} TO {}").format(
                         self.t(), sql.Identifier(old), sql.Identifier(new)))
-            for col, typ in (("rel_id", "bigserial"), ("link", "text NOT NULL DEFAULT 'DIRECT'"), ("via", "text")):
+            for col, typ in (("rel_id", "bigserial"), ("link", "text NOT NULL DEFAULT 'DIRECT'"), ("via", "text"),
+                             ("handler", "text"), ("in_force", "text")):
                 if col not in have:
                     cur.execute(sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS {} " + typ).format(
                         self.t(), sql.Identifier(col)))
@@ -75,8 +81,8 @@ class RelationStore:
             if not self._has(cur, self.n["akp"]):
                 return {}
             cur.execute(sql.SQL("""SELECT source_mkp, max(version_id), max(akp_version), count(*),
-                                          md5(string_agg(type || ':' || element || ':' || COALESCE(same_akp_id, ''), ','
-                                                         ORDER BY type, element))
+                                          md5(string_agg(type || ':' || akp_id || ':' || COALESCE(same_akp_id, ''), ','
+                                                         ORDER BY type, akp_id))
                                    FROM {} WHERE is_latest AND source_mkp LIKE %s GROUP BY source_mkp""").format(
                 self.t(self.n["akp"])), (like,))
             for m, v, av, n, h in cur.fetchall():
@@ -110,11 +116,14 @@ class RelationStore:
         out = {m: {"akp": [], "edges": [], "gkp": [], "gm": []} for m in molecules}
         facts, same_ids = set(), set()
         with self.conn.cursor() as cur:
-            cur.execute(sql.SQL("SELECT source_mkp, type, element, concept, results, same_akp_id FROM {} "
+            mid_col = sql.SQL("mkp_id") if "mkp_id" in self._cols(cur, self.n["akp"]) else sql.SQL("NULL")
+            cur.execute(sql.SQL("SELECT source_mkp, type, akp_id, concept, results, same_akp_id, {} FROM {} "
                                 "WHERE is_latest AND source_mkp = ANY(%s) ORDER BY source_mkp, ordinal")
-                        .format(self.t(self.n["akp"])), (molecules,))
-            for m, t, el, c, res, same in cur.fetchall():
+                        .format(mid_col, self.t(self.n["akp"])), (molecules,))
+            for m, t, el, c, res, same, mid in cur.fetchall():
                 out[m]["akp"].append({"type": t, "element": el, "concept": c, "results": res, "same_akp_id": same})
+                if mid:
+                    out[m].setdefault("mkp_id", mid)        # the MKP's short id (M_SIAFOS) names its node
                 if same:
                     same_ids.add(same)
             if self._has(cur, self.n["fact_edge"]):
@@ -139,12 +148,16 @@ class RelationStore:
                 facts.update(items(fields(r["results"] or "").get("facts")))
             names: Dict[str, str] = {}
             if facts and self._has(cur, self.n["fact"]):
-                cur.execute(sql.SQL("SELECT fact_id, name FROM {} WHERE fact_id = ANY(%s)").format(self.t(self.n["fact"])),
-                            (sorted(facts),))
-                names = {f: n for f, n in cur.fetchall()}
+                concept = sql.SQL("concept") if "concept" in self._cols(cur, self.n["fact"]) else sql.SQL("''")
+                cur.execute(sql.SQL("SELECT fact_id, name, {} FROM {} WHERE fact_id = ANY(%s)").format(
+                    concept, self.t(self.n["fact"])), (sorted(facts),))
+                # the fact's 2-3 word concept goes with its name: "Form Of Supply · Supply Form"
+                same = lambda a, b: " ".join(w for w in str(a).lower().split() if w not in ("of", "the")) == \
+                    " ".join(w for w in str(b).lower().split() if w not in ("of", "the"))
+                names = {f: f"{n} · {c}" if c and not same(c, n) else n for f, n, c in cur.fetchall()}
             same: Dict[str, dict] = {}
             if same_ids:                         # A_REF: the atom it is the SAME as (in another MKP)
-                cur.execute(sql.SQL("SELECT DISTINCT ON (akp_id) akp_id, source_mkp, element, results FROM {} "
+                cur.execute(sql.SQL("SELECT DISTINCT ON (akp_id) akp_id, source_mkp, akp_id, results FROM {} "
                                     "WHERE is_latest AND akp_id = ANY(%s) ORDER BY akp_id, akp_version DESC")
                             .format(self.t(self.n["akp"])), (sorted(same_ids),))
                 from .build import fields
@@ -191,9 +204,16 @@ class RelationStore:
         self.conn.commit()
         return n
 
-    def latest_rows(self) -> List[dict]:
-        cols = ("mkp",) + COLS
+    def now(self):
         with self.conn.cursor() as cur:
-            cur.execute(sql.SQL("SELECT {} FROM {} WHERE is_latest ORDER BY mkp, from_type, from_id").format(
-                sql.SQL(", ").join(map(sql.Identifier, cols)), self.t()))
-            return [dict(zip(cols, r)) for r in cur.fetchall()]
+            cur.execute("SELECT now()")
+            return cur.fetchone()[0]
+
+    def latest_rows(self, fresh_since=None) -> List[dict]:
+        """The latest rows; fresh = the MKP's links were (re)built at or after fresh_since (this run)."""
+        cols = ("mkp", "instrument") + COLS
+        with self.conn.cursor() as cur:
+            cur.execute(sql.SQL("SELECT {}, inserted_at >= %s FROM {} WHERE is_latest ORDER BY mkp, from_type, from_id")
+                        .format(sql.SQL(", ").join(map(sql.Identifier, cols)), self.t()),
+                        (fresh_since or "infinity",))
+            return [dict(zip(cols + ("fresh",), r)) for r in cur.fetchall()]

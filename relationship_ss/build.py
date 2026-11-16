@@ -30,18 +30,20 @@ DERIVED - fact first:
     its READS row already says it. "What needs this fact" = relation IN ('READS', 'NEEDS').
 
 Ids: facts, TSGs, TGs, governance masters, provisions and MKPs keep their own id (the same in every law - that is
-what joins the laws). Atom, group, LE, PD, OR, CT and TC ids repeat across laws, so their id is <MKP>::<element>,
-the same as akp.akp_id.
+what joins the laws). Atom, group, LE, PD, OR, CT and TC ids are the abbreviated akp_id (M_SIAFOS_A_SIAS, unique in
+all laws); an older short id that repeats across laws is kept as <MKP>::<element>.
 """
 from __future__ import annotations
 
 import re
 from typing import Dict, List, Set, Tuple
 
-BUILD_VERSION = "3"                         # part of every fingerprint: a new version rebuilds every MKP once
-TOKEN = re.compile(r"\b(?:A|G|PD|LE|OR|CT|TC|F)_[A-Z0-9_]+\b")
+BUILD_VERSION = "6"                         # 4: abbreviated ids (notes section 3); 5: handler + in_force of atoms; 6: MKP short id, fact concept                         # part of every fingerprint: a new version rebuilds every MKP once
+TOKEN = re.compile(r"\b(?:M_[A-Z0-9]+_(?:A|G|PD|LE|OR|CT|TC)_[A-Z0-9]+|(?:A|G|PD|LE|OR|CT|TC|F)_[A-Z0-9_]+)\b")
+ABBREVIATED = re.compile(r"^M_[A-Z0-9]+_(?:A|G|PD|LE|OR|CT|TC)_[A-Z0-9]+$")
 KIND = {"A": "ATOM", "A_REF": "ATOM", "G": "GROUP", "PD": "PD", "LE": "LE", "OR": "OR", "CT": "CT", "TC": "TC"}
-COLS = ("from_type", "from_id", "from_name", "relation", "to_type", "to_id", "to_name", "link", "via")
+COLS = ("from_type", "from_id", "from_name", "relation", "to_type", "to_id", "to_name", "link", "via",
+        "handler", "in_force")                 # handler / in_force: of the atom a row starts from (observer filters)
 GLOBAL = {"FACT", "TSG", "TG", "GOVERNANCE_MASTER", "PROVISION", "MKP"}
 
 
@@ -56,9 +58,12 @@ def items(value: str) -> List[str]:
 
 
 def links(mkp: str, akp: List[dict], edges: List[dict], gkp: List[dict], gm: List[dict],
-          fact_names: Dict[str, str], same: Dict[str, dict] = None) -> List[dict]:
-    """All kp_relation rows of one MKP. akp rows: type, element, concept, results, same_akp_id."""
+          fact_names: Dict[str, str], same: Dict[str, dict] = None, mkp_id: str = "") -> List[dict]:
+    """All kp_relation rows of one MKP. akp rows: type, element, concept, results, same_akp_id.
+    mkp: the MKP key (citation_key#part, the kp_relation.mkp column); mkp_id: its short id (M_SIAFOS), the id of
+    its MKP node - the citation (Section 7(1)(a)) is the node's name."""
     same = same or {}
+    node = mkp_id or mkp
     kind: Dict[str, str] = {}
     name: Dict[str, str] = {}
     flds: Dict[str, Dict[str, str]] = {}
@@ -77,9 +82,12 @@ def links(mkp: str, akp: List[dict], edges: List[dict], gkp: List[dict], gm: Lis
     seen: Set[Tuple] = set()
 
     def ident(t: str, x: str) -> Tuple[str, str]:
-        """(full id, name) of a node: global ids as they are, MKP elements as <MKP>::<element>."""
+        """(full id, name) of a node: global ids as they are, MKP elements as <MKP>::<element>.
+        An abbreviated element id (M_SIAFOS_A_SIAS) is unique in all laws, so it is used as it is."""
         if t in GLOBAL:
             return x, ""
+        if ABBREVIATED.match(x):
+            return x, name.get(x, x)
         return f"{mkp}::{x}", name.get(x, x)
 
     def add(ft, fx, rel, tt, tx, to_name="", from_name=None, via=""):
@@ -143,20 +151,20 @@ def links(mkp: str, akp: List[dict], edges: List[dict], gkp: List[dict], gm: Lis
                     add("CT", el, "TRIGGERED_BY", "FACT", fact, fact_names.get(fact, fact))
                 reads.setdefault(el, set()).add(fact)
         if k in ("LE", "PD", "OR", "CT", "TC"):
-            add(k, el, "PART_OF", "MKP", mkp, cite)
+            add(k, el, "PART_OF", "MKP", node, cite)
     for r in akp:
         t, el, f = r["type"], r["element"], fields(r.get("results") or "")
         if t == "A_REF" and r.get("same_akp_id") in same:
             s = same[r["same_akp_id"]]
             f_id, f_nm = ident("ATOM", el)
-            t_id = f"{s['source_mkp']}::{s['element']}"
+            t_id = s["element"] if ABBREVIATED.match(s["element"]) else f"{s['source_mkp']}::{s['element']}"
             if ("ATOM", f_id, "SAME_AS", "ATOM", t_id) not in seen:
                 seen.add(("ATOM", f_id, "SAME_AS", "ATOM", t_id))
                 out.append({"from_type": "ATOM", "from_id": f_id, "from_name": f_nm[:300], "relation": "SAME_AS",
                             "to_type": "ATOM", "to_id": t_id, "to_name": str(s.get("label") or s["element"])[:300],
                             "link": "DIRECT", "via": ""})
         if t == "LK" and f.get("target"):
-            add("MKP", mkp, (f.get("relation") or "LINKS").upper(), "PROVISION", f["target"], f.get("kind") or "",
+            add("MKP", node, (f.get("relation") or "LINKS").upper(), "PROVISION", f["target"], f.get("kind") or "",
                 from_name=cite)
 
     # ---- NEEDS: the facts each element depends on, with the path
@@ -187,7 +195,7 @@ def links(mkp: str, akp: List[dict], edges: List[dict], gkp: List[dict], gm: Lis
             if fact not in mkp_facts or len(path) < len(mkp_facts[fact]):
                 mkp_facts[fact] = path
     for fact, path in sorted(mkp_facts.items()):
-        add("MKP", mkp, "NEEDS", "FACT", fact, fact_names.get(fact, fact), from_name=cite, via=" > ".join(path))
+        add("MKP", node, "NEEDS", "FACT", fact, fact_names.get(fact, fact), from_name=cite, via=" > ".join(path))
 
     # ---- TSGs (GKP), TGs and governance masters
     for g in gkp:
@@ -202,8 +210,18 @@ def links(mkp: str, akp: List[dict], edges: List[dict], gkp: List[dict], gm: Lis
                 via=" > ".join(path + [tsg]))
     for g in gm:
         gname = g.get("tsg_name") or g["tsg_id"]
-        add("MKP", mkp, "USED_IN", "GOVERNANCE_MASTER", g["tsg_id"], gname, from_name=cite)
+        add("MKP", node, "USED_IN", "GOVERNANCE_MASTER", g["tsg_id"], gname, from_name=cite)
         for fact, path in sorted(mkp_facts.items()):
             add("GOVERNANCE_MASTER", g["tsg_id"], "NEEDS", "FACT", fact, fact_names.get(fact, fact), from_name=gname,
-                via=" > ".join(path + [mkp, g["tsg_id"]]))
+                via=" > ".join(path + [node, g["tsg_id"]]))
+    # who checks each atom and when it is in force (notes sections 6, 12, 14): on every row that starts at the atom
+    attrs = {}
+    for el, k in kind.items():
+        if k == "ATOM":
+            f = flds.get(el) or {}
+            vf, vt = f.get("valid_from") or "", f.get("valid_to") or ""
+            attrs[ident("ATOM", el)[0]] = (f.get("handler") or "", f"{vf}..{vt}" if vf or vt else "")
+    for r in out:
+        h, w = attrs.get(r["from_id"], ("", "")) if r["from_type"] == "ATOM" else ("", "")
+        r["handler"], r["in_force"] = h, w
     return out

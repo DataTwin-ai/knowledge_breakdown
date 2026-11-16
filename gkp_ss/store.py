@@ -3,15 +3,16 @@
 gkp            one row per (atom, subgroup) membership - versioned like MKP / AKP:
                         instrument, version_id, source_mkp, mkp_id, akp_id, akp_element, akp_type, concept,
                         tg_id, tg_name, tsg_id, tsg_name,
-                        status APPROVED / REVIEW / UNCLASSIFIED, method (AGREE / JUDGE / SAME_INHERITED /
-                        AMENDMENT_RULE / AMENDMENT_TARGET / NONE), model_1, model_2, reason, scores, sources,
+                        status APPROVED / REVIEW / UNCLASSIFIED, method (AKP_GROUP_CONFIRMED / AKP_GROUP_CONFIRMED_LLM /
+                        AKP_GROUP_CHANGED / AGREE / JUDGE / SAME_INHERITED / AMENDMENT_RULE / AMENDMENT_TARGET / NONE),
+                        model_1, model_2, reason, scores, python_score, sources,
                         taxonomy_version, input_sha256, gkp_version, is_latest, inserted_at
 gkp_cache          per MKP + input hash (as before)      gkp_llm_cache   raw model answers
-gkp_tg18_proposals  proposals for new TG18 subgroups (PENDING / APPROVED / REJECTED / COVERED)
 gkp_coverage       anchor provisions whose atoms did not land in the subgroup that names them
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from typing import Dict, List, Optional
@@ -20,7 +21,7 @@ from psycopg2 import sql
 
 COLS = ("instrument", "version_id", "source_mkp", "mkp_id", "akp_id", "akp_element", "akp_type", "concept", "tg_id",
         "tg_name", "tsg_id", "tsg_name", "status", "method", "concept_score", "atom_score", "sources",
-        "model_1", "model_2", "reason", "taxonomy_version", "input_sha256")
+        "model_1", "model_2", "reason", "taxonomy_version", "input_sha256", "python_score")
 
 
 class GkpStore:
@@ -64,6 +65,7 @@ class GkpStore:
                          ("model_1", "text"), ("model_2", "text"), ("taxonomy_version", "text"),
                          ("gkp_version", "integer NOT NULL DEFAULT 1"), ("is_latest", "boolean NOT NULL DEFAULT true"),
                          ("akp_version", "integer"),
+                         ("python_score", "double precision"),     # notes section 1: the Python check of AKP's group
                          ("inserted_at", "timestamptz NOT NULL DEFAULT now()")):
             if col not in existing:
                 self.run(sql.SQL("ALTER TABLE {} ADD COLUMN {} " + typ).format(G, sql.Identifier(col)))
@@ -84,13 +86,6 @@ class GkpStore:
         self.run(sql.SQL("""CREATE TABLE IF NOT EXISTS {} (cache_key text PRIMARY KEY, model text, response text,
             inserted_at timestamptz NOT NULL DEFAULT now())""").format(self.t(f"{self.p}_llm_cache")))
         self.run(sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS unit_key text").format(self.t(f"{self.p}_llm_cache")))
-        self.run(sql.SQL("""CREATE TABLE IF NOT EXISTS {} (instrument text NOT NULL, version_id text NOT NULL,
-            source_mkp text NOT NULL, akp_element text NOT NULL, proposal_id text NOT NULL, name text NOT NULL,
-            definition text NOT NULL, include_json jsonb NOT NULL, exclude_json jsonb NOT NULL, evidence text NOT NULL,
-            reason text NOT NULL, status text NOT NULL DEFAULT 'PENDING', input_sha256 text NOT NULL,
-            updated_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY (instrument, version_id, source_mkp, akp_element))""")
-                 .format(self.t(f"{self.p}_tg18_proposals")))
-        self.run(sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS approved_tsg_id text").format(self.t(f"{self.p}_tg18_proposals")))
         self.run(sql.SQL("""CREATE TABLE IF NOT EXISTS {} (instrument text NOT NULL, version_id text NOT NULL,
             tsg_id text NOT NULL, anchor text NOT NULL, atoms integer NOT NULL, approved integer NOT NULL,
             status text NOT NULL, inserted_at timestamptz NOT NULL DEFAULT now(),
@@ -147,8 +142,8 @@ class GkpStore:
 
     # ---------------- AKP input
     def mkps(self, instrument: str, version: str) -> Dict[str, List[dict]]:
-        rows = self.run(sql.SQL("""SELECT source_mkp, mkp_id, ordinal, type, element, concept, results,
-            concept_embedding::text, atom_embedding::text, COALESCE(akp_id, source_mkp || '::' || element), same_akp_id
+        rows = self.run(sql.SQL("""SELECT source_mkp, mkp_id, ordinal, type, akp_id, concept, results,
+            concept_embedding::text, atom_embedding::text, akp_id, same_akp_id
             FROM {} WHERE instrument=%s AND version_id=%s AND validation_status='APPROVED' AND COALESCE(is_latest, true)
             ORDER BY source_mkp, ordinal""").format(self.t(self.akp_table)), (instrument, version), fetch=True)
         out: Dict[str, List[dict]] = {}
@@ -158,8 +153,8 @@ class GkpStore:
         return out
 
     def canonical_atom(self, akp_id: str) -> Optional[dict]:
-        r = self.run(sql.SQL("""SELECT concept, results, concept_embedding::text, atom_embedding::text, source_mkp, element
-            FROM {} WHERE COALESCE(akp_id, source_mkp || '::' || element)=%s AND type='A' AND validation_status='APPROVED'
+        r = self.run(sql.SQL("""SELECT concept, results, concept_embedding::text, atom_embedding::text, source_mkp, akp_id
+            FROM {} WHERE akp_id=%s AND type='A' AND validation_status='APPROVED'
             AND COALESCE(is_latest, true) LIMIT 1""").format(self.t(self.akp_table)), (akp_id,), fetch=True)
         return dict(zip(("concept", "results", "concept_vector", "atom_vector", "source_mkp", "element"), r[0])) if r else None
 
@@ -193,8 +188,8 @@ class GkpStore:
             return []
         try:
             return self.run(sql.SQL("""SELECT g.tsg_id, n.sim, n.akp_id FROM (
-                    SELECT a.instrument, a.version_id, a.source_mkp, a.element,
-                           COALESCE(a.akp_id, a.source_mkp || '::' || a.element) AS akp_id,
+                    SELECT a.instrument, a.version_id, a.source_mkp, a.akp_id AS element,
+                           a.akp_id,
                            1 - (a.atom_embedding <=> %s::vector) AS sim
                     FROM {} a WHERE a.type='A' AND a.is_latest AND a.validation_status='APPROVED' AND a.instrument<>%s
                       AND a.atom_embedding IS NOT NULL AND vector_dims(a.atom_embedding) = vector_dims(%s::vector)
@@ -284,37 +279,21 @@ class GkpStore:
             self.conn.rollback()
             raise
 
-    # ---------------- TG18 proposals
-    def save_proposals(self, instrument, version, mkp, fingerprint, proposals: List[dict]) -> None:
-        for p in proposals:
-            self.run(sql.SQL("""INSERT INTO {} (instrument, version_id, source_mkp, akp_element, proposal_id, name, definition,
-                include_json, exclude_json, evidence, reason, status, input_sha256)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s::jsonb,%s,%s,'PENDING',%s)
-                ON CONFLICT (instrument, version_id, source_mkp, akp_element) DO UPDATE SET proposal_id=EXCLUDED.proposal_id,
-                name=EXCLUDED.name, definition=EXCLUDED.definition, include_json=EXCLUDED.include_json,
-                exclude_json=EXCLUDED.exclude_json, evidence=EXCLUDED.evidence, reason=EXCLUDED.reason, status='PENDING',
-                input_sha256=EXCLUDED.input_sha256, updated_at=now()""").format(self.t(f"{self.p}_tg18_proposals")),
-                     (instrument, version, mkp, p["element"], p["proposal_id"], p["name"], p["definition"],
-                      json.dumps(p["include"]), json.dumps(p["exclude"]), p["evidence"], p["reason"], fingerprint))
+    # ---------------- calibration of the Python score (gkp_cache, version_id CALIBRATION)
+    def calibration_put(self, instrument: str, source_mkp: str, pairs: List[list]) -> None:
+        """(similarity, clues ok, the LLM kept the AKP group) of the atoms the verifiers checked in this MKP."""
+        sha = hashlib.sha256(json.dumps(pairs, sort_keys=True).encode()).hexdigest()
+        self.run(sql.SQL("""INSERT INTO {} (instrument, version_id, source_mkp, input_sha256, results_json)
+            VALUES (%s, 'CALIBRATION', %s, %s, %s::jsonb) ON CONFLICT (instrument, version_id, source_mkp, input_sha256)
+            DO UPDATE SET results_json=EXCLUDED.results_json, updated_at=now()""").format(self.t(f"{self.p}_cache")),
+                 (instrument, source_mkp, sha, json.dumps({"pairs": pairs})))
         self.conn.commit()
 
-    def mark_covered(self, instrument, version, mkp, rows):
-        done = sorted({r["akp_element"] for r in rows if r["status"] == "APPROVED"})
-        if done:
-            self.run(sql.SQL("""UPDATE {} SET status='COVERED', updated_at=now() WHERE instrument=%s AND version_id=%s
-                AND source_mkp=%s AND akp_element = ANY(%s) AND status='PENDING'""").format(self.t(f"{self.p}_tg18_proposals")),
-                     (instrument, version, mkp, done))
-            self.conn.commit()
-
-    def proposal(self, proposal_id: str) -> Optional[dict]:
-        r = self.run(sql.SQL("""SELECT proposal_id, name, definition, include_json, exclude_json, status FROM {}
-            WHERE proposal_id=%s LIMIT 1""").format(self.t(f"{self.p}_tg18_proposals")), (proposal_id,), fetch=True)
-        return dict(zip(("proposal_id", "name", "definition", "include", "exclude", "status"), r[0])) if r else None
-
-    def set_proposal_status(self, proposal_id: str, status: str, tsg_id: Optional[str] = None) -> None:
-        self.run(sql.SQL("UPDATE {} SET status=%s, approved_tsg_id=%s, updated_at=now() WHERE proposal_id=%s")
-                 .format(self.t(f"{self.p}_tg18_proposals")), (status, tsg_id, proposal_id))
-        self.conn.commit()
+    def calibration_rows(self) -> List[list]:
+        rows = self.run(sql.SQL("""SELECT DISTINCT ON (instrument, source_mkp) results_json FROM {}
+            WHERE version_id='CALIBRATION' ORDER BY instrument, source_mkp, updated_at DESC""")
+                        .format(self.t(f"{self.p}_cache")), fetch=True)
+        return [p for (r,) in rows for p in (r or {}).get("pairs", [])]
 
     # ---------------- coverage: anchor provisions -> did their atoms land in the subgroup?
     def coverage(self, instrument: str, version: str, subs: List[dict]) -> List[tuple]:
@@ -345,9 +324,7 @@ class GkpStore:
             tg_id, tg_name, tsg_id, tsg_name, status, method, concept_score, atom_score, reason, model_1, model_2,
             gkp_version, inserted_at FROM {} WHERE is_latest ORDER BY instrument, source_mkp, akp_element, tsg_id""")
                      .format(self.t(self.p)), fetch=True)
-        p = self.run(sql.SQL("""SELECT instrument, version_id, source_mkp, akp_element, proposal_id, name, definition, evidence,
-            reason, status, approved_tsg_id FROM {} ORDER BY instrument, source_mkp, akp_element""")
-                     .format(self.t(f"{self.p}_tg18_proposals")), fetch=True)
+        p = []                          # gkp_tg18_proposals removed (notes section 9): GKP CREATE grows gkp_taxonomy
         c = self.run(sql.SQL("SELECT instrument, version_id, tsg_id, anchor, atoms, approved, status, inserted_at FROM {} "
                              "ORDER BY status, instrument, tsg_id, anchor").format(self.t(f"{self.p}_coverage")), fetch=True)
         return g, p, c

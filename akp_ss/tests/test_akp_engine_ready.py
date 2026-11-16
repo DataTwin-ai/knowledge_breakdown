@@ -14,8 +14,8 @@ def atom(el, results):
 
 
 def test_good_atoms_pass():
-    rows = [FACT, atom("A_BARTER", "statement: \"x\"; order: LOW; facts: [F_SUPPLY_FORM]; rule: \"F_SUPPLY_FORM = 'BARTER'\""),
-            atom("A_OTHER", "statement: \"x\"; order: HIGH; facts: [F_SUPPLY_FORM]; interpretation: \"Is it another form?\"")]
+    rows = [FACT, atom("A_BARTER", "statement: \"x\"; order: LOW; handler: python; facts: [F_SUPPLY_FORM]; rule: \"F_SUPPLY_FORM = 'BARTER'\""),
+            atom("A_OTHER", "statement: \"x\"; order: HIGH; handler: heavy; facts: [F_SUPPLY_FORM]; interpretation: \"Is it another form?\"")]
     assert engine_ready(rows) == []
 
 
@@ -24,11 +24,23 @@ def test_step_number_as_order_is_refused():
 
 
 def test_value_not_in_options_and_bad_grammar_are_refused():
-    errs = engine_ready([FACT, atom("A_B", "statement: \"x\"; order: LOW; facts: [F_SUPPLY_FORM]; rule: \"F_SUPPLY_FORM = 'SWAP'\""),
-                         atom("A_C", "statement: \"x\"; order: LOW; facts: [F_SUPPLY_FORM]; rule: \"F_SUPPLY_FORM IN (SALE)\"")])
+    errs = engine_ready([FACT, atom("A_B", "statement: \"x\"; order: LOW; handler: python; facts: [F_SUPPLY_FORM]; rule: \"F_SUPPLY_FORM = 'SWAP'\""),
+                         atom("A_C", "statement: \"x\"; order: LOW; handler: python; facts: [F_SUPPLY_FORM]; rule: \"F_SUPPLY_FORM IN (SALE)\"")])
     assert any(e.startswith("VALUE: A_B") for e in errs) and any(e.startswith("RULE: A_C") for e in errs)
 
 
 def test_high_atom_needs_question_and_fact():
     errs = engine_ready([atom("A_H", 'statement: "x"; order: HIGH')])
     assert any(e.startswith("QUESTION: A_H") for e in errs) and any(e.startswith("FACTS: A_H") for e in errs)
+
+
+def test_handler_must_fit_the_order():
+    bad = [FACT, atom("A_BARTER", "statement: \"x\"; order: LOW; handler: heavy; facts: [F_SUPPLY_FORM]; "
+                                  "rule: \"F_SUPPLY_FORM = 'BARTER'\""),
+           atom("A_OTHER", "statement: \"x\"; order: HIGH; facts: [F_SUPPLY_FORM]; interpretation: \"Is it another form?\"")]
+    errs = engine_ready(bad)
+    assert any("A_BARTER handler heavy does not fit order LOW" in e for e in errs)
+    assert any("A_OTHER handler must be python, light or heavy" in e for e in errs)
+    light = [FACT, atom("A_OTHER", "statement: \"x\"; order: HIGH; handler: light; facts: [F_SUPPLY_FORM]; "
+                                   "interpretation: \"Is it another form?\"")]
+    assert engine_ready(light) == []

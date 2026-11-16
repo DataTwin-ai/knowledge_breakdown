@@ -124,8 +124,18 @@ downloaded at the start (`features.download_missing_pdfs` + `access.internet`).
    "section 15 of the Act", "rule 27 of the CGST Rules"), each with one fixed ID made by Python
    (`N_CTR_04_2018`, `CIR_47_2018`, `ACT_31_2018`, `CGSTR17`). Saved in `mkp.self_refs` / `mkp.cross_refs`,
    `mkp_ref` (one row per reference) and `ref_document` (one row per outside document, with its status).
-   A footnote "Inserted / Substituted by …" is AMENDING: its text is already inside the consolidated law, so it is
-   SKIPPED unless `features.push_amending_notifications`.
+   The title is the document's FULL name (from the footnote's `instrument` that IKP read, e.g. "The Central Goods
+   and Services Tax (Amendment) Act, 2018 (No. 31 of 2018)", or a notification with its date).
+   A footnote "Inserted / Substituted by …" is AMENDING (relation AMENDED_BY) and PENDING like any outside document.
+   **Link while splitting** (`ref_ss/link.py`, `refs.link_on_split`): a NEW outside document gets its official link
+   once - the `ref_link` model (Claude Haiku) with Claude's web search on `refs.allowed_hosts`; Python checks its
+   link, the PDF links among the search results, and opens an official page that lists the document to find its
+   PDF; only when all that finds nothing, the stronger `ref_link_retry` model (Claude Sonnet) searches once more.
+   `link_status` OK (status LINK_FOUND) / BAD (LINK_BAD) / NOT_FOUND (PENDING). `ref_engine.py` uses the same search.
+   `ref_engine.py` downloads the OK ones and finds another link for the others.
+   **Status of each law:** `mkp_ref.target_status` is INSERTED when the exact law the reference points to has a
+   saved MKP (Schedule I is PENDING until its MKPs are made), updated at the end of every run. `ref_document.status`
+   is about the document's file only.
 10. **Save** (`store.commit`, one transaction per unit) with the MKP embedding. **Versioning:**
    - each MKP element gets `mkp_version` 1, 2, 3, …;
    - only an element whose text, type or phrases changed gets the next version; the earlier row gets `is_latest=false`;
@@ -139,8 +149,8 @@ downloaded at the start (`features.download_missing_pdfs` + `access.internet`).
 | `mkp` | `cluster`, `type`, `element`, `results`, `embedding`, `version_id` (PDF hash), `mkp_id`, `mkp_version`, `is_latest`, `run_id`, `inserted_at`, `source_version` (IKP version), `qc_status`, `doc_type`, `instrument_code` |
 | `mkp_cache` | generator_1 / generator_2 / Standard rows per unit and input hash |
 | `mkp_llm_cache` | Raw model answers (`unit_key` = the unit they belong to) |
-| `mkp_ref` | MKP → referenced document / provision (`scope` SELF / CROSS, `relation`, `mention`) |
-| `ref_document` | One row per outside document: `ref_id`, kind, number, year, link, `status` (PENDING, SKIPPED, LINK_BAD, VERIFIED, INSERTED, NOT_FOUND) |
+| `mkp_ref` | MKP → referenced document / provision (`scope` SELF / CROSS, `relation`, `mention`, `target_status` INSERTED / PENDING of the exact law) |
+| `ref_document` | One row per outside document: `ref_id`, kind, number, year, full title, link, `link_status` (OK / BAD / NOT_FOUND), `status` (PENDING, LINK_FOUND, LINK_BAD, VERIFIED, INSERTED, NOT_FOUND) of the file |
 
 New `mkp` columns: `group_names`, `self_refs`, `cross_refs` (JSON lists).
 
@@ -192,10 +202,10 @@ New `mkp` columns: `group_names`, `self_refs`, `cross_refs` (JSON lists).
 
 | Table | Holds |
 |---|---|
-| `akp` | `instrument`, `version_id`, `source_mkp`, `mkp_id`, `ordinal`, `type`, `element`, `concept`, `results`, `concept_embedding`, `atom_embedding`, `validation_status`, `akp_version`, `is_latest`, `inserted_at`, `mkp_version`, `tier`, `akp_id`, `same_akp_id` |
+| `akp` | `instrument`, `version_id`, `source_mkp`, `mkp_id`, `akp_id` (the short id of every row, no element column), `ordinal`, `type`, `concept`, `results`, `concept_embedding`, `atom_embedding`, `validation_status`, `akp_version`, `is_latest`, `inserted_at`, `mkp_version`, `tier`, `same_akp_id`, `group_names` (the atom's TSG ids, like `mkp.group_names`; the confirmed TG / TSG is in `gkp`) |
 | `akp_cache` | Cached results per MKP and input hash |
 | `akp_llm_cache` | Raw model answers |
-| `akp_fact` | One row per canonical fact |
+| `akp_fact` | One row per canonical fact: name, entity, type, options, nl, `aliases`, `source_kind`, `derivation`, `concept` (2-3 words) with `concept_embedding`, `embedding` (name + nl) |
 | `akp_atom_fact` | Atom → fact edges |
 | `akp_time_fact` | Amendments as time facts |
 
@@ -250,8 +260,8 @@ A governance master holds everything the Decision Graph Engine needs for one TSG
 
 | Output | What it is |
 |---|---|
-| `Governance_Master/<TG>/<TSG>/rulebook.yaml` | The governance master; the engine reads this file |
-| `report.xlsx` | Next to each governance master |
+| `Governance_Master/<TG>/<TSG>_rulebook.yaml` | The governance master; the engine reads this file (+ `<TG>/report/<TSG>_report.xlsx`) |
+| `<TG>/report/<TSG>_report.xlsx` | The report of each governance master, in its TG's report folder |
 | `Governance_Master/index.xlsx` | Every governance master |
 | `governance_master` | **Main table**: one row per element, filter by `tsg_id` |
 | `governance_master_history` | One row per change |
@@ -403,7 +413,7 @@ from the new PDF (a TSG whose only laws were dropped is not "touched" by the run
 
 ## 13. Relationship table and Fact Network page (`relationship_builder.py`, `relationship_ss/`)
 
-Run it yourself; nothing runs it automatically. No LLM.
+main.py runs it at the end of every pipeline run (`relationship.run_after_pipeline`); you can also run it yourself. No LLM.
 
 ```
 python relationship_builder.py                     new / changed MKPs only, then the page
@@ -461,3 +471,22 @@ WHERE from_id = 'CGSTA17_S7_SS1_Ca#TEXT::LE_SIAFOS' AND relation = 'NEEDS' AND i
 SELECT from_type, from_id, relation, to_type, to_id FROM kp_relation
 WHERE mkp = 'CGSTA17_S7_SS1_Ca#TEXT' AND link = 'DIRECT' AND is_latest;
 ```
+
+## 14. The 2026-11-15 rebuild (what changed, where it lives)
+
+Decided in the project notes (`claude/akp_rebuild_notes.md`); everything is re-run in the central database
+(`Credentials/.env` LEGAL_DB_NAME / LEGAL_DB_SCHEMA - IKP, MKP, AKP, GKP all use LEGAL_DB_SCHEMA when
+`ikp.schema` / `mkp.schema` are empty).
+
+| Area | What | Where |
+|---|---|---|
+| Ids | MKP `M_<acronym of the concept name>`, unique across all laws (a clash gets a second letter, then a number); every AKP element `<MKP id>_<TYPE>_<acronym>`; facts `F_<acronym>` with no prefix. The models keep their working ids; Python rewrites every id just before saving. `akp.akp_id` is the id of every row (no element column). | `kp_ids.py`, `akp_ss/ids.py`, `mkp_ss/store.py` |
+| Fact flow | layer 1: the fact list given to the model (same unit, provisions it refers to, its TSGs, nearest, most used); layer 2 (before the model): same name / saved alias -> the registered id, only when the type, entity and options fit (a same name with another type gets its own numbered id); layer 3: every new fact vs ALL registered facts, found by name + nl AND by concept; a fact with the same name but other option words goes to the model, which maps the options (`option_map`: AGREED_TO_BE_PAID -> PAYABLE, or NEW for a real new value) and Python rewrites the rules (SAME / DERIVED / NEW, Python gate on type, entity, options; a legal conclusion goes back to the models); layer 4: `python akp_engine.py --fact-review` (merge list, sheet "Fact review" of akp.xlsx) and `--fact-merge OLD=KEEP` (new AKP versions). `akp_fact` has aliases, source_kind, derivation, concept. The fact-flow numbers (reuse rate, new facts per MKP, facts used by one atom, possible duplicates) are printed after every run. SAME atoms are found by statement AND concept (`same_concept_min_similarity`, `same_concept_statement_floor`). LK rows are named by their relation (`M_IOSFC_LK_AMENDS`). | `akp_ss/facts.py`, `akp_ss/factcheck.py`, `akp_ss/review.py`, `law_arc_akp_fact_prompt.txt` |
+| SAME | candidates above 0.90, plus 0.80-0.90 when they read the same facts with the same rule; SAME and NOT SAME answers kept in akp_cache; two atoms of one law with the same facts and rule are merged. | `akp_engine.py` (`_same_band`), `akp_ss/ids.py` (`merge_same_tests`) |
+| Handler | every atom: `handler: python / light / heavy` (AKP decides while splitting, Python gate, the comparison checks it); written on every governance-master predicate. | `akp_ss/guard.py`, `governance_master_ss/build.py` |
+| Law in force | `time: law_date: F_DOI` (Date Of Invoice, `Config/governance_master_map.json` law_date) in every governance master; the AKP time step makes old-text atoms of a provision changed after `akp.gst_start` and adds `valid_from` / `valid_to` + ANY groups; time facts keep effective_from and in_force_from. | `akp_ss/timestep.py`, `law_arc_akp_time_prompt.txt` |
+| GKP | AKP's group is checked by a Python score (embedding, among the closest, MKP agrees / anchor / facts) - the verifiers only when Python is not sure, plus an audit share; `python_score` on every row; `calibrate` once, then `python gkp_engine.py --calibration`. MKP, AKP and GKP read the taxonomy from the `gkp_taxonomy` table (re-read when GKP creates a group). `gkp_tg18_proposals` removed. | `gkp_ss/score.py`, `gkp_ss/taxonomy.py` (`current`) |
+| Worker pool | `pool.max_job_chars = 0`: every unit split down to its clauses; run waves (`pool.waves`): base laws first, a wave starts when the earlier waves are done. | `kp_pool.py`, `mkp_ss/waves.py` |
+| Governance master | `Governance_Master/<TG>/<TSG>_rulebook.yaml` + `<TG>/report/<TSG>_report.xlsx` (no sub-folder per TSG; one report folder per TG). | `governance_master_engine.py` |
+| Scraper | amending documents are fetched too (`Law/Amendments`), each document once; Python number / year check, then the LLM compares the PDF with the laws that cite it; an outside document takes the groups of the laws that cite it. | `ref_engine.py`, `ref_ss/` |
+| Observer | `relationship_builder.py` runs at the end of every pipeline run (`relationship.run_after_pipeline`); the page shows facts most used first, the chain of any fact or element both ways, and filters for TSG, document, handler and "new since the last run", with each atom's time window; `relationship.share_copy_to` copies it to a folder the team opens. | `relationship_ss/`, `relationship_builder.py` |

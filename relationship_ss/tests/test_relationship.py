@@ -92,6 +92,20 @@ def test_every_type_gets_a_direct_link_to_the_fact():
     assert "CT" not in consid and "GROUP" not in consid and "LE" in consid
 
 
+def test_mkp_node_has_its_short_id_and_the_citation_as_name():
+    akp = [{"type": "MKP", "element": "M_SIAFOS", "concept": "NA", "results": "citation: Section 7(1)(a)"},
+           {"type": "LE", "element": "M_SIAFOS_LE_SI", "concept": "NA", "results": 'expr: "M_SIAFOS_A_S"'},
+           {"type": "A", "element": "M_SIAFOS_A_S", "concept": "Sale", "results": 'statement: "sale"; facts: [F_FOS]'}]
+    rows = links(M1, akp, [], [], [{"tsg_id": "TSG01_01", "tsg_name": "Supply"}], {"F_FOS": "Form Of Supply · Supply Form"},
+                 mkp_id="M_SIAFOS")
+    mkp_rows = [r for r in rows if "MKP" in (r["from_type"], r["to_type"])]
+    assert mkp_rows and all((r["from_id"] if r["from_type"] == "MKP" else r["to_id"]) == "M_SIAFOS" for r in mkp_rows)
+    part = next(r for r in rows if r["relation"] == "PART_OF")
+    assert part["to_name"] == "Section 7(1)(a)"
+    gm = next(r for r in rows if r["from_type"] == "GOVERNANCE_MASTER")
+    assert gm["via"].endswith("M_SIAFOS > TSG01_01") and gm["to_name"] == "Form Of Supply · Supply Form"
+
+
 # ---------------------------------------------------------------- with PostgreSQL
 S = "rel_test"
 
@@ -200,3 +214,16 @@ def test_old_kp_relation_is_upgraded_and_rebuilt(db):
     cols = {x[0] for x in q(c, "SELECT column_name FROM information_schema.columns WHERE table_schema=%s "
                                "AND table_name='kp_relation'", S)}
     assert {"mkp", "from_name", "to_name", "link", "via", "rel_id"} <= cols and "molecule" not in cols
+
+
+def test_atom_rows_carry_handler_and_time_window():
+    """The observer filters on who checks an atom and shows when it is in force (notes section 14)."""
+    from relationship_ss.build import links
+    akp = [{"type": "A", "element": "M_CLRM_A_POFC", "concept": "", "same_akp_id": None,
+            "results": 'statement: "The person opts"; facts: [F_PO]; handler: python; valid_from: 2019-02-01'},
+           {"type": "LE", "element": "M_CLRM_LE_C", "concept": "", "same_akp_id": None, "results": 'expr: "M_CLRM_A_POFC"'}]
+    rows = links("K#TEXT", akp, [{"atom": "M_CLRM_A_POFC", "fact_id": "F_PO"}], [], [], {"F_PO": "Person opted"})
+    atom = [r for r in rows if r["from_type"] == "ATOM"]
+    assert atom and all(r["from_id"] == "M_CLRM_A_POFC" and r["handler"] == "python" and r["in_force"] == "2019-02-01.."
+                        for r in atom)
+    assert all(r["handler"] == "" for r in rows if r["from_type"] != "ATOM")

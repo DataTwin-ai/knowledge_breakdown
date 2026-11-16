@@ -20,6 +20,8 @@
     "akp_judge_prompt": "law_arc_akp_judge_prompt.txt",
     "akp_comparison_prompt": "law_arc_akp_comparison_prompt.txt",
     "akp_same_prompt": "law_arc_akp_same_prompt.txt",
+    "akp_fact_prompt": "law_arc_akp_fact_prompt.txt",
+    "akp_time_prompt": "law_arc_akp_time_prompt.txt",
     "gkp_prompt": "law_arc_gkp_prompt.txt"
   },
   "law_folders": {
@@ -38,6 +40,11 @@
     "circulars": {
       "folder": "Circulars",
       "type": "CIRCULAR"
+    },
+    "amendments": {
+      "folder": "Amendments",
+      "type": "ACT",
+      "_about": "amending Acts found by ref_engine.py (needed for the law before / after a change, notes section 13)"
     }
   },
   "ikp": {
@@ -47,7 +54,7 @@
     "fail_on_gate": true,
     "dry_run_fetch": true,
     "max_retries": 3,
-    "schema": "public",
+    "schema": "",
     "table_prefix": "ikp",
     "excel_file": "ikp.xlsx",
     "jsonl_dir": "Output/ikp",
@@ -62,7 +69,7 @@
     "excel_file": "mkp.xlsx",
     "excel_every": 10,
     "verify_blocks": true,
-    "schema": "public",
+    "schema": "",
     "table": "mkp",
     "fidelity_check": "BLOCK",
     "judge_retries": 1,
@@ -120,8 +127,21 @@
     "judge_repairs": 1,
     "legal_word_check": "STANDARD",
     "complex_threshold": 8,
-    "fact_slice": 30,
+    "fact_slice": 40,
+    "_fact_flow": "Fact flow (notes section 8): layer 1 = fact_slice facts given to the model (same unit, the MKP's TSGs via gkp_table, nearest, most used); layer 3 = every new fact is checked against the fact_check_top_k nearest registered facts with similarity >= fact_check_min_similarity (SAME / DERIVED / NEW, the SAME model).",
+    "fact_check_min_similarity": 0.80,
+    "fact_check_top_k": 10,
+    "gkp_table": "gkp",
     "same_min_similarity": 0.9,
+    "same_band_min_similarity": 0.80,
+    "same_concept_min_similarity": 0.92,
+    "same_concept_statement_floor": 0.70,
+    "_same_concept": "SAME by law AND concept: an existing atom is also found by its concept (concept_embedding). It goes to the SAME model when its concept similarity >= same_concept_min_similarity and its statement similarity >= same_concept_statement_floor (the SAME model still compares the law text, who, value and facts).",
+    "gst_start": "2017-07-01",
+    "fact_review_min_similarity": 0.90,
+    "_fact_review": "Fact flow layer 4 (python akp_engine.py --fact-review): pairs of registered facts with the same type and similarity >= fact_review_min_similarity go to the fact-check model; the merge list is printed and shown on the Fact review sheet of akp.xlsx. A person merges with --fact-merge OLD=KEEP (new AKP versions, nothing deleted).",
+    "_gst_start": "Time step (notes section 6): an amendment with effective_from after gst_start makes old / new atoms with valid_from / valid_to (one judge-model call per amended MKP, prompt akp_time_prompt).",
+    "_same_band": "SAME check (notes section 7): candidates above same_min_similarity always go to the SAME model; those between same_band_min_similarity and same_min_similarity only when they read the same facts with the same rule.",
     "ask_user_input": false,
     "scope_key": "",
     "section": "",
@@ -144,7 +164,12 @@
     "complex_pairs": 40,
     "similar_atoms": 8,
     "similar_atom_min": 0.75,
-    "create_reuse_similarity": 0.85
+    "create_reuse_similarity": 0.85,
+    "_confirm": "Python score of the AKP's group (notes section 1): HIGH = similarity >= confirm_min_similarity, among the confirm_top_n closest TSGs and at least one of MKP agrees / anchor / facts -> approved without LLM. audit_share of HIGH atoms still go to the verifiers. calibrate=true sends every atom to the verifiers once (one chapter) - then read python gkp_engine.py --calibration and set confirm_min_similarity where the LLM agrees 98-99%.",
+    "confirm_min_similarity": 0.80,
+    "confirm_top_n": 3,
+    "audit_share": 0.05,
+    "calibrate": true
   },
   "governance_master": {
     "save_to_db": true,
@@ -170,7 +195,10 @@
   "relationship": {
     "_about": "relationship_builder.py (run it yourself): the links between facts, atoms, groups, LEs, MKPs, TSGs and governance masters, read from the latest akp / akp_atom_fact / gkp / governance_master rows into one table, and the Fact Network page drawn from that table.",
     "table": "kp_relation",
-    "page": "Output/Relationship/fact_network.html"
+    "page": "Output/Relationship/fact_network.html",
+    "run_after_pipeline": true,
+    "_share": "share_copy_to: a folder the team can open (e.g. a shared network / OneDrive folder); after every build the page is copied there. Empty = only Output/Relationship. The folder must be allowed in permission.json access.",
+    "share_copy_to": ""
   },
   "vector": {
     "enabled": true,
@@ -179,16 +207,24 @@
     "vertex_location": "global"
   },
   "pool": {
-    "_about": "Worker pool: a unit bigger than max_job_chars is split at sub-sections, then clauses; the unit's heading becomes one small extra job. A unit the provider rate-limits goes back in the queue up to requeue_limit times.",
-    "max_job_chars": 24000,
+    "_about": "Worker pool: a unit bigger than max_job_chars is split at sub-sections, then clauses; the unit's heading becomes one small extra job. 0 = always split down to the smallest part (one MKP-sized job per clause or per sub-section without clauses; each clause still gets its parent's lead-in). A unit the provider rate-limits goes back in the queue up to requeue_limit times.",
+    "max_job_chars": 0,
     "requeue_limit": 3,
-    "progress_every_seconds": 60
+    "progress_every_seconds": 60,
+    "_waves": "Run waves (notes section 16, mkp_ss/waves.py): a unit is in the wave of the longest key it starts with; every other unit by its document type (other_waves). A wave starts when the waves before it are finished. Wave 0 = IKP, which runs before the pool.",
+    "waves": [{"wave": 1, "name": "base: definitions, supply, levy", "units": ["CGSTA17_S2", "CGSTA17_S7", "CGSTA17_SCHI", "CGSTA17_SCHII", "CGSTA17_SCHIII", "CGSTA17_S8", "CGSTA17_S9"]}, {"wave": 2, "name": "registration, inter / intra-State supply", "units": ["CGSTA17_S22", "CGSTA17_S23", "CGSTA17_S24", "CGSTA17_S25", "IGSTA17_S2", "IGSTA17_S5", "IGSTA17_S7", "IGSTA17_S8"]}, {"wave": 3, "name": "sales register: composition, exemption, time and value of supply, invoices, place of supply, their Rules", "units": ["CGSTA17_S10", "CGSTA17_S11", "CGSTA17_S12", "CGSTA17_S13", "CGSTA17_S14", "CGSTA17_S15", "CGSTA17_S31", "CGSTA17_S32", "CGSTA17_S33", "CGSTA17_S34", "IGSTA17_S10", "IGSTA17_S11", "IGSTA17_S12", "IGSTA17_S13", "CGSTR17_R3", "CGSTR17_R4", "CGSTR17_R5", "CGSTR17_R6", "CGSTR17_R7", "CGSTR17_R8", "CGSTR17_R9", "CGSTR17_R10", "CGSTR17_R11", "CGSTR17_R12", "CGSTR17_R13", "CGSTR17_R14", "CGSTR17_R15", "CGSTR17_R16", "CGSTR17_R17", "CGSTR17_R18", "CGSTR17_R19", "CGSTR17_R20", "CGSTR17_R21", "CGSTR17_R22", "CGSTR17_R23", "CGSTR17_R24", "CGSTR17_R25", "CGSTR17_R26", "CGSTR17_R27", "CGSTR17_R28", "CGSTR17_R29", "CGSTR17_R30", "CGSTR17_R31", "CGSTR17_R32", "CGSTR17_R33", "CGSTR17_R34", "CGSTR17_R35", "CGSTR17_R46", "CGSTR17_R47", "CGSTR17_R48", "CGSTR17_R49", "CGSTR17_R50", "CGSTR17_R51", "CGSTR17_R52", "CGSTR17_R53", "CGSTR17_R54", "CGSTR17_R55"]}],
+    "other_waves": {"ACT": 4, "RULES": 4, "NOTIFICATION": 5, "CIRCULAR": 5, "default": 5}
   },
   "refs": {
     "_about": "Cross references (MKP) and the web scraping script ref_engine.py.",
     "document_table": "ref_document",
     "link_table": "mkp_ref",
     "request_timeout_seconds": 60,
+    "_link_on_split": "MKP finds the official link of a NEW outside document (notification / circular / amending Act) while splitting, once per document: the ref_link model (Claude) with Claude's web search on allowed_hosts only, then Python checks the link opens and is a PDF -> ref_document.link_status OK / BAD / NOT_FOUND. ref_engine.py downloads the OK ones and finds another link for BAD / NOT_FOUND. Needs access.internet = true.",
+    "link_on_split": true,
+    "link_search_max_uses": 3,
+    "_link_retry": "When ref_link (Haiku) and Python's page / result checks find nothing, the stronger permission.json llm.ref_link_retry model searches once more with link_retry_max_uses searches. Without llm.ref_link_retry there is no retry.",
+    "link_retry_max_uses": 6,
     "max_link_tries": 2,
     "allowed_hosts": [
       "cbic-gst.gov.in",
@@ -199,7 +235,7 @@
       "gstcouncil.gov.in",
       "www.gstcouncil.gov.in",
       "egazette.gov.in",
-      "www.egazette.gov.in"
+      "www.egazette.gov.in", "indiacode.nic.in", "www.indiacode.nic.in", "legislative.gov.in", "www.legislative.gov.in"
     ]
   },
   "fact_catalog": {

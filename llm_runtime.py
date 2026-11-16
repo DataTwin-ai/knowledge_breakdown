@@ -376,6 +376,44 @@ def call_llm(runtime: dict, prompt: str) -> Tuple[str, int]:
 	)
 
 
+WEB_SEARCH_TOOL = "web_search_20250305"   # Claude's own web search (basic version, works on every model)
+
+
+def call_claude_search(runtime: dict, prompt: str, allowed_domains: Optional[List[str]] = None,
+                       max_uses: int = 3) -> Tuple[str, List[str]]:
+	"""One Claude call with Claude's web search turned on (only the official sites in allowed_domains).
+	Returns (answer text, the result links the search saw). Used to find a document's official link while the
+	law is split (ref_ss/link.py). There is no Gemini fallback: when Claude is down this raises."""
+	if clean(runtime.get("provider")).upper() != "CLAUDE":
+		raise ValueError("web search needs a Claude model (permission.json llm.ref_link)")
+	client, model = runtime.get("client"), clean(runtime.get("model"))
+	if client is None or _fallback["down"]:
+		raise RuntimeError("Claude is not available - web search skipped")
+	tool = {"type": WEB_SEARCH_TOOL, "name": "web_search", "max_uses": max(1, int(max_uses))}
+	if allowed_domains:
+		tool["allowed_domains"] = sorted({clean(d) for d in allowed_domains if clean(d)})
+	with _gate("CLAUDE"):
+		msg = client.messages.create(model=model, max_tokens=2048, tools=[tool],
+		                             messages=[{"role": "user", "content": prompt}])
+	try:
+		import kp_usage
+		kp_usage.add("CLAUDE", model, *kp_usage.claude_usage(msg))
+	except Exception:
+		pass
+	texts, links = [], []
+	for block in getattr(msg, "content", []) or []:
+		kind = getattr(block, "type", "")
+		if kind == "text":
+			texts.append(getattr(block, "text", "") or "")
+		elif kind == "web_search_tool_result":
+			content = getattr(block, "content", None)
+			for item in content if isinstance(content, list) else []:
+				url = getattr(item, "url", "")
+				if url:
+					links.append(url)
+	return "".join(texts).strip(), list(dict.fromkeys(links))
+
+
 def _to_gemini(runtime: dict, model: str, prompt: str) -> Tuple[str, int]:
 	"""One Claude call answered by its Gemini fallback model (Claude is down)."""
 	rt = _gemini_runtime(runtime.get("paths"))

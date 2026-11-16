@@ -150,7 +150,6 @@ def cascade_sql(schema: str, n: dict) -> str:
         + step(n["gkp"], "version_id = $1 AND source_mkp = $2")
         + step(n["gkp_cache"], "version_id = $1 AND source_mkp = $2")
         + step(n["gkp_llm"], "unit_key = $2", True)
-        + step(f"{n['gkp']}_tg18_proposals", "version_id = $1 AND source_mkp = $2")
         + step(n["gm"], "source_mkp = $2 AND $1 IS NOT NULL")
         + step(n["ref_link"], "version_id = $1 AND mkp_element = $2")
         + step(n.get("relation", "kp_relation"), "version_id = $1 AND mkp = $2", True)

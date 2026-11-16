@@ -13,7 +13,7 @@ Sources (each candidate records why it was proposed):
 from __future__ import annotations
 
 import re
-from typing import Dict, List, Optional
+from typing import Tuple, Dict, List, Optional
 
 from psycopg2 import sql
 
@@ -49,6 +49,30 @@ class CandidateFinder:
         except Exception:
             self.store.conn.rollback()
             return []
+
+    def closeness(self, atom: dict, groups: set, tsgs: List[str], top_n: int) -> Tuple[Dict[str, float], List[str]]:
+        """Python score clue 1 (gkp_ss/score.py): similarity of the atom / concept embedding with each of `tsgs`,
+        and the top_n closest TSGs of the whole taxonomy (best of the two embeddings)."""
+        best: Dict[str, float] = {}
+        for vec in (atom.get("concept_vector"), atom.get("atom_vector")):
+            for sid, sim in self._vector(vec, groups, max(top_n, 1) + 10):
+                best[sid] = max(best.get(sid, -1.0), float(sim))
+        top = [sid for sid, _ in sorted(best.items(), key=lambda kv: (-kv[1], kv[0]))[:top_n]]
+        for t in tsgs:
+            if t in best:
+                continue
+            for vec in (atom.get("concept_vector"), atom.get("atom_vector")):
+                if not vec:
+                    continue
+                try:
+                    r = self.store.run(sql.SQL("""SELECT 1 - (embedding <=> %s::vector) FROM {} WHERE tsg_id=%s
+                        AND vector_dims(embedding) = vector_dims(%s::vector)""").format(self.T), (vec, t, vec), fetch=True)
+                except Exception:
+                    self.store.conn.rollback()
+                    r = []
+                if r and r[0][0] is not None:
+                    best[t] = max(best.get(t, -1.0), float(r[0][0]))
+        return best, top
 
     def find(self, atom: dict, groups: set, k: int, exclude: set = frozenset(), full: bool = True) -> List[dict]:
         found: Dict[str, dict] = {}

@@ -105,7 +105,7 @@ def env():
 
 
 O3 = {"enabled": True, "akp_table": AKP_T, "mkp_table": MKP_T, "table_prefix": PFX, "taxonomy_file": str(TAX_TMP),
-      "excel_file": "gkp_test.xlsx", "use_cache": True}
+      "excel_file": "gkp_test.xlsx", "use_cache": True, "calibrate": False, "audit_share": 0.0}
 
 
 def go(scope, fake, **over):
@@ -222,12 +222,29 @@ def test_groups_given_by_akp_need_no_gkp_llm(env):
     conn, _ = env
     q(conn, f"""UPDATE {AKP_T} SET results = results || '; groups: [TSG04_04, TSG99_99]'
                WHERE source_mkp='CGSTA17_S9_SS3#TEXT' AND type='A' AND is_latest""")
+    q(conn, f"""UPDATE {MKP_T} SET group_names = '["TSG04_04"]'::jsonb
+               WHERE element='CGSTA17_S9_SS3#TEXT' AND type='MKP' AND is_latest RETURNING 1""")   # MKP agrees
     fake = Fake()
-    c = go("CGSTA17_S9_SS3", fake, use_cache=False)
+    # Python score HIGH (toy embeddings: any similarity, TSG04_04 among the closest, MKP agrees) -> no GKP LLM
+    c = go("CGSTA17_S9_SS3", fake, use_cache=False, confirm_min_similarity=-1.0, confirm_top_n=1000)
     rows = q(conn, f"SELECT DISTINCT tsg_id, method FROM {PFX} WHERE source_mkp='CGSTA17_S9_SS3#TEXT' AND is_latest "
                    "AND akp_type='A'")
-    assert rows and set(rows) == {("TSG04_04", "AKP_GROUP")}           # TSG99_99 is not in the taxonomy: dropped
+    assert rows and set(rows) == {("TSG04_04", "AKP_GROUP_CONFIRMED")}  # TSG99_99 is not in the taxonomy: dropped
     assert c["akp_group"] >= 1 and sum(fake.calls.values()) == 0
+    score = q(conn, f"SELECT python_score FROM {PFX} WHERE source_mkp='CGSTA17_S9_SS3#TEXT' AND is_latest AND akp_type='A'")
+    assert all(r[0] is not None for r in score)
+
+
+def test_calibration_sends_akp_groups_to_the_verifiers(env):
+    conn, _ = env
+    q(conn, f"DELETE FROM {PFX}_llm_cache RETURNING 1")
+    fake = Fake()
+    go("CGSTA17_S9_SS3", fake, use_cache=False, calibrate=True)
+    rows = q(conn, f"SELECT DISTINCT method FROM {PFX} WHERE source_mkp='CGSTA17_S9_SS3#TEXT' AND is_latest AND akp_type='A'")
+    assert sum(fake.calls.values()) > 0
+    assert {r[0] for r in rows} <= {"AKP_GROUP_CONFIRMED_LLM", "AKP_GROUP_CHANGED", "GKP_CREATED", "CREATE_EXISTING",
+                                    "CREATE_REUSED"}
+    assert q(conn, f"SELECT count(*) FROM {PFX}_cache WHERE version_id='CALIBRATION'")[0][0] >= 1
 
 
 def test_coverage_and_excel(env):
@@ -258,7 +275,7 @@ def test_governance_master_built_from_the_database(env, tmp_path):
     assert results and any(r["tsg"] == "TSG01_01" for r in results), results
     r = next(r for r in results if r["tsg"] == "TSG01_01")
     assert r["status"] == "WRITTEN", r
-    assert (tmp_path / "Governance_Master" / "TG01" / "TSG01_01" / "rulebook.yaml").is_file()
+    assert (tmp_path / "Governance_Master" / "TG01" / "TSG01_01_rulebook.yaml").is_file()
     assert q(conn, "SELECT count(*) FROM gm_p3t WHERE tsg_id='TSG01_01'")[0][0] > 0
     again = gm.run_for_mkps(["CGSTA17_S7_SS1_Ca#TEXT"], perm)                 # nothing changed: no new history row
     assert q(conn, "SELECT count(*) FROM gm_p3t_history WHERE tsg_id='TSG01_01'")[0][0] == 1, again

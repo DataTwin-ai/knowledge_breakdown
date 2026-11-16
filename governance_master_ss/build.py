@@ -120,8 +120,8 @@ def select(snap: Snapshot, bundles: "OrderedDict[str, Bundle]", tsg: str, cfg: d
     produced_by: Dict[str, str] = {}
     for b in bundles.values():
         for le in b.of("LE"):
-            for pd in rlist(le, "feeds") + ["PD_" + le["element"][3:]]:
-                if pd.startswith("PD_"):
+            for pd in rlist(le, "feeds") + [R.as_kind(le["element"], "PD")]:
+                if R.is_kind(pd, "PD"):
                     produced_by.setdefault(pd, b.key)
 
     def covered(b: Bundle) -> bool:
@@ -174,7 +174,7 @@ def select(snap: Snapshot, bundles: "OrderedDict[str, Bundle]", tsg: str, cfg: d
         b = bundles[key]
         if "products" in follow:
             for le in b.of("LE"):
-                for pd in sorted(set(t for t in R.ID_TOKEN.findall(rf(le, "expr")) if t.startswith("PD_"))):
+                for pd in sorted(set(t for t in R.ID_TOKEN.findall(rf(le, "expr")) if R.is_kind(t, "PD"))):
                     pd = p_alias.get(pd, pd)
                     if pd in spine_products:
                         continue
@@ -383,11 +383,11 @@ def build(snap: Snapshot, tsg: str, tsg_name: str, tg: str, tg_name: str, cfg: d
             for a in b.of("A") + b.of("A_REF"):
                 if a["element"] in part:
                     local[a["element"]] = new_id(a["element"], b, a["type"], a.get("akp_id") or "")
-                    base = a["element"][2:] if a["element"].startswith("A_") else a["element"]
-                    lid = new_id("LE_" + base, b, "LE")
-                    pid = new_id("PD_" + base, b, "PD")
-                    local["LE_" + base], local["PD_" + base] = lid, pid
-                    d["products"][pid] = {"le": lid, "akp": "PD_" + base,
+                    le_src, pd_src = R.as_kind(a["element"], "LE"), R.as_kind(a["element"], "PD")
+                    lid = new_id(le_src, b, "LE")
+                    pid = new_id(pd_src, b, "PD")
+                    local[le_src], local[pd_src] = lid, pid
+                    d["products"][pid] = {"le": lid, "akp": pd_src,
                                           "statement": (rf(a, "statement") or a.get("concept") or a["element"])[:300]}
             drafts[key] = d
             continue
@@ -396,8 +396,8 @@ def build(snap: Snapshot, tsg: str, tsg_name: str, tg: str, tg_name: str, cfg: d
             if r["type"] in ("A", "A_REF", "G", "LE", "CT"):
                 local[r["element"]] = new_id(r["element"], b, r["type"], r.get("akp_id") or "")
         for le in b.of("LE"):
-            feeds = [p for p in rlist(le, "feeds") if p.startswith("PD_")]
-            pid = feeds[0] if feeds else "PD_" + le["element"][3:]
+            feeds = [p for p in rlist(le, "feeds") if R.is_kind(p, "PD")]
+            pid = feeds[0] if feeds else R.as_kind(le["element"], "PD")
             local.setdefault(pid, new_id(pid, b, "PD"))
             d["products"][local[pid]] = {"le": local[le["element"]], "akp": pid,
                                          "statement": (rf(le, "nl") or rf(le, "outcome") or le["element"])[:300]}
@@ -453,7 +453,7 @@ def build(snap: Snapshot, tsg: str, tsg_name: str, tg: str, tg_name: str, cfg: d
             def one(tok: str) -> str:
                 if tok in R.KEYWORDS:
                     return tok
-                if tok.startswith("PD_"):
+                if R.is_kind(tok, "PD"):
                     pid = resolve_pd(tok)
                     if pid is None:
                         d["problems"].append(f"product {tok} is produced by no included MKP")
@@ -521,14 +521,32 @@ def build(snap: Snapshot, tsg: str, tsg_name: str, tg: str, tg_name: str, cfg: d
                     continue
                 pred["interpretation"] = (rf(src, "interpretation") or f"Decide whether: {statement}")[:1000]
                 pred["grounding"] = grounding
+            # who checks it (notes section 12): the AKP handler when it fits the order, else python (LOW) / heavy (HIGH)
+            given = rf(src, "handler").lower()
+            fits = {"LOW": ("python",), "HIGH": ("light", "heavy")}[pred["order"]]
+            if given and given not in fits:
+                report["warnings"].append(f"{key} {a['element']}: handler '{given}' does not fit order {pred['order']} - "
+                                          f"{fits[-1]} used")
+            pred["handler"] = given if given in fits else fits[-1]
+            # when the check is in force (notes section 6): the AKP time step wrote the window on the atom
+            for w in ("valid_from", "valid_to"):
+                day = rf(src, w)
+                if re.fullmatch(r"\d{4}-\d{2}-\d{2}", day):
+                    pred[w] = day
+                elif day and day.upper() != "NA":
+                    report["warnings"].append(f"{key} {a['element']}: {w} '{day}' is not a date - left out")
+            if pred.get("valid_from") and pred.get("valid_to") and pred["valid_from"] > pred["valid_to"]:
+                report["blocking"].append(f"{key} {a['element']}: valid_from {pred['valid_from']} is after valid_to {pred['valid_to']}")
             d["predicates"][pid] = pred
         if part is not None:              # one outcome per atom of this sub-group; the rest of the law is elsewhere
             for a in b.of("A") + b.of("A_REF"):
                 if a["element"] in part and local[a["element"]] in d["predicates"]:
-                    base = a["element"][2:] if a["element"].startswith("A_") else a["element"]
+                    # outcome name: the atom's own name in words (an abbreviated id is not a readable outcome)
+                    base = (rf(a, "name") or rf(a, "statement") or R.tail(a["element"])) \
+                        if R.kind_of(a["element"]) and R.tail(a["element"]) == a["element"] else R.tail(a["element"])
                     stmt = d["predicates"][local[a["element"]]]["statement"]
-                    d["outcomes"][local["LE_" + base]] = {
-                        "outcome": re.sub(r"[^A-Z0-9]+", "_", base.upper())[:60], "expr": local[a["element"]],
+                    d["outcomes"][local[R.as_kind(a["element"], "LE")]] = {
+                        "outcome": re.sub(r"[^A-Z0-9]+", "_", base.upper()).strip("_")[:60], "expr": local[a["element"]],
                         "module": b.mkp_id or b.key,
                         "description": f"{stmt} ({_strip_clause(b.citation or b.citation_key)}, part of the law)"[:300]}
             d["products"] = OrderedDict((p, v) for p, v in d["products"].items() if v["le"] in d["outcomes"])
@@ -731,6 +749,15 @@ def build(snap: Snapshot, tsg: str, tsg_name: str, tg: str, tg_name: str, cfg: d
     for fid, spec in out_facts.items():
         if fid in used_facts and fid not in rb["facts"]:
             rb["facts"][fid] = spec
+    # the date that picks the law in force for a document (notes section 6: the invoice date)
+    law = cfg.get("law_date") or {}
+    if law.get("fact"):
+        lid = law["fact"]
+        if lid not in rb["facts"]:
+            rb["facts"][lid] = {"name": law.get("name") or lid, "type": "DATE", "tier": law.get("tier", "T0")}
+        elif rb["facts"][lid].get("type") != "DATE":
+            report["blocking"].append(f"law_date fact {lid} is a {rb['facts'][lid].get('type')} fact, not a DATE")
+        rb["time"] = {"law_date": lid}
     for section in ("overrides", "triggers"):
         if not rb[section]:
             rb.pop(section)
@@ -819,14 +846,14 @@ def _test_pack(d: dict, rb: dict, name: str) -> Tuple[dict, Dict[str, str]]:
     Products of other steps (and of the spine) become test facts F_T_<name> read by checks A_T_<name>, so a
     test case can set them (default TRUE: the prerequisite holds). Overrides from other MKPs are left out."""
     products_in = sorted({t for o in d["outcomes"].values() for t in R.ID_TOKEN.findall(o["expr"])
-                          if t.startswith("PD_") and t not in d["products"]} |
-                         {m for g in d["groups"].values() for m in g["members"] if m.startswith("PD_") and m not in d["products"]})
-    swap = {pd: "A_T_" + pd[3:] for pd in products_in}
+                          if R.is_kind(t, "PD") and t not in d["products"]} |
+                         {m for g in d["groups"].values() for m in g["members"] if R.is_kind(m, "PD") and m not in d["products"]})
+    swap = {pd: "A_T_" + R.tail(pd) for pd in products_in}
     facts, preds = {}, {}
     for pd in products_in:
-        facts["F_T_" + pd[3:]] = {"name": f"Test input: {rb['products'].get(pd, {}).get('statement', pd)}"[:200],
+        facts["F_T_" + R.tail(pd)] = {"name": f"Test input: {rb['products'].get(pd, {}).get('statement', pd)}"[:200],
                                   "type": "BOOLEAN"}
-        preds[swap[pd]] = {"statement": f"Test input {pd} holds", "order": "LOW", "rule": f"F_T_{pd[3:]} = TRUE"}
+        preds[swap[pd]] = {"statement": f"Test input {pd} holds", "order": "LOW", "rule": f"F_T_{R.tail(pd)} = TRUE"}
     used = set(facts)
     for pid, p in d["predicates"].items():
         preds[pid] = p
@@ -842,7 +869,7 @@ def _test_pack(d: dict, rb: dict, name: str) -> Tuple[dict, Dict[str, str]]:
     pack = {"name": f"GOVERNANCE MASTER test pack {name}", "version": "test", "facts": facts, "predicates": preds,
             "groups": groups, "outcomes": outcomes,
             "products": {pid: {"statement": p["statement"]} for pid, p in d["products"].items()}, "compounds": [comp]}
-    return pack, {pd: "F_T_" + pd[3:] for pd in products_in}
+    return pack, {pd: "F_T_" + R.tail(pd) for pd in products_in}
 
 
 def tests_from_tc(drafts, ordered, rb, cfg, f_alias) -> List[dict]:
@@ -862,7 +889,7 @@ def tests_from_tc(drafts, ordered, rb, cfg, f_alias) -> List[dict]:
             facts = {f: True for f in product_facts.values()}
             judg = {}
             for f, raw in PAIR.findall(rf(tc, "facts")) + PAIR.findall(rf(tc, "products")):
-                if f.startswith("PD_"):
+                if R.is_kind(f, "PD"):
                     target = product_facts.get(p_alias.get(f, f)) or product_facts.get(rev.get(f, f))
                     val = _value(raw, {"type": "BOOLEAN"})
                     if target and val is not None:

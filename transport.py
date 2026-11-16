@@ -192,22 +192,13 @@ def derive_id(prefix: str, concept: str) -> str:
 	if not concept:
 		raise ValueError("Concept name is required.")
 
-	tokens = re.findall(r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*", concept)
-	if not tokens:
-		raise ValueError(f"Cannot derive ID from concept: {concept}")
-
-	pieces: List[str] = []
-	for token in tokens:
-		plain = token.replace("-", "")
-		if re.fullmatch(r"\d+", plain):
-			pieces.append(plain)
-		elif re.fullmatch(r"[IVXLCDM]+", plain.upper()):
-			pieces.append(plain.upper())
-		else:
-			pieces.append(plain[0].upper())
-
-	acronym = "".join(pieces)
-	return f"{prefix}_{acronym}"
+	# one rule for every id (kp_ids.py): a Roman numeral counts only when written in capitals,
+	# so words like "Civil" or "Mix" give their first letter
+	from kp_ids import IdError, acronym
+	try:
+		return f"{prefix}_{acronym(concept)}"
+	except IdError as exc:
+		raise ValueError(f"Cannot derive ID from concept: {concept}") from exc
 
 
 # Extract LAW ARC element IDs mentioned inside free text.

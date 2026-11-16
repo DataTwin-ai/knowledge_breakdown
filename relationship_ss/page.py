@@ -31,7 +31,9 @@ def write(rows: List[dict], path: Path) -> Path:
              "from_label": r["from_name"] or "", "relation": r["relation"],
              "to_type": r["to_type"], "to_id": key(r["to_type"], r["to_id"]), "to_raw": r["to_id"],
              "to_element": short(r["to_id"]), "to_label": r["to_name"] or "",
-             "link": r["link"], "via": r["via"] or "", "hops": (r["via"].count(" > ") + 1) if r["via"] else ""}
+             "link": r["link"], "via": r["via"] or "", "hops": (r["via"].count(" > ") + 1) if r["via"] else "",
+             "document": r.get("instrument") or "", "handler": r.get("handler") or "", "in_force": r.get("in_force") or "",
+             "fresh": bool(r.get("fresh"))}
             for r in rows]
     text = json.dumps(data, ensure_ascii=False, default=str).replace("</", "<\\/")
     html = TEMPLATE.read_text(encoding="utf-8").replace("__DATA__", text) \

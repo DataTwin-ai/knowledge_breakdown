@@ -1,7 +1,7 @@
 """GOVERNANCE MASTER / source: everything GOVERNANCE MASTER reads, as one plain snapshot (from PostgreSQL, or a JSON file in tests).
 
 Snapshot (all latest rows only):
-  akp          akp rows: instrument, version_id, source_mkp, mkp_id, ordinal, type, element, concept,
+  akp          akp rows: instrument, version_id, source_mkp, mkp_id, ordinal, type, element (= akp_id), concept,
                results, akp_id, same_akp_id
   facts        akp_fact: fact_id -> name, entity, data_type, unit, options, evidence, derived_from, nl,
                possible_duplicate_of
@@ -75,7 +75,9 @@ def _jl(v) -> list:
 def from_db(conn, schema: str, tables: Dict[str, str], instruments: List[str]) -> Snapshot:
     """Read the latest IKP-GKP rows of the given instruments (all MKPs: links may point anywhere in them)."""
     s = Snapshot()
-    akp = _rows(conn, sql.SQL("SELECT " + ", ".join(AKP_COLS) + " FROM {} WHERE is_latest AND instrument = ANY(%s) "
+    # the akp table has no element column: the abbreviated akp_id is the element id (notes section 3)
+    cols = ", ".join("akp_id AS element" if c == "element" else c for c in AKP_COLS)
+    akp = _rows(conn, sql.SQL("SELECT " + cols + " FROM {} WHERE is_latest AND instrument = ANY(%s) "
                               "AND COALESCE(validation_status, 'APPROVED') <> 'SUPERSEDED' "
                               "ORDER BY instrument, source_mkp, ordinal").format(_t(schema, tables["akp"])),
                 (list(instruments),))

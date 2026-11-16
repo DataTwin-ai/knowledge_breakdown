@@ -111,7 +111,9 @@ class IkpIndex:
                 from ikp_engine import get_connection
                 conn = get_connection(paths)
                 try:
-                    return cls.from_db(conn, doc, settings.get("schema", "public"), settings.get("table_prefix", "ikp"), version)
+                    from db_insert import get_db_schema
+                    return cls.from_db(conn, doc, settings.get("schema") or get_db_schema(),
+                                       settings.get("table_prefix", "ikp"), version)
                 finally:
                     conn.close()
             except LookupError:

@@ -12,7 +12,10 @@ Added:
   * Model tiers SIMPLE / COMPLEX; Gemini + Claude in parallel; raw answers cached; embeddings PENDING-safe.
   * GROUPS: the MKP's TSG ids (mkp.group_names) go in with the MKP; every A atom gets its own groups field (kept from
     the MKP, or another TSG when the atom is about something else); the judge confirms; Python keeps only real
-    TSG ids. GKP takes these groups as they are and calls an LLM only for atoms left without a group.
+    TSG ids; saved in akp.group_names. GKP checks every atom's group (Python score, the LLM only when unsure).
+  * IDS: short ids made by Python (akp_ss/ids.py, kp_ids.py) just before saving: <MKP id>_<TYPE>_<acronym>, facts F_..
+  * FACT FLOW: one fact = one id in every law - the fact slice (layer 1), the same name (layer 2), the fact-check
+    model (layer 3, again at save time) and --fact-review / --fact-merge (layer 4). Fact numbers after every run.
   * WORKER POOL: one scope per job, own connection; fact saves are serialised with a lock (one fact id per fact).
 Requires the project modules: db_insert, llm_runtime, transport, vector_store.
 """
@@ -32,12 +35,15 @@ from psycopg2 import sql
 
 from akp_ss import excel as excel_mod
 from akp_ss.facts import FactRegistry, skip_rows, time_fact
+from akp_ss.factcheck import check as check_facts
+from akp_ss.ids import abbreviate, check as id_check, merge_same_tests
+from akp_ss import timestep
 from akp_ss.guard import engine_ready, legal_words, structure
 from akp_ss.parse import (apply_python_review, family, field_list, parse_rows, parse_verdict, raw_rows, retry_text,
                            table_text)
 from akp_ss.refs import RefFinder, set_references
 from akp_ss.store import AkpStore
-from kp_console import log, say, stage
+from kp_console import flow, log, say, stage
 from transport import get_field, mkp_bundles, tg_of
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -100,10 +106,27 @@ def validate_akp_settings(raw: dict) -> dict:
     s["excel_every"] = max(1, int(s.get("excel_every", 25)))
     s["excel_file"] = s.get("excel_file", "akp.xlsx")
     s["fact_slice"] = int(s.get("fact_slice", 30))
+    for k in ("fact_check_min_similarity", "fact_check_top_k", "gkp_table"):      # fact flow layers 1 + 3
+        if k not in s:
+            raise ValueError(f"Config/settings.json akp.{k} is missing")
+    s["fact_check_min_similarity"] = float(s["fact_check_min_similarity"])
+    s["fact_check_top_k"] = int(s["fact_check_top_k"])
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(s.get("gst_start", ""))):
+        raise ValueError("Config/settings.json akp.gst_start (YYYY-MM-DD) is missing")
     s["legal_word_check"] = str(s.get("legal_word_check", "STANDARD")).upper()   # BLOCK | STANDARD | WARN
     if s["legal_word_check"] not in ("BLOCK", "STANDARD", "WARN"):
         raise ValueError("akp.legal_word_check must be BLOCK, STANDARD or WARN")
     s["same_min_similarity"] = float(s.get("same_min_similarity", 0.90))
+    if "same_band_min_similarity" not in s:
+        raise ValueError("Config/settings.json akp.same_band_min_similarity is missing")
+    s["same_band_min_similarity"] = float(s["same_band_min_similarity"])
+    for k in ("same_concept_min_similarity", "same_concept_statement_floor"):     # SAME by law and concept
+        if k not in s:
+            raise ValueError(f"Config/settings.json akp.{k} is missing")
+        s[k] = float(s[k])
+    if "fact_review_min_similarity" not in s:
+        raise ValueError("Config/settings.json akp.fact_review_min_similarity is missing")
+    s["fact_review_min_similarity"] = float(s["fact_review_min_similarity"])
     for k in ("section", "scope_key", "only_mkp"):
         s[k] = str(s.get(k, "")).strip()
     models = s.get("models") or {}
@@ -126,7 +149,8 @@ def _prompts(permission: dict) -> dict:
     prompt_dir = resolve(permission["paths"]["prompt_dir"])
     files = permission["files"]
     names = {"akp": files["akp_prompt"], "judge": files["akp_judge_prompt"],
-             "comparison": files["akp_comparison_prompt"], "same": files["akp_same_prompt"]}
+             "comparison": files["akp_comparison_prompt"], "same": files["akp_same_prompt"],
+             "fact": files["akp_fact_prompt"], "time": files["akp_time_prompt"]}
     out = {}
     for label, name in names.items():
         path = prompt_dir / name
@@ -136,13 +160,18 @@ def _prompts(permission: dict) -> dict:
     return out
 
 
-def _concept_taxonomy(permission: dict):
-    """The GST taxonomy (same file as GKP) as short lines for the groups field, and its TSG ids."""
+def _concept_taxonomy(permission: dict, conn=None):
+    """The GST taxonomy as short lines for the groups field, and its TSG ids - the gkp_taxonomy TABLE that GKP
+    also uses (base groups + groups GKP created, notes section 9); the file only while the table is empty."""
     from gkp_ss import taxonomy as tax
     file = Path(permission.get("gkp", {}).get("taxonomy_file", "Config/gst_taxonomy.json"))
     if not file.is_absolute():
         file = BASE_DIR / file
-    _, subs = tax.load(file)
+    if conn is None:
+        _, subs = tax.load(file)
+    else:
+        from db_insert import get_db_schema
+        _, subs = tax.current(conn, get_db_schema(), f"{permission.get('gkp', {}).get('table_prefix', 'gkp')}_taxonomy", file)
     return tax.compact_text(subs), {x["tsg_id"] for x in subs}
 
 
@@ -215,6 +244,17 @@ def _read_bundles(conn, instrument, table, version, selection, only_mkp):
     keys = {b["key"].split("#", 1)[0] for _, b in out}
     out.sort(key=lambda cb: (0 if get_field(cb[1]["mkp_row"], "parent") in keys else 1, cb[1]["key"]))
     return out
+
+
+def _law_date(permission: dict) -> dict:
+    """The DATE fact that picks the law in force (Config/governance_master_map.json law_date) - the time step's
+    placeholders read it, so AKP and the governance master use one invoice-date fact."""
+    from kp_settings import resolve
+    path = resolve(permission["governance_master"]["map_file"])
+    law = (json.loads(path.read_text(encoding="utf-8")).get("law_date") or {})
+    if not law.get("fact"):
+        raise ValueError(f"{path.name}: law_date.fact is missing")
+    return {"fact": law["fact"], "name": law.get("name") or law["fact"]}
 
 
 def _mkp_groups(conn, table, version, elements) -> Dict[str, list]:
@@ -323,9 +363,25 @@ def complexity(text: str, sp_rows: list, knowledge_type: str, threshold: float):
 
 # ---------------------------------------------------------------- SAME (existing atom reused)
 
-def akp_id(source_mkp: str, element: str) -> str:
-    """Stable id of an atom: '<citation_key#part>::<atom element>', e.g. CGSTA17_S7_SS1_Ca#TEXT::A_SALE."""
-    return f"{source_mkp}::{element}"
+def _same_band(rows: List[dict], candidates: List[dict], high: float, concept_high: float = 2.0) -> List[dict]:
+    """SAME candidates (notes section 7): above `high` always; found by its concept (concept similarity >=
+    concept_high) always; between the band floor and `high` only when the existing atom reads the same facts with
+    the same rule (different words, same test)."""
+    norm = lambda x: " ".join(str(x or "").replace('"', "").split()).upper()
+    by_el = {r["ELEMENT"]: r for r in rows if r["TYPE"] == "A"}
+    out = []
+    for item in candidates:
+        row = by_el.get(item["element"])
+        mine = (sorted(field_list(row, "facts")), norm(get_field(row, "rule"))) if row else None
+        keep = []
+        for c in item.get("candidates", []):
+            theirs = (sorted(field_list({"RESULTS": c.get("results") or ""}, "facts")),
+                      norm(get_field({"RESULTS": c.get("results") or ""}, "rule")))
+            if float(c["similarity"]) > high or float(c.get("concept_similarity") or 0) >= concept_high \
+                    or (mine and mine[0] and mine == theirs):
+                keep.append(c)
+        out.append(dict(item, candidates=keep))
+    return out
 
 
 def _apply_same(rows: List[dict], matches: List[dict], candidates: List[dict], min_similarity: float = 0.90) -> int:
@@ -339,8 +395,11 @@ def _apply_same(rows: List[dict], matches: List[dict], candidates: List[dict], m
         if str(match.get("same_verdict", "")).strip().upper() != "TRUE" or not str(match.get("reason", "")).strip():
             continue
         cand, row = bank.get((new_el, canonical)), by_element.get(new_el)
-        if not cand or not row or row["TYPE"] != "A" or float(cand["similarity"]) <= min_similarity:
+        if not cand or not row or row["TYPE"] != "A" or (float(cand["similarity"]) <= min_similarity
+                                                         and not cand.get("by_concept")):
             continue
+        if get_field(row, "valid_from") or get_field(row, "valid_to"):
+            continue                         # a check with its own time window stays itself (notes section 6)
         row["_facts"] = field_list(row, "facts")              # the fact links stay (network), the text does not
         row["TYPE"] = "A_REF"
         row["RESULTS"] = ""
@@ -362,7 +421,6 @@ def run_akp_scope(pdf_path, instrument=None, section=None, scope_key=None, only_
     if not s["enabled"]:
         raise RuntimeError("AKP is disabled in permission.json")
     prompts = _prompts(permission)
-    taxonomy, valid_tsgs = _concept_taxonomy(permission)
     from llm_runtime_marker import CACHE_BREAK
     paths = _paths(permission)
     pdf_path = Path(pdf_path)
@@ -382,6 +440,8 @@ def run_akp_scope(pdf_path, instrument=None, section=None, scope_key=None, only_
     if paths["env_file"].exists():
         load_dotenv(paths["env_file"], override=False)
     conn = get_connection()
+    # the one taxonomy of MKP / AKP / GKP: the gkp_taxonomy table (base groups + groups GKP created)
+    taxonomy, valid_tsgs = _concept_taxonomy(permission, conn)
     store = AkpStore(conn, get_db_schema(), s["table"], s["cache_table"], s["mkp_table"])
     registry = FactRegistry(conn, get_db_schema(), s["table"].rsplit("_akp", 1)[0])
     models_api = Models(paths, store, s["use_cache"], session, fake_llm)
@@ -477,8 +537,19 @@ def run_akp_scope(pdf_path, instrument=None, section=None, scope_key=None, only_
             log("- Comparator returned FALSE without a specific reason.")
         log("=" * 72)
 
-    def save(key, bundle, mkp_id, fingerprint, standard, vectors, tier, cache_data, tfact=None):
+    def save(key, bundle, mkp_id, fingerprint, standard, vectors, tier, cache_data, tfact=None, facts_seen=None):
         with _save_lock:
+            if facts_seen is not None:      # facts other workers registered meanwhile (clauses run at the same time)
+                late = fact_check(key, get_field(bundle["mkp_row"], "text"), standard, since=facts_seen)
+                if late:
+                    cache_data["fact_check"] = list(cache_data.get("fact_check") or []) + late
+            # abbreviated ids for every element and fact (notes section 3), in place - the cached standard too
+            _, notes = abbreviate(standard, mkp_id, registry.all_ids())
+            for n in notes:
+                log(n)
+            bad = id_check(standard, mkp_id)
+            if bad:
+                raise RuntimeError("ID GATE: " + "; ".join(bad[:8]))
             return _save(key, bundle, mkp_id, fingerprint, standard, vectors, tier, cache_data, tfact)
 
     def _save(key, bundle, mkp_id, fingerprint, standard, vectors, tier, cache_data, tfact=None):
@@ -505,6 +576,62 @@ def run_akp_scope(pdf_path, instrument=None, section=None, scope_key=None, only_
         session.counts["fact_links"] += edges
         session.counts["time_facts"] += 1 if tfact else 0
         return ver
+
+    def time_step(key, citation_key, source_text, standard, changes):
+        """Old / new law (notes section 6): one call per amended MKP; Python adds valid_from / valid_to and the
+        ANY groups. A result the engine could not run is not used (the current law stays). Never blocks the AKP."""
+        if not changes:
+            return standard, []
+
+        def ask():
+            req = timestep.request({"source_mkp": key, "citation_key": citation_key, "text": source_text}, standard, changes)
+            log(f"MODEL                  : TIME step ({tier_models['judge']['model']}) - {len(changes)} change(s) after "
+                f"{s['gst_start']}")
+            return models_api.role(tier_models["judge"], prompts["time"] + "\nINPUT:\n" +
+                                   json.dumps(req, ensure_ascii=False, default=str))
+        try:
+            rows, notes = timestep.run(standard, changes, ask, law_date,
+                                       lambda t: engine_ready(t, registry.all_ids()))
+        except Exception as exc:
+            from llm_runtime_errors import is_fatal, is_rate_limited
+            if is_rate_limited(exc) or is_fatal(exc):
+                raise
+            rows, notes = standard, [f"TIME STEP SKIPPED: {type(exc).__name__}: {str(exc)[:150]} - current law only"]
+        for n in notes:
+            log(n)
+        session.counts["time_changes"] = session.counts.get("time_changes", 0) + sum(n.startswith("TIME T") for n in notes)
+        return rows, notes
+
+    def fact_check(key, source_text, standard, since=None):
+        """Fact flow layer 3: new facts of an approved AKP against ALL registered facts (one call per MKP, the SAME
+        model). SAME -> the existing id, DERIVED -> derived_from + formula, NEW -> kept. Never blocks the AKP."""
+        known = registry.all_ids()
+        if since is None:
+            from akp_ss.facts import concept_warnings
+            for w in concept_warnings(standard):          # a weak concept finds fewer same facts
+                log(f"FACT CONCEPT           : {w}")
+
+        def ask(req):
+            prompt = prompts["fact"] + "\nINPUT:\n" + json.dumps(req, ensure_ascii=False, default=str)
+            log(f"MODEL                  : FACT check ({tier_models['same']['model']}) - {len(req['new_facts'])} new fact(s)")
+            return models_api.role(tier_models["same"], prompt)
+        try:
+            decisions, asked = check_facts(standard, known, embed,
+                                           lambda v, cv=None: registry.nearest(v, s["fact_check_top_k"],
+                                                                                 s["fact_check_min_similarity"], cv),
+                                           ask, {"source_mkp": key, "text": source_text}, since=since)
+        except Exception as exc:
+            from llm_runtime_errors import is_fatal, is_rate_limited
+            if is_rate_limited(exc) or is_fatal(exc):
+                raise
+            log(f"FACT CHECK SKIPPED     : {type(exc).__name__}: {str(exc)[:150]} - new facts kept as new")
+            return []
+        for d in decisions:
+            if d["decision"] != "NEW" or asked:
+                log(f"FACT                   : {d['fact']} {d['decision']} {d['existing']} - {str(d['reason'])[:120]}")
+        session.counts["facts_reused"] = session.counts.get("facts_reused", 0) + sum(d["decision"] == "SAME" for d in decisions)
+        session.counts["facts_derived"] = session.counts.get("facts_derived", 0) + sum(d["decision"] == "DERIVED" for d in decisions)
+        return decisions
 
     def same_check(key, source_text, standard, nearest):
         """Separate SAME90 call: which new atoms already exist (similarity > 0.90 candidates only)."""
@@ -543,6 +670,11 @@ def run_akp_scope(pdf_path, instrument=None, section=None, scope_key=None, only_
         if only_keys is not None:
             bundles = [cb for cb in bundles if cb[1]["key"] in only_keys]
         mkp_groups = _mkp_groups(conn, s["mkp_table"], version, [b["key"] for _, b in bundles])
+        # amendments of the provisions in scope: footnotes of this run + those saved before (old / new law)
+        time_facts = store.time_facts(instrument, version) + [
+            time_fact(b["mkp_row"], instrument, b["key"]) for _, b in bundles
+            if get_field(b["mkp_row"], "knowledge_type").upper() == "AMENDMENT"]
+        law_date = _law_date(permission)
         filled = store.backfill(instrument, embed)
         log(f"\nAKP / DOCUMENT     : {instrument}")
         log(f"AKP / SOURCE       : {s['mkp_table']} / {version}")
@@ -565,13 +697,21 @@ def run_akp_scope(pdf_path, instrument=None, section=None, scope_key=None, only_
                     "knowledge_type": knowledge_type, "mkp_groups": mkp_groups.get(key, []),
                     "instrument": {"code": instrument, "name": doc.get("name"), "type": doc.get("type")}}
             mver = int(bundle.get("mkp_version") or 1)
-            fingerprint = hashlib.sha256(json.dumps({"mkp_text": source_text, "knowledge_type": knowledge_type,
-                                                     "phrases": [get_field(x, "text") for x in bundle["sp_rows"]],
-                                                     "mkp_version": mver}, sort_keys=True, ensure_ascii=False,
+            ck_now = get_field(row, "citation_key") or key.split("#", 1)[0]
+            changes = (timestep.changes_for(ck_now, time_facts, s["gst_start"])
+                       if knowledge_type not in PYTHON_KINDS else [])
+            fp_data = {"mkp_text": source_text, "knowledge_type": knowledge_type,
+                       "phrases": [get_field(x, "text") for x in bundle["sp_rows"]], "mkp_version": mver}
+            if changes:                       # a new amendment of this provision makes a new AKP (old / new law)
+                fp_data["changes"] = [(c["id"], c["kind"], c["effective_from"], c["replaced_text"]) for c in changes]
+            fingerprint = hashlib.sha256(json.dumps(fp_data, sort_keys=True, ensure_ascii=False,
                                                     default=str).encode()).hexdigest()
             latest = store.latest(instrument, version, key)
-            # CACHE: the saved AKP was made from this same MKP version -> reuse it, no model call
-            if s["use_cache"] and latest and (latest["mkp_version"] is None or int(latest["mkp_version"]) == mver):
+            # CACHE: the saved AKP was made from this same MKP version (and the same amendments) -> reuse it, no model call
+            # (headings / amendments are written by Python, no LLM: always rebuilt - a new version only when different)
+            if s["use_cache"] and latest and knowledge_type not in PYTHON_KINDS \
+                    and (latest["mkp_version"] is None or int(latest["mkp_version"]) == mver) \
+                    and (not changes or latest["source_hash"] == fingerprint):
                 log(f"STATUS                  : CACHED (AKP version {latest['akp_version']}, MKP version {mver})")
                 session.counts["cached"] += 1
                 session.counts["atoms"] += latest.get("atoms", 0)
@@ -603,7 +743,13 @@ def run_akp_scope(pdf_path, instrument=None, section=None, scope_key=None, only_
                 mkp_vec = embed(source_text)
             except Exception:
                 mkp_vec = None
-            input_data = {**base, "fact_registry": registry.slice(unit_prefix, mkp_vec, s["fact_slice"])}
+            try:                                # provisions this MKP refers to: their facts are offered first
+                _, ref_keys, _ = refs.for_atom(source_text, ck_now, source_text)
+            except Exception:
+                ref_keys = []
+            input_data = {**base, "fact_registry": registry.slice(unit_prefix, mkp_vec, s["fact_slice"],
+                                                                  mkp_groups.get(key, []), s["gkp_table"],
+                                                                  [k for k in ref_keys if k and k != ck_now])}
             approved, feedback, last_error, last_table = False, "", "", ""
             for attempt in range(1, s["max_attempts"] + 1):
                 gemini_raw = claude_raw = ""
@@ -679,6 +825,24 @@ def run_akp_scope(pdf_path, instrument=None, section=None, scope_key=None, only_
                 if verdict["verdict"] == "TRUE":
                     for w in clean_atom_groups(standard, valid_tsgs):
                         log(f"GROUPS                 : {w}")
+                    facts_seen = set(registry.all_ids())
+                    fact_decisions = fact_check(key, source_text, standard)
+                    # raw-input check (notes section 8): a fact that is a legal conclusion goes back to the models
+                    concl = [d for d in fact_decisions if str(d.get("reason", "")).strip().upper().startswith("CONCLUSION")]
+                    if concl and attempt < s["max_attempts"]:
+                        verdict = {"verdict": "FALSE", "reconstructed_mkp": "(not saved - a fact is a legal conclusion)",
+                                   "missing": [], "added_or_changed": [],
+                                   "logic_problems": [f"FACT {d['fact']} ('{d['name']}') is a legal conclusion, not a raw "
+                                                      f"input: make it an atom / LE built from the raw facts it comes "
+                                                      f"from - {str(d['reason'])[:200]}" for d in concl],
+                                   "same_matches": [], "references": []}
+                    elif concl:
+                        for d in concl:
+                            log(f"FACT REVIEW            : {d['fact']} looks like a legal conclusion (last attempt - kept)")
+                if verdict["verdict"] == "TRUE":
+                    for n in merge_same_tests(standard):
+                        log(n)
+                    standard, time_notes = time_step(key, ck_now, source_text, standard, changes)
                     # references: Python, from each atom's own words + the IKP cross-references
                     ck = get_field(row, "citation_key") or key.split("#", 1)[0]
                     legal = 0
@@ -691,16 +855,25 @@ def run_akp_scope(pdf_path, instrument=None, section=None, scope_key=None, only_
                     vectors, nearest = {}, []
                     try:
                         vectors = _vectors(standard, embed, session)
-                        nearest = store.same_candidates(key, standard, vectors, min_similarity=s["same_min_similarity"])
+                        nearest = _same_band(standard, store.same_candidates(
+                            key, standard, vectors, min_similarity=s["same_band_min_similarity"],
+                            concept_min=s["same_concept_min_similarity"],
+                            concept_floor=s["same_concept_statement_floor"]),
+                            s["same_min_similarity"], s["same_concept_min_similarity"])
                         matches = same_check(key, source_text, standard, nearest)
                     except Exception as exc:
                         log(f"SAME CHECK SKIPPED      : {type(exc).__name__}: {str(exc)[:150]} - atoms kept as new")
                         matches = []
-                    same_n = _apply_same(standard, matches, nearest, s["same_min_similarity"])
+                    same_n = _apply_same(standard, matches, nearest, s["same_band_min_similarity"])
+                    same_decisions = [{"element": m.get("element"), "canonical": m.get("canonical"),
+                                       "same": str(m.get("same_verdict", "")).upper(), "reason": m.get("reason", "")}
+                                      for m in matches]          # SAME and NOT SAME both kept (review, no repeat)
                     vectors = {i: v for i, v in vectors.items() if standard[i]["TYPE"] == "A"}
                     ver = save(key, bundle, mkp_id, fingerprint, standard, vectors, tier,
                                {"status": "APPROVED", "attempt": attempt, "gemini": gemini, "claude": claude,
-                                "standard": standard, "comparison": verdict, "tier": tier})
+                                "standard": standard, "comparison": verdict, "tier": tier,
+                                "fact_check": fact_decisions, "same_check": same_decisions,
+                                "time_step": time_notes}, facts_seen=facts_seen)
                     session.counts["approved"] += 1
                     session.counts["same_refs"] += same_n
                     session.counts["legal_refs"] += legal
@@ -756,12 +929,26 @@ def ensure_tables(settings_override=None) -> None:
         conn.close()
 
 
+def fact_measures(conn, registry) -> dict:
+    """The fact-flow numbers after every run (notes section 8): reuse rate, new facts per MKP, facts used by one
+    atom, the open merge list. Python only, no model."""
+    from akp_ss import review
+    m = review.measures(conn, registry)
+    with conn.cursor() as cur:
+        cur.execute(sql.SQL("SELECT count(*) FROM {} WHERE possible_duplicate_of IS NOT NULL").format(
+            registry.t(registry.fact_t)))
+        m["marked_possible_duplicates"] = int(cur.fetchone()[0] or 0)
+    conn.commit()
+    flow(f"FACT FLOW  : {m['facts']} facts, {m['fact_links']} links | reuse rate {m['reuse_rate']:.1%} | "
+         f"{m['new_facts_per_mkp']} new facts per MKP | {m['facts_used_by_one_atom']} used by one atom | "
+         f"{m['marked_possible_duplicates']} marked as possible duplicates (python akp_engine.py --fact-review)")
+    return m
+
+
 def export_excel() -> Optional[Path]:
-    """akp.xlsx once at the end of a pool run (workers do not write it)."""
+    """akp.xlsx once at the end of a pool run (workers do not write it), after the fact-flow numbers."""
     permission = _permission()
     s = validate_akp_settings(permission.get("akp", {}))
-    if not s["export_excel"]:
-        return None
     from db_insert import get_connection, get_db_schema
     conn = get_connection()
     try:
@@ -769,10 +956,73 @@ def export_excel() -> Optional[Path]:
         registry = FactRegistry(conn, get_db_schema(), s["table"].rsplit("_akp", 1)[0])
         store.ensure()
         registry.ensure()
+        try:
+            fact_measures(conn, registry)
+        except Exception as exc:                 # numbers only: never stops the run
+            conn.rollback()
+            log(f"FACT FLOW  : numbers not read ({type(exc).__name__}: {str(exc)[:120]})")
+        if not s["export_excel"]:
+            return None
         short = {code: d.get("name", code) for code, d in (permission.get("documents") or {}).items()}
-        return excel_mod.write(_paths(permission)["output_dir"] / s["excel_file"], store, registry.export_rows(), short)
+        from akp_ss.review import latest_review
+        return excel_mod.write(_paths(permission)["output_dir"] / s["excel_file"], store, registry.export_rows(), short,
+                               latest_review(store))
     finally:
         conn.close()
+
+
+def fact_review(fake_llm: Optional[Callable] = None) -> dict:
+    """Fact flow layer 4 (notes section 8): measures + pairs of facts that may be one fact, reviewed by the
+    fact-check model. Changes no law; the list is for a person (console, akp.xlsx "Fact review")."""
+    from akp_ss import review
+    permission = _permission()
+    s = validate_akp_settings(permission.get("akp", {}))
+    prompts = _prompts(permission)
+    from db_insert import get_connection, get_db_schema
+    from llm_fallback import route
+    conn = get_connection()
+    try:
+        store = AkpStore(conn, get_db_schema(), s["table"], s["cache_table"], s["mkp_table"])
+        registry = FactRegistry(conn, get_db_schema(), s["table"].rsplit("_akp", 1)[0])
+        store.ensure()
+        registry.ensure()
+        models_api = Models(_paths(permission), store, s["use_cache"], AkpSession(), fake_llm)
+        model = route(s["models"]["SIMPLE"])["same"]
+        models_api.unit = review.REVIEW_KEY
+        ask = lambda req: models_api.role(model, prompts["fact"] + "\nINPUT:\n" + json.dumps(req, ensure_ascii=False, default=str))
+        out = review.review(conn, registry, store, ask, s["fact_review_min_similarity"])
+    finally:
+        conn.close()
+    m = out["measures"]
+    say(f"  FACT REVIEW : {m['facts']} facts, {m['fact_links']} links - reuse rate {m['reuse_rate']:.0%}, "
+        f"{m['new_facts_per_mkp']} facts per MKP, {m['facts_used_by_one_atom']} used by one atom only")
+    same = [p for p in out["pairs"] if p["decision"] in ("SAME", "DERIVED")]
+    say(f"  FACT REVIEW : {len(out['pairs'])} close pair(s), {len(same)} to look at (merge: --fact-merge OLD=KEEP)")
+    for p in same:
+        say(f"        {p['decision']:<8} {p['fact']} ({p['name']})  ~  {p['other']} ({p['other_name']})  "
+            f"{p['similarity']} - {str(p['reason'])[:100]}")
+    export_excel()
+    return out
+
+
+def fact_merge(old: str, keep: str) -> List[str]:
+    """A person approved: fact `old` is the same as `keep` - every law that reads it gets a new AKP version."""
+    from akp_ss import review
+    permission = _permission()
+    s = validate_akp_settings(permission.get("akp", {}))
+    from db_insert import get_connection, get_db_schema
+    conn = get_connection()
+    try:
+        store = AkpStore(conn, get_db_schema(), s["table"], s["cache_table"], s["mkp_table"])
+        registry = FactRegistry(conn, get_db_schema(), s["table"].rsplit("_akp", 1)[0])
+        store.ensure()
+        registry.ensure()
+        done = review.merge(conn, registry, store, old, keep)
+    finally:
+        conn.close()
+    say(f"  FACT MERGE : {old} -> {keep} in {len(done)} MKP(s): {', '.join(done[:10])}"
+        + (" ..." if len(done) > 10 else ""))
+    return done
 
 
 def main_akp():
@@ -801,8 +1051,15 @@ if __name__ == "__main__":
     parser.add_argument("--instrument", help="Legal document code such as CGSTA17")
     parser.add_argument("--section", help="Section 7 or explicit citation key")
     parser.add_argument("--mkp", help="One MKP ID or citation key")
+    parser.add_argument("--fact-review", action="store_true", help="fact clean-up: measures + facts that may be one fact")
+    parser.add_argument("--fact-merge", metavar="OLD=KEEP", help="merge a fact a person approved (new AKP versions)")
     args = parser.parse_args()
-    if args.pdf:
+    if args.fact_review:
+        fact_review()
+    elif args.fact_merge:
+        old_id, _, keep_id = args.fact_merge.partition("=")
+        fact_merge(old_id.strip(), keep_id.strip())
+    elif args.pdf:
         run_akp_scope(BASE_DIR / args.pdf, args.instrument, args.section, only_mkp=args.mkp)
     else:
         main_akp()

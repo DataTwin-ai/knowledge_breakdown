@@ -199,7 +199,9 @@ def discover_documents(perm: dict, settings: dict, write_registry: bool = True) 
     docs: Dict[str, dict] = {}
     added = False
     # PDFs left directly in Law/ (old layout): move the ones whose kind is known into their sub-folder
-    by_type = {spec["type"]: spec["folder"] for spec in settings["law_folders"].values()}
+    by_type: Dict[str, str] = {}
+    for spec in settings["law_folders"].values():       # first folder of a type (Law/Acts, not Law/Amendments)
+        by_type.setdefault(spec["type"], spec["folder"])
     if law_dir.is_dir():
         for pdf in sorted(law_dir.glob("*.pdf")):
             info = registry.get(pdf.name)
@@ -300,6 +302,8 @@ def load(fresh: bool = False, permission: Optional[dict] = None, settings: Optio
     cfg["refs"] = dict(st.get("refs") or {})
     if llm.get("ref_link"):          # web scraping (ref_engine.py): the model that finds a document's official link
         cfg["refs"]["link_finder"] = _role(llm["ref_link"], "llm.ref_link")
+    if llm.get("ref_link_retry"):    # the stronger model that searches once more when ref_link found nothing
+        cfg["refs"]["link_retry"] = _role(llm["ref_link_retry"], "llm.ref_link_retry")
     cfg["llm_fallback"] = _fallback(llm.get("fallback"))
     emb = llm.get("embedding") or {}
     cfg["vector"] = {**st["vector"], "embedding_model": str(emb.get("model") or "text-embedding-005")}

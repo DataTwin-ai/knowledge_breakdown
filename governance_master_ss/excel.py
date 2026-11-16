@@ -1,4 +1,4 @@
-"""GOVERNANCE MASTER / Excel: report.xlsx next to each governance master, and index.xlsx listing every governance master."""
+"""GOVERNANCE MASTER / Excel: <TSG>_report.xlsx in the report folder of each TG, and index.xlsx listing every governance master."""
 from __future__ import annotations
 
 from pathlib import Path

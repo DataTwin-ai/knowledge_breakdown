@@ -75,7 +75,11 @@ def validate_mkp_settings(raw: dict) -> dict:
     s["max_retries"] = int(s.get("max_retries", 3))
     s["scope"] = s.get("scope", "FULL")
     s["excel_file"] = str(s.get("excel_file", "mkp.xlsx"))
-    s["schema"] = str(s.get("schema", "public"))
+    # "" = the database schema of Credentials/.env LEGAL_DB_SCHEMA, the same one AKP / GKP use (central database)
+    if not str(s.get("schema") or "").strip():
+        from db_insert import get_db_schema
+        s["schema"] = get_db_schema()
+    s["schema"] = str(s["schema"]).strip()
     s["table"] = str(s.get("table", "mkp"))
     s["complex_threshold"] = float(s.get("complex_threshold", 20))
     s["judge_retries"] = int(s.get("judge_retries", 1))
@@ -196,6 +200,20 @@ def make_embedder():
 # ---------------------------------------------------------------- one document
 
 class MkpRun:
+    def _taxonomy(self):
+        from gkp_ss import taxonomy as tax
+        _, subs = tax.current(self._tax_conn, self._tax_schema, self._tax_table, self._tax_file)
+        return subs
+
+    @property
+    def taxonomy_text(self) -> str:
+        from gkp_ss import taxonomy as tax
+        return tax.compact_text(self._taxonomy())
+
+    @property
+    def valid_tsgs(self) -> set:
+        return {x["tsg_id"] for x in self._taxonomy()}
+
     def __init__(self, document: dict, permission: dict, paths: dict, settings: dict, conn,
                  fake_llm: Optional[Callable] = None, embed: Optional[Callable] = None):
         import ikp_engine as ikp
@@ -232,13 +250,13 @@ class MkpRun:
         self.excel = paths["output_dir"] / settings["excel_file"]
         self.pending: Dict[str, list] = {}
         self.pending_units = 0
-        # groups: the taxonomy goes with the prompt; only its TSG ids are kept
-        from gkp_ss import taxonomy as tax
+        # groups: the taxonomy goes with the prompt; only its TSG ids are kept. It is the gkp_taxonomy TABLE
+        # (notes section 9), read again when GKP created a group - the next law of the same run is offered it
         from kp_settings import resolve
-        tax_file = (permission.get("gkp") or {}).get("taxonomy_file", "Config/gst_taxonomy.json")
-        _, subs = tax.load(resolve(tax_file))
-        self.valid_tsgs = {x["tsg_id"] for x in subs}
-        self.taxonomy_text = tax.compact_text(subs)
+        self._tax_conn, self._tax_schema = conn, settings["schema"]
+        self._tax_table = f"{(permission.get('gkp') or {}).get('table_prefix', 'gkp')}_taxonomy"
+        self._tax_file = resolve((permission.get("gkp") or {}).get("taxonomy_file", "Config/gst_taxonomy.json"))
+        _ = self.taxonomy_text
         # references: what each MKP refers to (Python), saved with a status
         self.features = permission.get("features") or {}
         rc = permission.get("refs") or {}
@@ -247,6 +265,11 @@ class MkpRun:
         self.refs.ensure()
         self.held = held_documents(permission, conn, ikp_s["schema"], ikp_s["table_prefix"])
         self.act_code = parent_act(self.code, document["type"], document.get("name", ""))
+        # the official link of a new outside document is found while splitting (ref_ss/link.py), once per document
+        for k in ("link_on_split", "link_search_max_uses"):
+            if k not in rc:
+                raise ValueError(f"Config/settings.json refs.{k} is missing")
+        self.link_cfg = permission if (rc["link_on_split"] and fake_llm is None) else None
 
     def _excel(self, by_provider: dict) -> None:
         """Buffer rows; the workbook is written every `excel_every` units and at the end (the DB is saved at once)."""
@@ -289,8 +312,8 @@ class MkpRun:
                 n = self.idx.nodes.get(k) or {}
                 xrefs += list(n.get("xrefs") or [])
                 for a in n.get("amendments") or []:          # footnote texts: "Inserted ... by ... Act ... (No. 31 of 2018)"
-                    if isinstance(a, dict):
-                        notes.append(" ".join(str(a.get(x) or "") for x in ("text", "instrument")))
+                    if isinstance(a, dict):              # the text + the full name IKP read (the document's title)
+                        notes.append({"text": str(a.get("text") or ""), "instrument": str(a.get("instrument") or "")})
             llm = list_field(rows[d.mkp_key], "cross_refs") if d.mkp_key in rows else []
             found = detect(self.code, d.text, notes, xrefs, llm, self.act_code)
             by_mkp[d.mkp_key] = found
@@ -304,6 +327,14 @@ class MkpRun:
             except Exception as exc:            # references are an add-on: the MKPs are saved either way
                 self.store.conn.rollback()
                 log(f"REFERENCES : not saved for {unit_key} ({type(exc).__name__}: {str(exc)[:150]})")
+            if getattr(self, "link_cfg", None) is not None:   # new outside documents: their link + link status
+                try:
+                    from ref_ss import link
+                    link.on_split(self.link_cfg, self.refs, {r["ref_id"] for refs in by_mkp.values() for r in refs
+                                                             if r["scope"] == "CROSS"})
+                except Exception as exc:        # a link never stops the MKP
+                    self.store.conn.rollback()
+                    log(f"LINKS      : not searched for {unit_key} ({type(exc).__name__}: {str(exc)[:150]})")
         return extras
 
     # -- cache per provision

@@ -20,7 +20,15 @@ from psycopg2 import sql
 
 from transport import get_field
 
-from .parse import COLS
+from .parse import COLS, field_list
+
+
+def group_names(row: dict) -> Optional[str]:
+    """akp.group_names: the TSG ids of an atom (its groups field) as JSON; None for the other row types.
+    A SAME atom (A_REF) has none here - GKP gives it the original atom's group (SAME_INHERITED)."""
+    if row.get("TYPE") != "A":
+        return None
+    return json.dumps([g for g in field_list(row, "groups") if re.fullmatch(r"TSG\d+_\d+", g)])
 
 
 def _vec(v) -> Optional[str]:
@@ -54,8 +62,8 @@ class AkpStore:
             sql.SQL("CREATE SCHEMA IF NOT EXISTS {}").format(sql.Identifier(self.schema)),
             sql.SQL("""CREATE TABLE IF NOT EXISTS {} (
                 instrument text NOT NULL, version_id text NOT NULL, source_mkp text NOT NULL, mkp_id text,
-                source_hash text NOT NULL, ordinal integer NOT NULL, mkp text NOT NULL, type text NOT NULL,
-                element text NOT NULL, concept text NOT NULL DEFAULT '', results text NOT NULL,
+                akp_id text NOT NULL, type text NOT NULL, source_hash text NOT NULL, ordinal integer NOT NULL,
+                mkp text NOT NULL, concept text NOT NULL DEFAULT '', results text NOT NULL,
                 concept_embedding vector, atom_embedding vector,
                 validation_status text NOT NULL DEFAULT 'APPROVED', created_at timestamptz NOT NULL DEFAULT now(),
                 PRIMARY KEY (instrument, version_id, source_mkp, ordinal))""").format(T),
@@ -65,9 +73,12 @@ class AkpStore:
             sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS inserted_at timestamptz NOT NULL DEFAULT now()").format(T),
             sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS mkp_version integer").format(T),
             sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS tier text").format(T),
-            # SAME: akp_id of every atom; a SAME atom has empty RESULTS and the existing atom's id in same_akp_id
+            # akp_id: the abbreviated id of every row (notes section 3; there is no separate element column).
+            # SAME: a SAME atom (A_REF) has the existing atom's id in same_akp_id
             sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS akp_id text").format(T),
             sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS same_akp_id text").format(T),
+            # the TSG ids of each atom (its groups field), like mkp.group_names; the confirmed group is in gkp
+            sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS group_names jsonb").format(T),
             sql.SQL("""CREATE TABLE IF NOT EXISTS {} (instrument text NOT NULL, version_id text NOT NULL,
                 source_mkp text NOT NULL, input_sha256 text NOT NULL, results_json jsonb NOT NULL,
                 updated_at timestamptz NOT NULL DEFAULT now(),
@@ -81,6 +92,8 @@ class AkpStore:
                 kind text, amended_by text, instrument_date date, effective_from date, replaced_text text, note text,
                 inserted_at timestamptz NOT NULL DEFAULT now(),
                 PRIMARY KEY (instrument, version_id, amendment_mkp))""").format(self.t(self.time_table)),
+            # the day the amending law was brought into force, when it differs from effective_from (notes section 6)
+            sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS in_force_from date").format(self.t(self.time_table)),
             # MKP table: versions (MKP adds these too; harmless if present)
             sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS is_latest boolean NOT NULL DEFAULT true").format(self.t(self.mkp_table)),
             sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS mkp_version integer NOT NULL DEFAULT 1").format(self.t(self.mkp_table)),
@@ -93,6 +106,8 @@ class AkpStore:
             if m and (m.group(1), m.group(2)) in existing:
                 continue                     # no ALTER (and no table lock) when the column is already there
             self.run(s)
+        if (self.table, "element") in existing:       # a table made before the abbreviated ids: element is no longer written
+            self.run(sql.SQL("ALTER TABLE {} ALTER COLUMN element DROP NOT NULL").format(T))
         # primary key must include akp_version so versions can live side by side
         rows = self.run(sql.SQL("""SELECT c.conname, array_agg(a.attname::text) FROM pg_constraint c
             JOIN pg_attribute a ON a.attrelid=c.conrelid AND a.attnum = ANY(c.conkey)
@@ -141,8 +156,8 @@ class AkpStore:
         return {"akp_version": r[0][0], "source_hash": r[0][1], "mkp_version": r[0][2], "atoms": int(r[0][3] or 0)} if r else None
 
     def same_as_latest(self, cur, instrument, version, source_mkp, rows: List[dict]) -> Optional[int]:
-        """The latest approved akp_version when `rows` say exactly the same (type, element, results), else None."""
-        cur.execute(sql.SQL("SELECT akp_version, type, element, results FROM {} WHERE instrument=%s AND version_id=%s "
+        """The latest approved akp_version when `rows` say exactly the same (type, akp_id, results), else None."""
+        cur.execute(sql.SQL("SELECT akp_version, type, akp_id, results FROM {} WHERE instrument=%s AND version_id=%s "
                             "AND source_mkp=%s AND is_latest AND validation_status='APPROVED' ORDER BY ordinal")
                     .format(self.t(self.table)), (instrument, version, source_mkp))
         old = cur.fetchall()
@@ -163,7 +178,7 @@ class AkpStore:
             if cv or av:
                 cur.execute(sql.SQL("UPDATE {} SET concept_embedding=COALESCE(%s::vector, concept_embedding), "
                                     "atom_embedding=COALESCE(%s::vector, atom_embedding) WHERE instrument=%s AND version_id=%s "
-                                    "AND source_mkp=%s AND element=%s AND type='A' AND is_latest").format(self.t(self.table)),
+                                    "AND source_mkp=%s AND akp_id=%s AND type='A' AND is_latest").format(self.t(self.table)),
                             (_vec(cv), _vec(av), instrument, version, source_mkp, row["ELEMENT"]))
 
     def mkp_id(self, version, source_mkp) -> Optional[tuple]:
@@ -173,33 +188,51 @@ class AkpStore:
         return r[0] if r else None
 
     def same_candidates(self, source_mkp: str, rows: List[dict], vectors: Dict[int, tuple], limit: int = 5,
-                        min_similarity: float = 0.90) -> List[dict]:
-        """Existing canonical atoms (latest, approved, TYPE A) with cosine similarity > min_similarity."""
+                        min_similarity: float = 0.90, concept_min: float = 2.0,
+                        concept_floor: float = 2.0) -> List[dict]:
+        """Existing canonical atoms (latest, approved, TYPE A) for every new atom - by law AND concept (notes
+        section 7): found by its statement (atom_embedding, similarity > min_similarity), or by its concept
+        (concept_embedding >= concept_min) when its statement is at least concept_floor alike. Each candidate has
+        both similarities and the law text of its MKP; the SAME model decides."""
         found = []
         for i, row in enumerate(rows):
             if row["TYPE"] != "A" or i not in vectors or not vectors[i][1]:
                 continue
-            v = vectors[i][1]
-            try:
-                matches = self.run(sql.SQL("""SELECT a.element, a.concept, a.results, a.instrument, a.version_id, a.source_mkp,
-                    COALESCE(a.akp_id, a.source_mkp || '::' || a.element), 1 - (a.atom_embedding <=> %s::vector),
-                    (SELECT m.results FROM {} m WHERE m.type='MKP' AND m.element=a.source_mkp AND m.version_id=a.version_id
-                     AND COALESCE(m.is_latest, true) LIMIT 1)
-                    FROM {} a WHERE a.type='A' AND a.validation_status='APPROVED' AND a.is_latest
-                    AND a.source_mkp<>%s AND a.atom_embedding IS NOT NULL AND vector_dims(a.atom_embedding)=%s
-                    ORDER BY a.atom_embedding <=> %s::vector LIMIT %s""").format(self.t(self.mkp_table), self.t(self.table)),
-                                   (_vec(v), source_mkp, len(v), _vec(v), limit), fetch=True)
-            except Exception:
-                self.conn.rollback()
-                matches = []
-            cands = []
-            for el, concept, results, inst, ver, src, aid, score, mkp_results in matches:
-                if score is None or float(score) <= min_similarity:
+            cv, av = vectors[i][0], vectors[i][1]
+            got: Dict[str, dict] = {}
+            for col, v in (("atom_embedding", av), ("concept_embedding", cv)):
+                if not v:
                     continue
-                cands.append({"akp_id": aid, "element": el, "concept": concept, "results": results, "instrument": inst,
-                              "version": ver, "source_mkp": src,
-                              "source_text": get_field({"RESULTS": mkp_results or ""}, "text"),
-                              "similarity": round(float(score), 6)})
+                try:
+                    matches = self.run(sql.SQL("""SELECT a.akp_id, a.concept, a.results, a.instrument, a.version_id,
+                        a.source_mkp, 1 - (a.atom_embedding <=> %s::vector),
+                        CASE WHEN %s::vector IS NOT NULL AND a.concept_embedding IS NOT NULL
+                             AND vector_dims(a.concept_embedding) = %s THEN 1 - (a.concept_embedding <=> %s::vector) END,
+                        (SELECT m.results FROM {m} m WHERE m.type='MKP' AND m.element=a.source_mkp
+                         AND m.version_id=a.version_id AND COALESCE(m.is_latest, true) LIMIT 1)
+                        FROM {t} a WHERE a.type='A' AND a.validation_status='APPROVED' AND a.is_latest
+                        AND a.source_mkp<>%s AND a.atom_embedding IS NOT NULL AND vector_dims(a.atom_embedding)=%s
+                        AND a.{c} IS NOT NULL AND vector_dims(a.{c})=%s
+                        ORDER BY a.{c} <=> %s::vector LIMIT %s""").format(
+                        m=self.t(self.mkp_table), t=self.t(self.table), c=sql.Identifier(col)),
+                        (_vec(av), _vec(cv), len(cv or []), _vec(cv), source_mkp, len(av), len(v), _vec(v), limit),
+                        fetch=True)
+                except Exception:
+                    self.conn.rollback()
+                    matches = []
+                for aid, concept, results, inst, ver, src, score, cscore, mkp_results in matches:
+                    if score is None or aid in got:
+                        continue
+                    score, cscore = float(score), (float(cscore) if cscore is not None else 0.0)
+                    by_concept = cscore >= concept_min and score >= concept_floor
+                    if score <= min_similarity and not by_concept:
+                        continue
+                    got[aid] = {"akp_id": aid, "element": aid, "concept": concept, "results": results,
+                                "instrument": inst, "version": ver, "source_mkp": src,
+                                "source_text": get_field({"RESULTS": mkp_results or ""}, "text"),
+                                "similarity": round(score, 6), "concept_similarity": round(cscore, 6),
+                                "by_concept": by_concept and score <= min_similarity}
+            cands = sorted(got.values(), key=lambda c: -max(c["similarity"], c["concept_similarity"]))[:limit]
             found.append({"element": row["ELEMENT"], "concept": row["CONCEPT"], "new_results": row["RESULTS"],
                           "candidates": cands})
         return found
@@ -218,24 +251,37 @@ class AkpStore:
         for i, row in enumerate(rows):
             cv, av = vectors.get(i, (None, None)) if row["TYPE"] == "A" else (None, None)
             cur.execute(sql.SQL("""INSERT INTO {} (instrument, version_id, source_mkp, mkp_id, source_hash, ordinal, mkp, type,
-                element, concept, results, concept_embedding, atom_embedding, validation_status, akp_version, is_latest,
-                inserted_at, mkp_version, tier, akp_id, same_akp_id) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::vector,
-                %s::vector,'APPROVED',%s,true,now(),%s,%s,%s,%s)""").format(T),
+                akp_id, concept, results, concept_embedding, atom_embedding, validation_status, akp_version, is_latest,
+                inserted_at, mkp_version, tier, same_akp_id, group_names) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                %s::vector,%s::vector,'APPROVED',%s,true,now(),%s,%s,%s,%s::jsonb)""").format(T),
                         (instrument, version, source_mkp, mkp_id, fingerprint, i, row["MKP"], row["TYPE"], row["ELEMENT"],
                          row["CONCEPT"], row["RESULTS"], _vec(cv), _vec(av), akp_version, mkp_version, tier,
-                         f"{source_mkp}::{row['ELEMENT']}" if row["TYPE"] in ("A", "A_REF") else None,
-                         row.get("SAME_AKP_ID")))
+                         row.get("SAME_AKP_ID"), group_names(row)))
         return akp_version
+
+    def time_facts(self, instrument, version) -> List[dict]:
+        """Saved amendments (akp_time_fact) of this document, in the time_fact() form."""
+        try:
+            rows = self.run(sql.SQL("""SELECT time_fact_id, target_citation_key, kind, effective_from, replaced_text, note
+                FROM {} WHERE instrument=%s AND version_id=%s""").format(self.t(self.time_table)), (instrument, version),
+                            fetch=True)
+        except Exception:
+            self.conn.rollback()
+            return []
+        return [{"time_fact_id": r[0], "target": r[1], "kind": r[2], "effective_from": str(r[3]) if r[3] else None,
+                 "replaced_text": r[4], "note": r[5]} for r in rows]
 
     def save_time_fact(self, cur, instrument, version, source_mkp, tf: dict) -> None:
         cur.execute(sql.SQL("""INSERT INTO {} (instrument, version_id, amendment_mkp, time_fact_id, target_citation_key, kind,
-            amended_by, instrument_date, effective_from, replaced_text, note) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            amended_by, instrument_date, effective_from, in_force_from, replaced_text, note)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ON CONFLICT (instrument, version_id, amendment_mkp) DO UPDATE SET target_citation_key=EXCLUDED.target_citation_key,
             kind=EXCLUDED.kind, amended_by=EXCLUDED.amended_by, instrument_date=EXCLUDED.instrument_date,
-            effective_from=EXCLUDED.effective_from, replaced_text=EXCLUDED.replaced_text, note=EXCLUDED.note,
+            effective_from=EXCLUDED.effective_from, in_force_from=EXCLUDED.in_force_from,
+            replaced_text=EXCLUDED.replaced_text, note=EXCLUDED.note,
             inserted_at=now()""").format(self.t(self.time_table)),
                     (instrument, version, source_mkp, tf["time_fact_id"], tf["target"], tf["kind"], tf["amended_by"],
-                     tf["instrument_date"], tf["effective_from"], tf["replaced_text"], tf["note"]))
+                     tf["instrument_date"], tf["effective_from"], tf.get("in_force_from"), tf["replaced_text"], tf["note"]))
 
     # ---------------- embeddings left empty earlier (Vertex down) -> filled now
     def backfill(self, instrument: str, embed: Callable, limit: int = 2000) -> int:
@@ -260,8 +306,8 @@ class AkpStore:
 
     # ---------------- for Excel
     def export_rows(self):
-        std = self.run(sql.SQL("""SELECT instrument, source_mkp, mkp_id, mkp, type, element, concept, results, akp_version,
-            inserted_at, akp_id, same_akp_id FROM {} WHERE is_latest AND validation_status='APPROVED' ORDER BY instrument, source_mkp, ordinal""")
+        std = self.run(sql.SQL("""SELECT instrument, source_mkp, mkp_id, mkp, type, akp_id, concept, results, akp_version,
+            inserted_at, akp_id, same_akp_id, COALESCE(group_names::text, '') FROM {} WHERE is_latest AND validation_status='APPROVED' ORDER BY instrument, source_mkp, ordinal""")
                        .format(self.t(self.table)), fetch=True)
         cache = self.run(sql.SQL("""SELECT DISTINCT ON (instrument, source_mkp) instrument, source_mkp, results_json FROM {}
             ORDER BY instrument, source_mkp, updated_at DESC""").format(self.t(self.cache_table)), fetch=True)

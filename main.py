@@ -12,7 +12,7 @@
 4. Worker pool (kp_pool.py): the scope becomes jobs (one per section / rule / paragraph; big units split);
    workers.count workers run MKP -> AKP -> GKP per job, a free worker takes the next job.
 5. When every job is done: Excel files, the governance master of every TSG that got laws, the fact catalog,
-   and a summary per document. Errors are in Output/<DOC>/error_log.csv; the full detail in Output/logs/.
+   the relationships + the fact flow observer page (relationship_builder.py), and a summary per document. Errors are in Output/<DOC>/error_log.csv; the full detail in Output/logs/.
 """
 from __future__ import annotations
 
@@ -240,12 +240,26 @@ def after_pool(cfg: dict, run: dict, totals: dict, paths: dict) -> List[dict]:
         except Exception as exc:
             flow(f"FACT CATALOG : not built ({str(exc)[:160]})")
     _mark_documents_inserted(cfg, totals)
+    _relationships(cfg)
     show_summary(cfg, totals, gm, paths)
     return gm
 
 
+def _relationships(cfg: dict) -> None:
+    """kp_relation + the fact flow observer page, at the end of every run (Config/settings.json
+    relationship.run_after_pipeline), so the page always shows the latest graph (notes section 14)."""
+    if not (cfg.get("relationship") or {}).get("run_after_pipeline"):
+        return
+    try:
+        import relationship_builder
+        relationship_builder.run(cfg=cfg)
+    except Exception as exc:                  # the run itself is done; only the page is not refreshed
+        flow(f"RELATION   : not built ({str(exc)[:160]}) - run  python relationship_builder.py")
+
+
 def _mark_documents_inserted(cfg: dict, totals: dict) -> None:
-    """A notification / circular / Act we just processed: its cross-reference row becomes INSERTED."""
+    """A notification / circular / Act we just processed: its document row (ref_document) becomes INSERTED - we
+    have its file. Then every reference row (mkp_ref) gets the status of the exact law it points to."""
     try:
         from db_insert import get_connection, get_db_schema
         from ref_ss.store import RefStore
@@ -259,6 +273,9 @@ def _mark_documents_inserted(cfg: dict, totals: dict) -> None:
                 d = cfg["documents"].get(code) or {}
                 if totals[code].done:
                     store.mark_inserted(d.get("ref_id") or code, code, d.get("name", ""), d.get("type", ""))
+            # each reference: is the exact law it points to made yet? (mkp_ref.target_status)
+            n = store.update_target_status((cfg.get("mkp") or {}).get("table", "mkp"))
+            log(f"REFERENCES : target status of {n} reference(s) updated")
         finally:
             conn.close()
     except Exception as exc:

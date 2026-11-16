@@ -231,9 +231,19 @@ def standard_gate(rows: List[dict], ctx: dict, fidelity_mode: str = "BLOCK",
         if r["CLUSTER"] != cluster:
             errors.append(f"row {r['ELEMENT']} has cluster {r['CLUSTER']}, wanted {cluster}")
             break
+    lead_ins = []
     for r in rows:
         if r["TYPE"] == "UNL" and r["ELEMENT"] not in expected:
-            errors.append(f"source boundary includes unselected {r['ELEMENT']}")
+            # a clause job gets its parent's lead-in only to read ("Subject to ... treated as—"); the lead-in is
+            # already inside the clause MKP, so a UNL row for it is dropped, not an error (7(3)(b), 2026-11-16)
+            if "LEAD_IN" in str(provisions.get(r["ELEMENT"], {}).get("role", "")):
+                lead_ins.append(r)
+                warnings.append(f"UNL row for {r['ELEMENT']} dropped - it is the lead-in of this clause, "
+                                f"already inside the clause MKP")
+            else:
+                errors.append(f"source boundary includes unselected {r['ELEMENT']}")
+    if lead_ins:
+        rows = [r for r in rows if not any(r is x for x in lead_ins)]
 
     # heading and operative text of one node share citation_key#TEXT -> heading becomes #HEAD (structure only)
     mkps = [r for r in rows if r["TYPE"] == "MKP"]

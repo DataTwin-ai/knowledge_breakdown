@@ -1,5 +1,10 @@
-"""GKP / the GST taxonomy (Config/gst_taxonomy.json, 15 TG / 81 TSG + groups GKP created): load, validate, embed once.
+"""GKP / the GST taxonomy: ONE taxonomy for MKP, AKP and GKP - the gkp_taxonomy TABLE (notes section 9).
 
+Config/gst_taxonomy.json is the reviewed starting list (15 TG / 81 TSG) and the export for people; sync() puts it in
+the table with its embeddings. GKP CREATE adds a sub-group to the table (and to the file, created_by GKP).
+current()        the taxonomy as MKP / AKP / GKP use it: the active rows of the table (base + GKP-created), read
+                 again whenever the table changed - so a group created for one law is offered for the next law
+                 of the same run. Falls back to the file while the table is still empty.
 compact_text()   the taxonomy as short lines for the MKP / AKP prompts (the groups field)
 add_subgroup()   GKP creates a sub-group (under an existing TG, or under a new TG) when nothing fits;
                  written to the taxonomy file with created_by GKP, under a lock (several workers)."""
@@ -105,11 +110,14 @@ def sync(conn, schema: str, subs: List[dict], embed: Callable, model: str, table
             tg_name text NOT NULL, tsg_name text NOT NULL, definition text NOT NULL, include_json jsonb NOT NULL,
             exclude_json jsonb NOT NULL, embedding_input_hash text NOT NULL, embedding_model text NOT NULL,
             embedding vector NOT NULL, updated_at timestamptz NOT NULL DEFAULT now())""").format(T))
-        for col, typ in (("key_provisions", "jsonb"), ("anchors", "jsonb"), ("active", "boolean")):
+        for col, typ in (("key_provisions", "jsonb"), ("anchors", "jsonb"), ("active", "boolean"),
+                         ("created_by", "text"), ("created_for", "text")):
             cur.execute(sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS {} " + typ).format(T, sql.Identifier(col)))
         cur.execute(sql.SQL("SELECT tsg_id, embedding_input_hash FROM {}").format(T))
         old = dict(cur.fetchall())
-        cur.execute(sql.SQL("UPDATE {} SET active = (tsg_id = ANY(%s))").format(T), ([s["tsg_id"] for s in subs],))
+        # a group GKP created stays active even when the file it was exported to is an older copy
+        cur.execute(sql.SQL("UPDATE {} SET active = (tsg_id = ANY(%s) OR created_by = 'GKP')").format(T),
+                    ([s["tsg_id"] for s in subs],))
     conn.commit()
     n = 0
     for s in subs:
@@ -118,24 +126,80 @@ def sync(conn, schema: str, subs: List[dict], embed: Callable, model: str, table
         if old.get(s["tsg_id"]) == fp:
             with conn.cursor() as cur:   # metadata may change without the embedding text changing
                 cur.execute(sql.SQL("UPDATE {} SET anchors=%s::jsonb, key_provisions=%s::jsonb, exclude_json=%s::jsonb, "
-                                    "active=true WHERE tsg_id=%s").format(T),
-                            (json.dumps(s["anchors"]), json.dumps(s["key_provisions"]), json.dumps(s["exclude"]), s["tsg_id"]))
+                                    "created_by=%s, created_for=%s, active=true WHERE tsg_id=%s").format(T),
+                            (json.dumps(s["anchors"]), json.dumps(s["key_provisions"]), json.dumps(s["exclude"]),
+                             s.get("created_by"), s.get("created_for"), s["tsg_id"]))
             continue
         v = embed(text)
         if not v:
             raise RuntimeError("taxonomy embedding failed - Vertex unavailable?")
         with conn.cursor() as cur:
             cur.execute(sql.SQL("""INSERT INTO {} (tsg_id, tg_id, tg_name, tsg_name, definition, include_json,
-                exclude_json, embedding_input_hash, embedding_model, embedding, key_provisions, anchors, active)
-                VALUES (%s,%s,%s,%s,%s,%s::jsonb,%s::jsonb,%s,%s,%s::vector,%s::jsonb,%s::jsonb,true)
+                exclude_json, embedding_input_hash, embedding_model, embedding, key_provisions, anchors, active,
+                created_by, created_for)
+                VALUES (%s,%s,%s,%s,%s,%s::jsonb,%s::jsonb,%s,%s,%s::vector,%s::jsonb,%s::jsonb,true,%s,%s)
                 ON CONFLICT (tsg_id) DO UPDATE SET tg_id=EXCLUDED.tg_id, tg_name=EXCLUDED.tg_name,
                 tsg_name=EXCLUDED.tsg_name, definition=EXCLUDED.definition, include_json=EXCLUDED.include_json,
                 exclude_json=EXCLUDED.exclude_json, embedding_input_hash=EXCLUDED.embedding_input_hash,
                 embedding_model=EXCLUDED.embedding_model, embedding=EXCLUDED.embedding, key_provisions=EXCLUDED.key_provisions,
-                anchors=EXCLUDED.anchors, active=true, updated_at=now()""").format(T),
+                anchors=EXCLUDED.anchors, active=true, created_by=EXCLUDED.created_by, created_for=EXCLUDED.created_for,
+                updated_at=now()""").format(T),
                         (s["tsg_id"], s["tg_id"], s["tg_name"], s["name"], s["definition"], json.dumps(s["include"]),
                          json.dumps(s["exclude"]), fp, model, "[" + ",".join(str(float(x)) for x in v) + "]",
-                         json.dumps(s["key_provisions"]), json.dumps(s["anchors"])))
+                         json.dumps(s["key_provisions"]), json.dumps(s["anchors"]), s.get("created_by"),
+                         s.get("created_for")))
         conn.commit()                      # keep paid embedding work even if a later call fails
         n += 1
     return n
+
+
+_current_lock = threading.Lock()
+_current: Dict[tuple, tuple] = {}
+
+
+def from_rows(meta: dict, rows: List[tuple]) -> Tuple[dict, List[dict]]:
+    """(data, subs) in the shape of load(), from gkp_taxonomy rows
+    (tsg_id, tg_id, tg_name, tsg_name, definition, include_json, exclude_json, key_provisions, anchors, created_by)."""
+    order = {g["tg_id"]: i for i, g in enumerate(meta.get("groups", []))}
+    descr = {g["tg_id"]: g for g in meta.get("groups", [])}
+    subs = []
+    for tsg, tg, tg_name, name, definition, inc, exc, keys, anchors, by in rows:
+        subs.append({"tsg_id": tsg, "tg_id": tg, "tg_name": tg_name, "name": name, "definition": definition,
+                     "include": list(inc or []), "exclude": list(exc or []), "key_provisions": list(keys or []),
+                     "anchors": list(anchors or []), **({"created_by": by} if by else {})})
+    subs.sort(key=lambda x: (order.get(x["tg_id"], 999), x["tg_id"], tsg_number(x["tsg_id"]), x["tsg_id"]))
+    groups: List[dict] = []
+    for x in subs:
+        if not groups or groups[-1]["tg_id"] != x["tg_id"]:
+            g = descr.get(x["tg_id"], {})
+            groups.append({"tg_id": x["tg_id"], "name": x["tg_name"], "description": g.get("description", ""),
+                           "subgroups": []})
+        groups[-1]["subgroups"].append({k: v for k, v in x.items() if k not in ("tg_id", "tg_name")})
+    return {**{k: v for k, v in meta.items() if k != "groups"}, "groups": groups}, subs
+
+
+def current(conn, schema: str, table: str, path: Path) -> Tuple[dict, List[dict]]:
+    """The one taxonomy (table first, file while the table is empty), re-read when the table changed."""
+    meta = json.loads(Path(path).read_text(encoding="utf-8-sig"))
+    T = sql.SQL("{}.{}").format(sql.Identifier(schema), sql.Identifier(table))
+    try:
+        with conn.cursor() as cur:
+            cur.execute(sql.SQL("SELECT count(*), max(updated_at)::text FROM {} WHERE COALESCE(active, true)").format(T))
+            stamp = tuple(cur.fetchone())
+    except Exception:
+        conn.rollback()
+        return load(path)
+    if not stamp[0]:
+        return load(path)
+    key = (schema, table, str(path))
+    with _current_lock:
+        hit = _current.get(key)
+        if hit and hit[0] == stamp:
+            return hit[1], hit[2]
+    with conn.cursor() as cur:
+        cur.execute(sql.SQL("""SELECT tsg_id, tg_id, tg_name, tsg_name, definition, include_json, exclude_json,
+            key_provisions, anchors, created_by FROM {} WHERE COALESCE(active, true)""").format(T))
+        data, subs = from_rows(meta, cur.fetchall())
+    with _current_lock:
+        _current[key] = (stamp, data, subs)
+    return data, subs

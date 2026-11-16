@@ -39,6 +39,8 @@ def get_db_config() -> dict:
 
 
 def get_db_schema() -> str:
+	# Credentials/.env first: a step may ask for the schema before its first connection (IKP did, and wrote to public)
+	load_project_environment()
 	return os.getenv("LEGAL_DB_SCHEMA", "public")
 
 

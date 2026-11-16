@@ -138,12 +138,29 @@ def test_reference_status_rules(conn):
                 {"CGSTR17": "CGSTR17"}, push_amending=False)
     conn.commit()
     with conn.cursor() as cur:
-        cur.execute("SELECT ref_id, status FROM t_ref_doc ORDER BY 1")
-        assert dict(cur.fetchall()) == {"ACT_31_2018": "SKIPPED", "CGSTR17": "INSERTED", "N_CTR_04_2018": "PENDING"}
-    assert [p["ref_id"] for p in st.pending()] == ["N_CTR_04_2018"]
+        cur.execute("SELECT ref_id, status FROM t_ref_doc ORDER BY 1")      # amending Acts are not skipped any more
+        assert dict(cur.fetchall()) == {"ACT_31_2018": "PENDING", "CGSTR17": "INSERTED", "N_CTR_04_2018": "PENDING"}
+    assert sorted(p["ref_id"] for p in st.pending()) == ["ACT_31_2018", "N_CTR_04_2018"]
     st.mark_inserted("N_CTR_04_2018", "N04_2018")
-    got = {r["ref_id"]: r["status"] for r in st.for_mkp("V1", "CGSTA17_S15_SS1#TEXT")}
-    assert got["N_CTR_04_2018"] == "INSERTED"
+    # the status of each law: CGSTR17 file is held, but rule 27 has no MKP yet -> PENDING; the notification has one
+    with conn.cursor() as cur:
+        cur.execute("""DROP TABLE IF EXISTS public.t_ref_mkp;
+            CREATE TABLE public.t_ref_mkp (type text, element text, is_latest boolean, instrument_code text);
+            INSERT INTO public.t_ref_mkp VALUES ('MKP', 'N04_2018_P1#TEXT', true, 'N04_2018'),
+                                                ('MKP', 'CGSTR17_R2#TEXT', true, 'CGSTR17')""")
+    conn.commit()
+    assert st.update_target_status("t_ref_mkp") == 3
+    got = {r["ref_id"]: (r["status"], r["doc_status"]) for r in st.for_mkp("V1", "CGSTA17_S15_SS1#TEXT")}
+    assert got == {"N_CTR_04_2018": ("INSERTED", "INSERTED"), "CGSTR17": ("PENDING", "INSERTED"),
+                   "ACT_31_2018": ("PENDING", "PENDING")}
+    with conn.cursor() as cur:                                            # rule 27 is made -> INSERTED
+        cur.execute("INSERT INTO public.t_ref_mkp VALUES ('MKP', 'CGSTR17_R27_SR1#TEXT', true, 'CGSTR17')")
+    conn.commit()
+    st.update_target_status("t_ref_mkp")
+    assert {r["ref_id"]: r["status"] for r in st.for_mkp("V1", "CGSTA17_S15_SS1#TEXT")}["CGSTR17"] == "INSERTED"
+    with conn.cursor() as cur:
+        cur.execute("DROP TABLE public.t_ref_doc; DROP TABLE public.t_ref_link; DROP TABLE public.t_ref_mkp")
+    conn.commit()
 
 
 def test_delete_cascade_removes_everything_made_from_an_mkp(conn):
@@ -300,3 +317,15 @@ def test_claude_credit_error_is_answered_by_gemini(monkeypatch):
     with pytest.raises(RuntimeError, match="CLAUDE call failed"):
         L.call_llm(rt, "q")
     L.configure(None, True, None)
+
+
+def test_amending_act_check_and_folder(monkeypatch, tmp_path):
+    """Amending Acts are fetched too (Law/Amendments) and checked by 'No. 31 of 2018' (notes section 13)."""
+    from ref_ss import fetch
+    import ref_engine
+    monkeypatch.setattr(fetch, "first_pages_text", lambda path, pages=2: "THE CGST (AMENDMENT) ACT, 2018 NO. 31 OF 2018")
+    assert fetch.verify_pdf(tmp_path / "x.pdf", 31, 2018, "AMENDING_ACT")[0]
+    assert not fetch.verify_pdf(tmp_path / "x.pdf", 32, 2018, "AMENDING_ACT")[0]
+    assert ref_engine._folder_type({"kind": "AMENDING_ACT"}) == ("ACT", "AMENDMENT")
+    assert ref_engine._folder_type({"kind": "CIRCULAR"}) == ("CIRCULAR", "CIRCULAR")
+    assert ref_engine._check_content({}, {"ref_id": "ACT_31_2018"}, "text", []) == (True, "no citing law text to compare with")

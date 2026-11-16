@@ -12,7 +12,7 @@ import re
 import urllib.parse
 import urllib.request
 from pathlib import Path
-from typing import Iterable, Optional, Tuple
+from typing import Iterable, List, Optional, Tuple
 
 import kp_settings
 from kp_console import flow, log
@@ -48,6 +48,54 @@ def fetch_pdf(url: str, timeout: int = 60, allowed_hosts: Optional[Iterable[str]
     return data
 
 
+def check_link(url: str, timeout: int = 30, allowed_hosts: Optional[Iterable[str]] = None) -> Tuple[bool, str]:
+    """Does the link work? An official host, HTTP 200, and the first bytes are a PDF (only the start is read)."""
+    parts = urllib.parse.urlparse(url or "")
+    if parts.scheme not in ("http", "https") or not parts.netloc:
+        return False, f"not a web link: {url}"
+    if allowed_hosts and parts.hostname not in set(allowed_hosts):
+        return False, f"host {parts.hostname} is not in refs.allowed_hosts"
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "application/pdf,*/*",
+                                               "Range": "bytes=0-1023"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            status = getattr(resp, "status", 200)
+            if status not in (200, 206):
+                return False, f"HTTP {status}"
+            head = resp.read(1024)
+    except Exception as exc:
+        return False, f"does not open - {type(exc).__name__}: {str(exc)[:120]}"
+    if not head.startswith(b"%PDF"):
+        return False, "opens, but it is not a PDF (a web page?)"
+    return True, "opens, PDF"
+
+
+def pdf_links_in_page(url: str, timeout: int = 30, allowed_hosts: Optional[Iterable[str]] = None,
+                      words: Iterable[str] = ()) -> List[str]:
+    """The PDF links on an official web page (a page that lists the document), best first: the links whose
+    address or text has the document's number / year come first. Only official hosts; nothing is downloaded."""
+    parts = urllib.parse.urlparse(url or "")
+    hosts = set(allowed_hosts or [])
+    if parts.scheme not in ("http", "https") or (hosts and parts.hostname not in hosts):
+        return []
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "text/html,*/*"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            html = resp.read(3_000_000).decode("utf-8", "replace")
+    except Exception:
+        return []
+    words = [str(w).lower() for w in words if str(w).strip()]
+    found = []
+    for m in re.finditer(r"<a\b[^>]*href=[\"']([^\"']+)[\"'][^>]*>(.*?)</a>", html, flags=re.I | re.S):
+        link = urllib.parse.urljoin(url, m.group(1).strip())
+        if ".pdf" not in link.lower() or (hosts and urllib.parse.urlparse(link).hostname not in hosts):
+            continue
+        text = (link + " " + re.sub(r"<[^>]+>", " ", m.group(2))).lower()
+        found.append((sum(w in text for w in words), link))
+    found.sort(key=lambda x: -x[0])
+    return list(dict.fromkeys(link for _, link in found))
+
+
 def first_pages_text(path: Path, pages: int = 2) -> str:
     try:
         import pymupdf
@@ -69,6 +117,11 @@ def verify_pdf(path: Path, number: Optional[int], year: Optional[int], kind: str
     except Exception as exc:
         return False, f"could not read the PDF ({type(exc).__name__})"
     text = " ".join(text.split())
+    if kind == "AMENDING_ACT":                        # "No. 31 of 2018"
+        pat = rf"(?<!\d){int(number)}\s+of\s+{int(year)}(?!\d)"
+        if not re.search(pat, text, re.I):
+            return False, f"Act {number} of {year} is not in the first pages"
+        return True, "number and year found"
     pat = rf"(?<!\d)0?{int(number)}\s*/\s*(?:\d+\s*/\s*)?{int(year)}(?!\d)"
     if not re.search(pat, text):
         return False, f"{kind.lower()} {number}/{year} is not in the first pages"

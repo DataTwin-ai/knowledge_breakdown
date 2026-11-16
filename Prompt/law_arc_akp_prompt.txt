@@ -1,3 +1,6 @@
+PROMPT EDIT 2026-11-16 (2): FACT CONCEPT = the kind of input, 2-3 words, never the name repeated.
+PROMPT EDIT 2026-11-16: FACT CONCEPT added (every TXN FACTS row has a 2- or 3-word CONCEPT, like an A row; Python embeds it to find the same fact across laws).
+PROMPT EDIT 2026-11-15: NAME AND HANDLER FIELDS added (name on every element row -> Python makes the abbreviated id; handler python / light / heavy on every A row; source_kind and, for a NEW fact, new_reason on every FACTS row).
 PROMPT EDIT 2026-11-09: groups field (TG / TSG) added; the GST taxonomy is now sent with this prompt.
 PROMPT EDIT 2026-11-10: RETRY section added (ERRORS FROM LAST TIME + YOUR TABLE LAST TIME on a retry).
 ROLE — DARP LAW ARC AKP GENERATOR (MAP → FRAME → SPLIT)
@@ -13,6 +16,24 @@ GROUPS FIELD — EVERY A ROW
   give more than one only when the atom really serves both checks.
 - Use ONLY ids printed in the GST TAXONOMY. Never invent an id. If no TSG fits, write `groups: []`
   (GKP decides later). Never distort, omit, narrow or force a source concept merely to fit a taxonomy entry.
+
+NAME AND HANDLER FIELDS — EVERY A, G, LE, PD, OR, CT AND TC ROW
+- name: "<3-7 words, Title Case, from the element's own text>" on every A, G, LE, PD, OR, CT and TC row, and on
+  every TXN FACTS row (the fact name). Python makes the final id from the first letter of every word of the name
+  (numerals kept whole, at most 10 letters): A row name "Supply Is A Sale" in M_SIAFOS -> M_SIAFOS_A_SIAS;
+  fact name "Form Of Supply" -> F_FOS. Keep using your own working ids (A_SALE, LE_SOG, F_SUPPLY_FORM) inside the
+  table - Python rewrites every id everywhere. Never shorten the statement to fit the name.
+  A fact taken from INPUT.fact_registry keeps its fact_id exactly as given - do not rename it.
+- handler: who checks the atom when a document is validated, on EVERY A row, decided while splitting:
+    python  a plain check of fact values (=, <, >, IN a list, IS_SET) - goes with order: LOW and a rule;
+    light   needs reading, but one or two facts and an easy, short question - goes with order: HIGH;
+    heavy   a real legal judgement: several facts, or the law's wording must be weighed - order: HIGH.
+  python atoms give a rule and no interpretation; light / heavy atoms give an interpretation and at least one
+  fact. A legal judgement is never python.
+- source_kind on every TXN FACTS row: where the value comes from - DOCUMENT (a column / field of the document
+  checked, e.g. invoice date), WORKED_OUT (calculated from other facts; then also derived_from and derivation),
+  LOOKUP (a register or master, e.g. GSTIN status) or ASK (only a person can answer). A fact is a RAW input:
+  "date of birth" is a fact, "is a senior citizen" is an atom on it.
 
 CONCEPT-FIRST LEGAL ATOMICITY
 1. FIRST identify complete legal concept families in the source, THEN create meaningful A rows.
@@ -59,8 +80,15 @@ CONCEPT COLUMN AND FAMILY — MANDATORY FOR ATOMS
 - Avoid one-word concepts or vague categories: "Transfer", "GST", "Law", "Tax" are invalid.
 - Use the same short concept for precisely the same meaning; keep the original atom statement
   complete, irrespective of concept length. Do not use permanent group or subgroup IDs.
+- Every TXN FACTS row MUST have a 2- or 3-word CONCEPT too: the KIND of input, not the fact name repeated -
+  no small words (of, the, for), e.g. name "Supply Consideration Status" -> concept "Consideration Status";
+  name "Form Of Supply" -> "Supply Form"; "Description Of Supplier Activity" -> "Activity Description";
+  "Date Of Invoice" -> "Invoice Date". Two facts that ask the same question get the same concept even when
+  their names differ - that is how the same input is found across laws. A registry fact keeps the concept
+  INPUT.fact_registry gives it.
 - A_REF rows, if any, retain the referring atom's concept. Other row types can use a short
-  explanatory concept or NA. Python generates embeddings of A.CONCEPT and A.statement separately.
+  explanatory concept or NA. Python generates embeddings of A.CONCEPT and A.statement separately, and of the
+  FACTS CONCEPT and the fact name + nl separately.
 
 REFERENCES — STORE IN RESULTS
 - When this atom explicitly refers to another law provision, append
@@ -82,7 +110,7 @@ SAME ATOMS
 OTHER ELEMENTS (PRESERVE FROM EXISTING DESIGN)
 - LE: one per outcome; expr uses only A_, G_, PD_ tokens with AND/OR/NOT, never F_.
 - G: ALL or ANY with two or more members; child MKPs retain appropriate dependencies.
-- A: family; statement; phrases; scope; role; order LOW/HIGH; tier; resolver; facts; rule or
+- A: family; name; statement; phrases; scope; role; order LOW/HIGH; handler; tier; resolver; facts; rule or
   interpretation; false_if if legally necessary; nl; reference when explicitly present.
 - FACTS: F_ transaction inputs with type, resolver, used_by, evidence and nl.
 - PD: previously established product needed as input, never an invented output.
@@ -107,7 +135,7 @@ FACTS - THE FACT NETWORK (MANDATORY)
 - FACTS RESULTS: name; entity; type (BOOL, CODE, AMOUNT, NUMBER, PERCENT, DATE, PERIOD, TEXT, LIST, ID, QUANTITY);
   options for CODE; unit for AMOUNT / PERIOD / QUANTITY; evidence: [documents that prove it];
   derived_from: [F_...] when computed from other facts (age from date of birth); registry: EXISTING or NEW;
-  used_by; nl.
+  new_reason: "<why no INPUT.fact_registry fact fits>" on every NEW fact; used_by; nl.
 - EVERY operative A names at least one fact in facts: [...] (or the PD it relies on). LOW atoms give a rule on
   those facts; HIGH atoms still name the evidence fact the heavy model will read (e.g. F_ACTIVITY_DESCRIPTION)
   and give an interpretation question.
@@ -154,13 +182,13 @@ MKP|TYPE|ELEMENT|CONCEPT|RESULTS
 M_SIAFOS|MKP|M_SIAFOS|NA|citation: "Section 7(1)(a)"; citation_key: CGSTA17_S7_SS1_Ca; frame: INCLUSIVE
 M_SIAFOS|LE|LE_SIAFOS|NA|outcome: SUPPLY_INCLUDED; expr: "G_FORMS AND A_COB"
 M_SIAFOS|G|G_FORMS|NA|logic: ANY; members: [A_SALE, A_TRANSFER, A_OTHER]
-M_SIAFOS|A|A_SALE|Sale Transaction|family: "Forms of Supply"; groups: [TSG01_01]; statement: "The supply takes the form of sale of goods, services or both"; phrases: [SP3]; scope: TRANSACTION; role: CONDITION; order: LOW; resolver: EXPRESSION; facts: [F_SUPPLY_FORM]; rule: "F_SUPPLY_FORM = 'SALE'"; nl: "A sale transaction"
-M_SIAFOS|A|A_TRANSFER|Transfer Transaction|family: "Forms of Supply"; statement: "The supply takes the form of transfer of goods, services or both"; phrases: [SP3]; scope: TRANSACTION; role: CONDITION; order: LOW; resolver: EXPRESSION; facts: [F_SUPPLY_FORM]; rule: "F_SUPPLY_FORM = 'TRANSFER'"; nl: "A transfer transaction"
-M_SIAFOS|A|A_OTHER|Other Supply Forms|family: "Forms of Supply"; statement: "The supply is another qualifying form of goods or services or both"; phrases: [SP3]; scope: TRANSACTION; role: CONDITION; order: HIGH; resolver: HEAVY_MODEL; facts: [F_SUPPLY_FORM, F_SUPPLY_DESCRIPTION]; interpretation: "Is this form of supply of the same kind as the listed forms?"; nl: "A form not in the examples"
-M_SIAFOS|A|A_COB|Business Activity|family: "Supplier Business Context"; statement: "A person makes or agrees to make the supply in the course or furtherance of business"; phrases: [SP7]; scope: TRANSACTION; role: CONDITION; order: HIGH; resolver: HEAVY_MODEL; facts: [F_ACTIVITY_DESCRIPTION]; interpretation: "Is the activity in the course or furtherance of business?"; nl: "An activity connected with business"
-TXN|FACTS|F_SUPPLY_FORM|NA|name: "Form of supply"; entity: SUPPLY; type: CODE; options: [SALE, TRANSFER, OTHER]; evidence: [invoice, contract]; registry: NEW; used_by: [A_SALE, A_TRANSFER, A_OTHER]
-TXN|FACTS|F_SUPPLY_DESCRIPTION|NA|name: "Description of the supply"; entity: SUPPLY; type: TEXT; evidence: [invoice, contract]; registry: NEW; used_by: [A_OTHER]
-TXN|FACTS|F_ACTIVITY_DESCRIPTION|NA|name: "Description of the supplier's activity"; entity: ACTIVITY; type: TEXT; evidence: [business records, registration details]; registry: NEW; used_by: [A_COB]
+M_SIAFOS|A|A_SALE|Sale Transaction|family: "Forms of Supply"; name: "Supply Is A Sale"; groups: [TSG01_01]; statement: "The supply takes the form of sale of goods, services or both"; phrases: [SP3]; scope: TRANSACTION; role: CONDITION; order: LOW; handler: python; resolver: EXPRESSION; facts: [F_SUPPLY_FORM]; rule: "F_SUPPLY_FORM = 'SALE'"; nl: "A sale transaction"
+M_SIAFOS|A|A_TRANSFER|Transfer Transaction|family: "Forms of Supply"; name: "Supply Is A Transfer"; statement: "The supply takes the form of transfer of goods, services or both"; phrases: [SP3]; scope: TRANSACTION; role: CONDITION; order: LOW; handler: python; resolver: EXPRESSION; facts: [F_SUPPLY_FORM]; rule: "F_SUPPLY_FORM = 'TRANSFER'"; nl: "A transfer transaction"
+M_SIAFOS|A|A_OTHER|Other Supply Forms|family: "Forms of Supply"; name: "Supply Is Another Form"; statement: "The supply is another qualifying form of goods or services or both"; phrases: [SP3]; scope: TRANSACTION; role: CONDITION; order: HIGH; handler: light; resolver: HEAVY_MODEL; facts: [F_SUPPLY_FORM, F_SUPPLY_DESCRIPTION]; interpretation: "Is this form of supply of the same kind as the listed forms?"; nl: "A form not in the examples"
+M_SIAFOS|A|A_COB|Business Activity|family: "Supplier Business Context"; name: "Supply In Course Of Business"; statement: "A person makes or agrees to make the supply in the course or furtherance of business"; phrases: [SP7]; scope: TRANSACTION; role: CONDITION; order: HIGH; handler: heavy; resolver: HEAVY_MODEL; facts: [F_ACTIVITY_DESCRIPTION]; interpretation: "Is the activity in the course or furtherance of business?"; nl: "An activity connected with business"
+TXN|FACTS|F_SUPPLY_FORM|Supply Form|name: "Form of supply"; entity: SUPPLY; type: CODE; options: [SALE, TRANSFER, OTHER]; evidence: [invoice, contract]; registry: NEW; used_by: [A_SALE, A_TRANSFER, A_OTHER]
+TXN|FACTS|F_SUPPLY_DESCRIPTION|Supply Description|name: "Description of the supply"; entity: SUPPLY; type: TEXT; evidence: [invoice, contract]; registry: NEW; used_by: [A_OTHER]
+TXN|FACTS|F_ACTIVITY_DESCRIPTION|Activity Description|name: "Description of the supplier's activity"; entity: ACTIVITY; type: TEXT; evidence: [business records, registration details]; registry: NEW; used_by: [A_COB]
 M_SIAFOS|SP|SP3|NA|role: ILLUSTRATIVE; text: "such as sale, transfer, barter, exchange, licence, rental, lease or disposal"; elements: [A_SALE, A_TRANSFER, A_OTHER]
 M_SIAFOS|SUM|M_SIAFOS|NA|atoms: 4; notes: "Illustrative example only: supply of this MKP also needs all omitted parts in actual output"
 

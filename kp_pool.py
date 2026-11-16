@@ -2,10 +2,13 @@
 
     jobs   the chosen scope of every document, cut by mkp_ss/scope.jobs_for(): one job per section / rule /
            schedule paragraph / circular paragraph; a unit bigger than pool.max_job_chars is split at sub-sections,
-           then clauses (its heading and lead-in become one small extra job). Acts first, then Rules,
+           then clauses (its heading and lead-in become one small extra job). pool.max_job_chars = 0 splits every
+           unit down to its smallest parts, so no worker waits behind one big section. Acts first, then Rules,
            notifications, circulars (law order inside each document).
     queue  every job waits in one queue. permission.json workers.count workers (W1, W2 ...) each take the next
            job as soon as they are free - whichever worker finishes first takes the next one.
+    waves  base laws first (mkp_ss/waves.py, pool.waves): a worker takes a job of a later wave only when every
+           job of the waves before it is finished, so the core facts exist before the other laws need them.
     job    MKP for the unit, then AKP for its MKPs, then GKP for its atoms (one database connection per worker).
     errors a unit that fails a step goes to Output/<DOC>/error_log.csv and the worker takes the next job.
            An MKP gate failure splits the unit into its parts (new jobs at the front of the queue).
@@ -36,6 +39,7 @@ class Job:
     depth: int = 0                    # 1, 2, 3 = a part made after an MKP gate failure
     requeues: int = 0
     no: int = 0
+    wave: int = 0                     # run wave (mkp_ss/waves.py): a wave starts when the waves before it are done
     requeued: bool = False            # this attempt was put back in the queue (not counted as finished)
 
     @property
@@ -95,6 +99,10 @@ class Pool:
         self.counter = 0
         self.stopped = ""                     # why the run was stopped (no credit, wrong key ...)
         self.usage_rows: List[dict] = []      # one row per finished job (Output/usage.xlsx, sheet Jobs)
+        from mkp_ss.waves import WavePlan
+        self.waves = WavePlan(pool_cfg)       # base laws first (notes section 16)
+        self.wave_pending: Dict[int, int] = {}
+        self.wave_now = None
         kp_usage.reset()
 
     # ---------------------------------------------------------------- queue
@@ -104,6 +112,9 @@ class Pool:
             for j in jobs:
                 self.counter += 1
                 j.no = self.counter
+                if not j.wave:
+                    j.wave = self.waves.wave_of(j.batch.root, j.doc.get("type", ""))
+                self.wave_pending[j.wave] = self.wave_pending.get(j.wave, 0) + 1
                 self.total_jobs += 1
                 self.totals.setdefault(j.code, DocTotals()).jobs += 1
             if front:
@@ -114,14 +125,28 @@ class Pool:
             self.cv.notify_all()
 
     def _next(self) -> Optional[Job]:
-        """The next job for a free worker; None when every job is finished."""
+        """The next job for a free worker; None when every job is finished. Only jobs of the lowest wave that still
+        has work are handed out: a later wave waits until the earlier waves are done."""
         with self.cv:
-            while not self.items and not self.closing:
+            while True:
+                if self.items:
+                    now = min(w for w, n in self.wave_pending.items() if n > 0)
+                    for i, j in enumerate(self.items):
+                        if j.wave == now:
+                            del self.items[i]
+                            if self.wave_now != now:
+                                self.wave_now = now
+                                left = sum(1 for x in self.items if x.wave == now) + 1
+                                flow(f"WAVE {now}    : {self.waves.name(now)} - {left} job(s)")
+                            return j
+                elif self.closing:
+                    return None
                 self.cv.wait()
-            return self.items.popleft() if self.items else None
 
-    def _finish(self, counted: bool = True) -> None:
+    def _finish(self, counted: bool = True, wave: int = 0) -> None:
         with self.cv:
+            if wave in self.wave_pending:
+                self.wave_pending[wave] -= 1
             self.pending -= 1
             self.finished += 1 if counted else 0
             if self.pending <= 0:
@@ -199,6 +224,8 @@ class Pool:
             self.stopped = why
             left = len(self.items)
             self.pending -= left
+            for j in self.items:
+                self.wave_pending[j.wave] -= 1
             self.items.clear()
             if self.pending <= 0:
                 self.closing = True
@@ -244,7 +271,7 @@ class Pool:
                             pass
                     with self.lock:
                         self.busy -= 1
-                    self._finish(counted=not job.requeued)
+                    self._finish(counted=not job.requeued, wave=job.wave)
         finally:
             for r in runs.values():
                 try:
@@ -296,7 +323,8 @@ class Pool:
                                  + " ".join(str(exc).split())[:300])
                     flow(f"[{name}] split  {job.code} {job.name} - MKP check failed, {len(kids)} part(s) queued first")
                     self.add([Job(job.doc, Batch(k, label_of(run.idx, k), k, True, False, b.cluster_id,
-                                                 b.business_question), job.depth + 1) for k in kids], front=True)
+                                                 b.business_question), job.depth + 1, wave=job.wave) for k in kids],
+                             front=True)
                     with self.lock:
                         tot.done += 1
                     return

@@ -101,9 +101,9 @@ def test_governance_master_folder_written_once_and_left_alone_when_unchanged(tmp
     s = p4.validate_governance_master_settings({**perm["governance_master"], "save_to_db": False, "use_cache": True,
                                                 "output_dir": str(tmp_path / "Governance_Master")})
     r = p4.build_governance_master("TSG01_03", snapshot(), None, perm, s)
-    f = tmp_path / "Governance_Master" / "TG01" / "TSG01_03" / "rulebook.yaml"
+    f = tmp_path / "Governance_Master" / "TG01" / "TSG01_03_rulebook.yaml"
     assert r["status"] == "WRITTEN" and f.is_file(), r
-    assert (f.parent / "report.xlsx").is_file() and not (f.parent / "versions").exists()
+    assert (f.parent / "report" / "TSG01_03_report.xlsx").is_file() and not (f.parent / "versions").exists()
     first = f.stat().st_mtime_ns
     r2 = p4.build_governance_master("TSG01_03", snapshot(), None, perm, s)
     assert r2["status"] == "WRITTEN" and f.stat().st_mtime_ns == first      # same content: file not rewritten
@@ -117,7 +117,7 @@ def test_spine_only_tsg_still_gets_a_governance_master(tmp_path):
     snap = snapshot()
     snap.gkp = [g for g in snap.gkp if g["source_mkp"].startswith("CGSTA17_S7")]
     r = p4.build_governance_master("TSG01_03", snap, None, perm, s)
-    f = tmp_path / "Governance_Master" / "TG01" / "TSG01_03" / "rulebook.yaml"
+    f = tmp_path / "Governance_Master" / "TG01" / "TSG01_03_rulebook.yaml"
     assert r["status"] == "WRITTEN" and f.is_file()                        # the spine itself is the governance master
     assert "A_AIAB:" in f.read_text(encoding="utf-8")
 
@@ -134,4 +134,4 @@ def test_amendment_only_tsg_writes_no_empty_file(tmp_path):
     r = p4.build_governance_master("TSG14_02", snap, None, perm, s)
     assert r["status"] in ("EMPTY", "WRITTEN")
     if r["status"] == "EMPTY":
-        assert not (tmp_path / "Governance_Master" / "TG14" / "TSG14_02" / "rulebook.yaml").exists()
+        assert not (tmp_path / "Governance_Master" / "TG14" / "TSG14_02_rulebook.yaml").exists()

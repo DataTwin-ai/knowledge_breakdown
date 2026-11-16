@@ -30,6 +30,7 @@ from typing import Callable, Dict, List, Optional
 
 from gkp_ss import excel as excel_mod
 from gkp_ss import taxonomy as tax
+from gkp_ss import score as gscore
 from gkp_ss.candidates import CandidateFinder
 from gkp_ss.store import GkpStore, provision_prefix
 from gkp_ss.verify import Verifier, parse_create
@@ -89,6 +90,15 @@ def validate_gkp_settings(raw: dict, permission: dict) -> dict:
     s["create_groups"] = bool(s["create_groups"] if "create_groups" in s
                               else (permission.get("features") or {}).get("gkp_create_groups", True))
     s["create_reuse_similarity"] = float(s.get("create_reuse_similarity", 0.85))
+    # the Python check of the AKP's group (notes section 1)
+    for k in ("confirm_min_similarity", "confirm_top_n", "audit_share", "calibrate"):
+        if k not in s:
+            raise ValueError(f"Config/settings.json gkp.{k} is missing")
+    s["confirm_min_similarity"] = float(s["confirm_min_similarity"])
+    s["confirm_top_n"] = max(1, int(s["confirm_top_n"]))
+    s["audit_share"] = min(1.0, max(0.0, float(s["audit_share"])))
+    if type(s["calibrate"]) is not bool:
+        raise ValueError("gkp.calibrate must be true or false")
     refs = permission.get("refs") or {}
     s["ref_document_table"] = refs.get("document_table", "ref_document")
     s["ref_link_table"] = refs.get("link_table", "mkp_ref")
@@ -146,12 +156,13 @@ def _embedder(embed=None):
 
 
 def _row(base: dict, sub: Optional[dict], status: str, method: str, reason: str, cand: Optional[dict] = None,
-         dec: Optional[dict] = None) -> dict:
+         dec: Optional[dict] = None, python_score: Optional[float] = None) -> dict:
     return dict(base, tg_id=sub["tg_id"] if sub else "", tg_name=sub["tg_name"] if sub else "",
                 tsg_id=sub["tsg_id"] if sub else "", tsg_name=sub["name"] if sub else "",
                 status=status, method=method, reason=reason,
                 concept_score=(cand or {}).get("concept_score"), atom_score=(cand or {}).get("atom_score"),
-                sources=(cand or {}).get("sources", []), model_1=(dec or {}).get("model_1"), model_2=(dec or {}).get("model_2"))
+                sources=(cand or {}).get("sources", []), model_1=(dec or {}).get("model_1"), model_2=(dec or {}).get("model_2"),
+                python_score=python_score)
 
 
 def run_gkp_scope(instrument, scope_key="ALL", version_id=None, fake_llm: Optional[Callable] = None,
@@ -171,7 +182,10 @@ def run_gkp_scope(instrument, scope_key="ALL", version_id=None, fake_llm: Option
     tvm = f"{tv}|{GKP_METHOD}"                 # saved on every row: taxonomy + how candidates were found
     amend_tsg = data.get("amendment_tsg", "TSG14_02")
     doc_type = str(((permission.get("documents") or {}).get(str(instrument).upper()) or {}).get("type") or "").upper()
-    subordinate = doc_type not in ("ACT", "RULES", "")
+    # a notification / circular, or any outside document the scraper brought in (it has a ref_id, e.g. an amending
+    # Act ACT_31_2018): its atoms take the groups of the laws that cite it, no grouping LLM (notes section 13)
+    doc_info = (permission.get("documents") or {}).get(str(instrument).upper()) or {}
+    subordinate = doc_type not in ("ACT", "RULES", "") or bool(doc_info.get("ref_id"))
     prompt = (_path(permission["paths"]["prompt_dir"]) / permission["files"]["gkp_prompt"]).read_text(encoding="utf-8-sig")
     paths = _paths(permission)
     from dotenv import load_dotenv
@@ -198,6 +212,16 @@ def run_gkp_scope(instrument, scope_key="ALL", version_id=None, fake_llm: Option
         if not s["taxonomy_synced"]:          # the worker pool syncs once before the workers start
             counts["taxonomy_embeddings"] = tax.sync(conn, get_db_schema(), subs, embed_fn, emb_model,
                                                      f"{s['table_prefix']}_taxonomy")
+        # the ONE taxonomy (notes section 9): the gkp_taxonomy table - base groups + the groups GKP created
+        data, subs = tax.current(conn, get_db_schema(), f"{s['table_prefix']}_taxonomy", _path(s["taxonomy_file"]))
+        by_id.clear()
+        by_id.update({x["tsg_id"]: x for x in subs})
+        core.clear()
+        core.update(g["tg_id"] for g in data["groups"])
+        by_tg_name.update({g["tg_id"]: g["name"] for g in data["groups"]})
+        tv = f"{tax_id}:{tax.taxonomy_hash(subs)}"
+        tvm = f"{tv}|{GKP_METHOD}"
+        finder = CandidateFinder(store, by_id, s, f"{s['table_prefix']}_taxonomy")
         version = version_id or _version(conn, instrument, s["mkp_table"], scope_key or "ALL")
         mkps = {k: v for k, v in store.mkps(instrument, version).items()
                 if _in_scope(provision_prefix(k), instrument, scope_key or "ALL")
@@ -298,7 +322,7 @@ def run_gkp_scope(instrument, scope_key="ALL", version_id=None, fake_llm: Option
 
         def new_group(d: dict, mkp: str) -> str:
             """Create (or reuse) one sub-group; one worker at a time."""
-            nonlocal subs
+            nonlocal subs, finder
             with _create_lock:
                 norm = lambda t: re.sub(r"[^a-z0-9]+", " ", str(t).lower()).strip()
                 same_name = next((x["tsg_id"] for x in by_id.values() if norm(x["name"]) == norm(d["name"])), None)
@@ -324,11 +348,13 @@ def run_gkp_scope(instrument, scope_key="ALL", version_id=None, fake_llm: Option
                 tg = d.get("tg_id") if d.get("tg_id") in core else ""
                 sid = tax.add_subgroup(_path(s["taxonomy_file"]), tg, d["name"], d["definition"], d["include"],
                                        d["exclude"], d.get("tg_name", ""), d.get("tg_description", ""), mkp)
-                _, subs = tax.load(_path(s["taxonomy_file"]))
+                _, file_subs = tax.load(_path(s["taxonomy_file"]))
+                tax.sync(conn, get_db_schema(), file_subs, embed_fn, emb_model, f"{s['table_prefix']}_taxonomy")
+                _, subs = tax.current(conn, get_db_schema(), f"{s['table_prefix']}_taxonomy", _path(s["taxonomy_file"]))
                 by_id.clear()
                 by_id.update({x["tsg_id"]: x for x in subs})
                 core.update(x["tg_id"] for x in subs)
-                tax.sync(conn, get_db_schema(), subs, embed_fn, emb_model, f"{s['table_prefix']}_taxonomy")
+                finder = CandidateFinder(store, by_id, s, f"{s['table_prefix']}_taxonomy")   # its words too
                 counts["groups_created"] += 1
                 created.append(f"{sid} {d['name']} ({by_id[sid]['tg_id']} {by_id[sid]['tg_name']})")
                 log(f"GKP CREATE             : new sub-group {sid} '{d['name']}' under {by_id[sid]['tg_id']}")
@@ -375,6 +401,8 @@ def run_gkp_scope(instrument, scope_key="ALL", version_id=None, fake_llm: Option
             rows: List[dict] = []
             atoms: List[dict] = []
             inherited_keys = []
+            akp_check: Dict[str, dict] = {}         # atoms whose AKP group goes to the verifiers (score low / audit)
+            calib: List[list] = []
             if kt == "AMENDMENT":
                 base = {"instrument": instrument, "version_id": version, "source_mkp": mkp, "mkp_id": mkp_id, "akp_id": None,
                         "akp_element": mkp_row["element"], "akp_type": "MKP", "concept": "Amendment record"}
@@ -423,16 +451,39 @@ def run_gkp_scope(instrument, scope_key="ALL", version_id=None, fake_llm: Option
                         if not given:
                             given = [t for t in doc_groups if t in by_id]
                             method = "DOCUMENT_GROUP"
-                    if given:
+                    if given and method != "AKP_GROUP":
                         for t in given:
                             rows.append(_row(base, by_id[t], "APPROVED", method,
-                                             "groups given by the MKP and AKP judges" if method == "AKP_GROUP"
-                                             else "group of its MKP" if method == "MKP_GROUP"
+                                             "group of its MKP" if method == "MKP_GROUP"
                                              else "group of this document (or of the provisions that cite it)"))
-                        counts["akp_group" if method == "AKP_GROUP" else "mkp_group"] += 1
+                        counts["mkp_group"] += 1
                         inherited_keys.append((method, r["element"], given))
                         continue
                     facts = store.atom_facts(instrument, version, mkp, r["element"])
+                    if given:                     # AKP's group: checked by the Python score, the LLM only when unsure
+                        probe = {"element": r["element"], "concept": r["concept"] or "", "results": r["results"] or "",
+                                 "family": get_field({"RESULTS": r["results"] or ""}, "family"), "source_mkp": mkp,
+                                 "facts": facts, "concept_vector": r.get("concept_vector"),
+                                 "atom_vector": r.get("atom_vector"), "base": base}
+                        sims, top = finder.closeness(probe, core, given, s["confirm_top_n"])
+                        found = {c["tsg_id"]: c for c in finder.find(probe, core, s["top_k_per_vector"])}
+                        checked = {t: gscore.clues(t, sims, top, mkp_groups.get(mkp, []),
+                                                   (found.get(t) or {}).get("sources", [])) for t in given}
+                        high = all(gscore.is_high(c, s["confirm_min_similarity"]) for c in checked.values())
+                        audit = gscore.audited(r["akp_id"] or r["element"], s["audit_share"])
+                        if high and not audit and not s["calibrate"]:
+                            for t in given:
+                                c = checked[t]
+                                rows.append(_row(base, by_id[t], "APPROVED", gscore.CONFIRMED,
+                                                 "AKP group confirmed by Python: " + gscore.why(c), found.get(t),
+                                                 python_score=c["similarity"]))
+                            counts["akp_group"] += 1
+                            inherited_keys.append((gscore.CONFIRMED, r["element"], given))
+                            continue
+                        counts["akp_group_llm"] = counts.get("akp_group_llm", 0) + 1
+                        akp_check[r["element"]] = {"given": given, "clues": checked,
+                                                   "why": "calibration" if s["calibrate"] else "audit" if high and audit
+                                                   else "Python not sure"}
                 atom = {"element": r["element"], "type": r["type"], "concept": data_row["concept"] or "",
                         "results": data_row["results"] or "", "family": get_field({"RESULTS": data_row["results"] or ""}, "family"),
                         "local_results": r["results"] if r["type"] == "A_REF" else "", "source_mkp": mkp, "facts": facts,
@@ -442,6 +493,15 @@ def run_gkp_scope(instrument, scope_key="ALL", version_id=None, fake_llm: Option
                     atom["candidates"] = []
                 else:
                     atom["candidates"] = finder.find(atom, core, s["top_k_per_vector"])
+                    for t in (akp_check.get(r["element"]) or {}).get("given", []):   # AKP's group is always a candidate
+                        if t not in {c["tsg_id"] for c in atom["candidates"]}:
+                            extra = finder.find(atom, core, s["broad_top_k_per_vector"], full=True)
+                            hit = next((c for c in extra if c["tsg_id"] == t), None) or {
+                                "tsg_id": t, "concept_score": None, "atom_score": None, "sources": [],
+                                "tg_id": by_id[t]["tg_id"], "group": by_id[t]["tg_name"], "subgroup": by_id[t]["name"],
+                                "definition": by_id[t]["definition"], "include": by_id[t]["include"],
+                                "exclude": by_id[t]["exclude"], "key_provisions": by_id[t].get("key_provisions") or []}
+                            atom["candidates"].append(dict(hit, sources=list(hit["sources"]) + ["AKP group"]))
                 atoms.append(atom)
             fp = _hash({"v": CLASSIFIER_VERSION, "prompt": prompt, "models": s["models"], "inherited": inherited_keys,
                         # only stable candidate sources: fact / reference / section sources change as other MKPs
@@ -458,7 +518,23 @@ def run_gkp_scope(instrument, scope_key="ALL", version_id=None, fake_llm: Option
             call.unit = mkp
             if atoms:
                 for el, rs in classify(atoms, mkp, mkp_id, context).items():
+                    chk = akp_check.get(el)
+                    for x in rs:                  # the verifiers on an AKP group: kept or changed (notes section 1)
+                        if chk and x["status"] == "APPROVED" and x["method"] in ("AGREE", "JUDGE"):
+                            kept = x["tsg_id"] in chk["given"]
+                            c = chk["clues"].get(x["tsg_id"]) or max(chk["clues"].values(), key=lambda v: v["similarity"])
+                            x["python_score"] = c["similarity"]
+                            x["reason"] = (f"{chk['why']}; " + gscore.why(c) + "; " +
+                                           f"{x['method'].lower()}: " + str(x["reason"] or ""))[:2000]
+                            x["method"] = gscore.CONFIRMED_LLM if kept else gscore.CHANGED
+                    if chk:                       # calibration data: did the LLM keep the AKP group?
+                        kept = any(x["status"] == "APPROVED" and x["tsg_id"] in chk["given"] for x in rs)
+                        for t, c in chk["clues"].items():
+                            calib.append([c["similarity"], bool(c["closest"] and (c["mkp_agrees"] or c["anchor"]
+                                                                                   or c["facts"])), kept])
                     rows.extend(rs)
+                if calib:
+                    store.calibration_put(instrument, mkp, calib)
             for r in rows:
                 r["taxonomy_version"] = tvm
                 r["input_sha256"] = fp
@@ -469,7 +545,6 @@ def run_gkp_scope(instrument, scope_key="ALL", version_id=None, fake_llm: Option
                 counts["unchanged"] += 1
             else:
                 ver = store.save_version(instrument, version, mkp, rows)
-            store.mark_covered(instrument, version, mkp, rows)
             for r in rows:
                 counts["approved_mappings"] += r["status"] == "APPROVED"
                 counts["agree"] += r["status"] == "APPROVED" and r["method"] == "AGREE"
@@ -581,6 +656,32 @@ def main_gkp():
     return [run_gkp_scope(d["code"], scope_key=scope) for d in selected_documents(permission)]
 
 
+def calibration_report() -> List[dict]:
+    """How often the verifiers kept the AKP's group, per similarity floor (atoms with the other clues ok).
+    Set gkp.confirm_min_similarity to the lowest floor where they agree almost always (98-99%)."""
+    permission = _permission()
+    s = validate_gkp_settings(permission.get("gkp", {}), permission)
+    from db_insert import get_connection, get_db_schema
+    conn = get_connection()
+    try:
+        store = GkpStore(conn, get_db_schema(), s["akp_table"], s["table_prefix"])
+        store.ensure()
+        pairs = store.calibration_rows()
+    finally:
+        conn.close()
+    table = gscore.calibration([(sim, kept) for sim, ok, kept in pairs if ok])
+    say(f"  GKP CALIBRATION : {len(pairs)} checked group(s), {sum(1 for p in pairs if p[1])} with the other clues ok"
+        f" (now: confirm_min_similarity {s['confirm_min_similarity']}, calibrate {s['calibrate']})")
+    for t in table:
+        say(f"        similarity >= {t['from_score']:.2f} : {t['atoms']:>5} atom(s), LLM kept the AKP group "
+            + (f"{t['llm_agrees']:.1%}" if t["llm_agrees"] is not None else "-"))
+    return table
+
+
 if __name__ == "__main__":
-    argparse.ArgumentParser(description="DARP LAW ARC GKP (groups the saved AKPs of the selected documents)").parse_args()
-    main_gkp()
+    ap = argparse.ArgumentParser(description="DARP LAW ARC GKP (groups the saved AKPs of the selected documents)")
+    ap.add_argument("--calibration", action="store_true", help="how often the LLM kept the AKP group, per similarity")
+    if ap.parse_args().calibration:
+        calibration_report()
+    else:
+        main_gkp()

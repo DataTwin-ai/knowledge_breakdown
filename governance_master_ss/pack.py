@@ -58,7 +58,7 @@ def check_pack(pack: dict) -> List[str]:
             if o not in c.get("includes", []):
                 errs.append(f"step {c['id']}: exclusive outcome {o} is not in the step")
     used_products = {t for o in pack.get("outcomes", {}).values() for t in R.ID_TOKEN.findall(o.get("expr", ""))
-                     if t.startswith("PD_")}
+                     if R.is_kind(t, "PD")}
     errs += [f"product {p} is used but no step produces it" for p in sorted(used_products - produced)]
     for pr in pack.get("precedents", []):
         if pr.get("predicate") not in pack.get("predicates", {}):

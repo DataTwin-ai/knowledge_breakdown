@@ -5,7 +5,8 @@
     python relationship_builder.py --only CGSTA17_S10    only MKPs whose id starts with this
     python relationship_builder.py --page-only           only rewrite the page from kp_relation
 
-Run it yourself, whenever you want (nothing runs it automatically). It reads the latest rows of the database - akp
+main.py runs it at the end of every pipeline run (relationship.run_after_pipeline), so the observer page always shows
+the latest graph; run it yourself too, whenever you want. It reads the latest rows of the database - akp
 (A, G, LE, OR, CT, PD, LK, A_REF), akp_atom_fact (atom -> fact), akp_fact (fact names), gkp (TSG of each element) and
 governance_master (which TSGs use an MKP) - and writes:
     PostgreSQL  kp_relation   one row per link (relationship_ss/build.py lists them): DIRECT rows as the law is built,
@@ -53,6 +54,7 @@ def run(full: bool = False, only: str = "", page_only: bool = False, conn=None, 
     try:
         store = RelationStore(conn, get_db_schema(), s["table"], _names(cfg))
         store.ensure()
+        run_started = store.now()             # links (re)built from here on are "new since the last run" on the page
         if not page_only:
             current, saved = store.current(only), store.saved(only)
             todo = sorted(m for m in current if full or saved.get(m) != current[m][0])
@@ -67,7 +69,7 @@ def run(full: bool = False, only: str = "", page_only: bool = False, conn=None, 
                 built = {}
                 for m in part:
                     v = src[m]
-                    rows = links(m, v["akp"], v["edges"], v["gkp"], v["gm"], v["names"], v["same"])
+                    rows = links(m, v["akp"], v["edges"], v["gkp"], v["gm"], v["names"], v["same"], v.get("mkp_id", ""))
                     fp, vid, av = current[m]
                     built[m] = (rows, fp, vid, av)
                     out["rows"] += len(rows)
@@ -78,10 +80,23 @@ def run(full: bool = False, only: str = "", page_only: bool = False, conn=None, 
                 store.retire(gone)
                 out["removed"] = len(gone)
                 flow(f"RELATION   : {len(gone)} MKP(s) no longer in the database - their links set is_latest = false")
-        latest = store.latest_rows()
+        latest = store.latest_rows(run_started)
         out["page"] = str(write_page(latest, page))
         flow(f"RELATION   : {len(latest)} latest row(s) in {s['table']} - {time.time() - started:.1f}s")
         flow(f"PAGE       : {out['page']}")
+        share = str(s.get("share_copy_to") or "").strip()
+        if share:                             # the team opens it from a shared folder (notes section 14)
+            import shutil
+            dest = Path(share)
+            dest = dest / page.name if dest.suffix.lower() != ".html" else dest
+            try:
+                kp_settings.require(cfg, "WRITE", dest)
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(out["page"], dest)
+                out["shared"] = str(dest)
+                flow(f"PAGE       : copied for the team to {dest}")
+            except Exception as exc:
+                flow(f"PAGE       : not copied to {dest} ({str(exc)[:120]})")
         return out
     finally:
         if own:

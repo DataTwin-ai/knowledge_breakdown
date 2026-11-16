@@ -44,10 +44,11 @@ A TSG whose only laws are already in the spine still gets its governance master 
 ```
 Governance_Master/                (outside Output/)
   index.xlsx                      every governance master: sub-group, name, group, status, laws, changes so far, last changed
-  TG01/                            group
-    TSG04_04/                      sub-group (Non-money consideration: barter, exchange)
-      rulebook.yaml               the governance master itself - the engine reads this file (its required name)
-      report.xlsx                 Summary, Laws (why each is in), Molecules, Coverage, Facts, Ids, Review
+  TG04/                            group (no sub-folder per sub-group)
+    TSG04_04_rulebook.yaml         the governance master of sub-group TSG04_04 - the engine reads this file
+                                   (dg validate / dg run take the file path)
+    report/                        the reports of the TG's sub-groups
+      TSG04_04_report.xlsx         Summary, Laws (why each is in), Molecules, Coverage, Facts, Ids, Review
 ```
 
 **PostgreSQL**
@@ -72,7 +73,7 @@ Governance_Master/                (outside Output/)
 | `facts` | The facts a check or review flag reads |
 | `source_mkp`, `mkp_id`, `akp_id`, `citation` | Which law the element came from (`SPINE` for the spine) |
 | `included_as` | `SPINE`, `MEMBER`, or why a linked law came in: `PRODUCT PD_…`, `REFERENCE …`, `OVERRIDE …`, `DEFINITION …` |
-| `attributes` | The element exactly as in `rulebook.yaml` (JSON) |
+| `attributes` | The element exactly as in `<TSG>_rulebook.yaml` (JSON) |
 | `pack_status` | `APPROVED`, or `NEEDS_REVIEW` when the self-check found a problem |
 | `updated_at` | When this content was written |
 
@@ -99,7 +100,7 @@ These are checked before the governance master is written:
 - No outcome sits in two steps.
 - Every product a step uses is produced by an earlier step.
 
-Anything wrong is listed in `report.xlsx` → **Review**, and the governance master is marked `NEEDS_REVIEW`. It is still written, so it can be looked at.
+Anything wrong is listed in `<TG>/report/<TSG>_report.xlsx` → **Review**, and the governance master is marked `NEEDS_REVIEW`. It is still written, so it can be looked at.
 
 ## 5. How the content is built
 

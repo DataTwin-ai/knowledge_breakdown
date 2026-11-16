@@ -295,4 +295,5 @@ def test_one_atom_tsg_is_small():
                  "tg_id": "TG04", "tsg_id": "TSG04_04", "status": "APPROVED"}]
     rb = build(snap, "TSG04_04", "Non-money consideration", "TG04", "VALUE", _no_spine_cfg(), {}, "v", depth=1).rulebook
     assert list(rb["predicates"]) == ["A_PAY_NONMONEY"] and len(rb["compounds"]) == 1
-    assert set(rb["facts"]) == {"F_PAYMENT_FORM"}
+    assert set(rb["facts"]) == {"F_PAYMENT_FORM", "F_DOI"}          # + the invoice date that picks the law in force
+    assert rb["time"] == {"law_date": "F_DOI"} and rb["facts"]["F_DOI"]["type"] == "DATE"

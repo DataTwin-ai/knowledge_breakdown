@@ -272,7 +272,7 @@ def structure(rows: List[dict], sp_source: List[dict], operative: bool, registry
 
 def engine_ready(rows: List[dict], registry: dict = None) -> List[str]:
     """Every atom must be usable by the Decision Graph Engine as written:
-      order is LOW or HIGH;  LOW -> a rule in the engine grammar on declared facts, values only from the fact's
+      order is LOW or HIGH, handler python (LOW) or light / heavy (HIGH);  LOW -> a rule in the engine grammar on declared facts, values only from the fact's
       options;  HIGH -> an interpretation question and at least one fact.  Errors go back to the judge."""
     from governance_master_ss import rules as R
     registry = registry or {}
@@ -296,6 +296,14 @@ def engine_ready(rows: List[dict], registry: dict = None) -> List[str]:
             errs.append(f"ORDER: {el} order must be LOW or HIGH, not '{get_field(r, 'order')}' "
                         "(LOW = a rule on facts decides it; HIGH = the judge decides it)")
             continue
+        handler = get_field(r, "handler").lower()
+        if handler not in ("python", "light", "heavy"):
+            errs.append(f"HANDLER: {el} handler must be python, light or heavy, not '{get_field(r, 'handler')}' "
+                        "(python = a plain check of fact values; light = short reading, one or two facts; "
+                        "heavy = a real legal judgement)")
+        elif (handler == "python") != (order == "LOW"):
+            errs.append(f"HANDLER: {el} handler {handler} does not fit order {order} "
+                        "(python goes with LOW and a rule; light / heavy go with HIGH and an interpretation)")
         if order == "LOW":
             rule = get_field(r, "rule")
             if not rule or rule.upper() == "NA":
