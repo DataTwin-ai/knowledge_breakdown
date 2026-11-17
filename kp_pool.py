@@ -252,7 +252,8 @@ class Pool:
                 try:
                     self._do(name, job, runs, conns)
                 except Exception as exc:        # never let one unit stop a worker
-                    self._failed(name, job, "RUN", exc)
+                    if not self._lost(name, job, self.totals[job.code], exc, runs, conns):
+                        self._failed(name, job, "RUN", exc)
                 finally:
                     use = kp_usage.job_end()
                     if not job.requeued:
@@ -286,6 +287,12 @@ class Pool:
             set_worker("")
 
     def _mkp_run(self, job: Job, runs: dict, conns: list):
+        from db_insert import is_alive
+        old = runs.get(job.code)
+        if old is not None and not is_alive(getattr(getattr(old, "store", None), "conn", None)):
+            # the connection was dropped while the worker waited for a model: open a new one for this document
+            log(f"NOTE : {job.code} database connection lost - opening a new one")
+            self._drop_run(job.code, runs, conns)
         if job.code not in runs:
             import ikp_engine
             from mkp_engine import MkpRun
@@ -293,6 +300,38 @@ class Pool:
             conns.append(conn)
             runs[job.code] = MkpRun(job.doc, self.cfg, self.paths, self.mkp_settings, conn, self.fake_llm, self.embed)
         return runs[job.code]
+
+    def _drop_run(self, code: str, runs: dict, conns: list) -> None:
+        """Forget a document's MkpRun and its connection (its buffered Excel rows are written first)."""
+        run = runs.pop(code, None)
+        if run is None:
+            return
+        try:
+            run.flush_excel()
+        except Exception:
+            pass
+        conn = getattr(getattr(run, "store", None), "conn", None)
+        if conn in conns:
+            conns.remove(conn)
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+    def _lost(self, name: str, job: Job, tot: DocTotals, exc, runs: dict, conns: list) -> bool:
+        """A dropped database connection: new connection next time, the unit goes back in the queue."""
+        from db_insert import is_connection_lost
+        if not is_connection_lost(exc) or job.requeues >= self.requeue_limit:
+            return False
+        job.requeues += 1               # the next try checks the MKP connection first (_mkp_run)
+        job.requeued = True
+        flow(f"[{name}] retry  {job.code} {job.name} - database connection lost, back in the queue "
+             f"({job.requeues}/{self.requeue_limit})")
+        with self.cv:
+            self.total_jobs -= 1
+            tot.jobs -= 1
+        self.add([job])
+        return True
 
     def _do(self, name: str, job: Job, runs: dict, conns: list) -> None:
         from mkp_ss.check import GateError
@@ -312,6 +351,8 @@ class Pool:
             except Exception as exc:
                 if is_rate_limited(exc) and job.requeues < self.requeue_limit:
                     self._requeue(name, job, tot)
+                    return
+                if self._lost(name, job, tot, exc, runs, conns):
                     return
                 kids = selectable_children(run.idx, b.root) if not getattr(b, "only_keys", None) else []
                 where = "MKP_GATE" if isinstance(exc, GateError) else "MKP"
@@ -342,6 +383,10 @@ class Pool:
                 tot.mkps_changed += r.get("changed", 0)
             for note in r.get("notes", []):
                 log(f"NOTE : {note}")
+            try:                    # MKP saved (committed); end its open read so the connection waits idle, not in a transaction
+                run.store.conn.rollback()
+            except Exception:
+                pass
         only = set(b.only_keys) if getattr(b, "only_keys", None) else None
         pdf = Path(self.paths["law_dir"]) / job.doc["file"]
         atoms, akp_failed = 0, []
@@ -359,6 +404,8 @@ class Pool:
                     return
                 if is_rate_limited(exc) and job.requeues < self.requeue_limit:
                     self._requeue(name, job, tot)
+                    return
+                if self._lost(name, job, tot, exc, runs, conns):
                     return
                 self._failed(name, job, "AKP", exc)
                 return
@@ -382,6 +429,8 @@ class Pool:
                     g = {}
                 elif is_rate_limited(exc) and job.requeues < self.requeue_limit:
                     self._requeue(name, job, tot)
+                    return
+                elif self._lost(name, job, tot, exc, runs, conns):
                     return
                 else:
                     self._failed(name, job, "GKP", exc)

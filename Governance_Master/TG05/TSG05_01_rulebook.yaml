@@ -1,16 +1,40 @@
 # GOVERNANCE MASTER TSG05_01 Time of supply – goods (TG05 Time & Period)
-# LAW ARC - 10 laws - status NEEDS_REVIEW
+# LAW ARC - 14 laws - status NEEDS_REVIEW
 name: TSG05_01 Time of supply – goods - GOVERNANCE MASTER rulebook
 version: TSG05_01
 facts:
+  F_VSS:
+    name: Voucher Supply Status
+    type: CODE
+    options:
+    - NOT_VOUCHER_BY_SUPPLIER
+    - UNKNOWN
+    - VOUCHER_BY_SUPPLIER
+    tier: T1
+  F_SIS2:
+    name: Supply Identifiability Status
+    type: CODE
+    options:
+    - IDENTIFIABLE
+    - NOT_IDENTIFIABLE
+    - UNKNOWN
+    tier: T1
+  F_SRBED:
+    name: Supply Recipient Books Entry Date
+    type: DATE
+    tier: T1
+  F_TDUC:
+    name: Time Determinable Under Clauses
+    type: CODE
+    options:
+    - 'NO'
+    - UNKNOWN
+    - 'YES'
+    tier: T1
   F_SPRD:
     name: Supplier Payment Receipt Date
     type: DATE
     tier: T0
-  F_PSR:
-    name: Payment Supply Reference
-    type: TEXT
-    tier: T1
   F_SCB:
     name: Supply Charge Basis
     type: CODE
@@ -19,18 +43,26 @@ facts:
     - REVERSE_CHARGE
     - UNKNOWN
     tier: T0
-  F_GRD:
-    name: Goods Receipt Date
+  F_DOII:
+    name: Date Of Invoice Issue
     type: DATE
     tier: T0
-  F_PDIRB:
-    name: Payment Date In Recipient Books
+  F_LDID:
+    name: Lieu Document Issue Date
     type: DATE
+    tier: T0
+  F_LDIS:
+    name: Lieu Document Issuer Status
+    type: CODE
+    options:
+    - OTHER_PERSON
+    - SUPPLIER
+    - UNKNOWN
     tier: T1
-  F_PDDIB:
-    name: Payment Debit Date In Bank
+  F_CCCD:
+    name: Clause C Candidate Date
     type: DATE
-    tier: T1
+    tier: T0
   F_SIK:
     name: Supply Item Kind
     type: CODE
@@ -38,47 +70,44 @@ facts:
     - BOTH
     - GOODS
     - SERVICES
+    - UNKNOWN
+    tier: T1
+  F_PSR:
+    name: Payment Supply Reference
+    type: TEXT
+    tier: T1
+  F_GRD:
+    name: Goods Receipt Date
+    type: DATE
+    tier: T0
+  F_PDO:
+    name: Payment Date Order
+    type: CODE
+    options:
+    - BANK_EARLIER
+    - BOOKS_EARLIER_OR_SAME
+    - UNKNOWN
+    tier: T0
+  F_GTS:
+    name: Goods Taxable Status
+    type: BOOLEAN
+    tier: T1
+  F_SEA:
+    name: Supply Excess Amount
+    type: AMOUNT
+    tier: T0
+  F_SOE:
+    name: Supplier Option Elected
+    type: BOOLEAN
     tier: T1
   F_IITS:
     name: Invoice Issue Timing Status
     type: CODE
     options:
-    - ON_OR_BEFORE_DUE_DATE
     - AFTER_DUE_DATE
+    - ON_OR_BEFORE_DUE_DATE
     - UNKNOWN
     tier: T0
-  F_DOS:
-    name: Description Of Supply
-    type: TEXT
-    tier: T1
-  F_SEA:
-    name: Supply Excess Amount
-    type: AMOUNT
-    tier: T1
-  F_SOE:
-    name: Supplier Option Elected
-    type: BOOLEAN
-    tier: T1
-  F_DOII:
-    name: Date Of Invoice Issue
-    type: DATE
-    tier: T0
-  F_LDIS:
-    name: Lieu Document Issuer Status
-    type: CODE
-    options:
-    - SUPPLIER
-    - OTHER_PERSON
-    - UNKNOWN
-    tier: T1
-  F_LDID:
-    name: Lieu Document Issue Date
-    type: DATE
-    tier: T1
-  F_CCCD:
-    name: Clause C Candidate Date
-    type: DATE
-    tier: T1
   F_FOS:
     name: Form Of Supply
     type: CODE
@@ -92,6 +121,10 @@ facts:
     - LEASE
     - DISPOSAL
     - OTHER
+    tier: T1
+  F_DOS:
+    name: Description Of Supply
+    type: TEXT
     tier: T1
   F_SES:
     name: Supply Execution Status
@@ -244,115 +277,164 @@ predicates:
     order: LOW
     rule: F_SCS = 'NONE'
     handler: python
-  M_TOSGPD_A_SRPFS:
-    statement: The supplier receives the payment with respect to the supply.
+  M_GVTOSR_A_SIVBS:
+    statement: The supply is a supply of vouchers by a supplier
+    order: LOW
+    rule: F_VSS = 'VOUCHER_BY_SUPPLIER'
+    handler: python
+  M_GVTOSR_A_CIOTPC:
+    statement: The case is one of the 'all other cases', that is a voucher supply case other than the case dealt with in the
+      preceding sub-clause (a) of the same sub-section
     order: HIGH
-    if_false: the payment record shows the payment relates to a different supply, or no payment has been received by the supplier
-    interpretation: Does the payment record show that the supplier received a payment with respect to the supply described
-      in the invoice or contract? If so, the receipt date is F_SPRD.
+    interpretation: Is this a voucher supply case other than the case covered by the preceding sub-clause (a) of the same
+      sub-section? The content of sub-clause (a) is not part of this MKP, so F_SIS2 is used only as the observable input and
+      the result stays UNKNOWN if the sibling clause or the fact cannot be established
     grounding:
-    - F_SPRD
-    - F_PSR
+    - F_SIS2
     handler: light
-  M_TOSGID_A_SIOG:
-    statement: The supply is a supply of goods
+  M_TOSVI_A_SOVBS:
+    statement: The supply is a supply of vouchers by a supplier.
     order: LOW
-    rule: F_SIK IN ['GOODS','BOTH']
+    rule: F_VSS = 'VOUCHER_BY_SUPPLIER'
     handler: python
-  M_TOSGID_A_INLTD:
-    statement: The date of issue of invoice by the supplier is not later than the last date on which the supplier is required
-      under section 31 to issue the invoice with respect to the supply
+  M_TOSVI_A_SIAI:
+    statement: The supply is identifiable at the point of issue of the voucher.
+    order: HIGH
+    interpretation: Does the contract, the terms and conditions or the voucher show that the supply was identifiable at the
+      point the voucher was issued?
+    grounding:
+    - F_SIS2
+    handler: light
+  M_TOSGAIP_A_SRSA:
+    statement: The supplier receives such addition in value, and the date of that receipt fixes the time of supply of the
+      addition
     order: LOW
-    rule: F_IITS = 'ON_OR_BEFORE_DUE_DATE'
+    rule: F_SPRD IS_SET
     handler: python
-  M_TOSGID_A_DETID:
-    statement: The last date on which the supplier is required under section 31 to issue the invoice with respect to the supply
-      is earlier than the date of issue of invoice by the supplier
-    order: LOW
-    rule: F_IITS = 'AFTER_DUE_DATE'
-    handler: python
-  M_TOSGRRD_A_TPORC:
+  M_RCGTID_A_SORCB:
     statement: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis
-    order: HIGH
-    interpretation: Is tax on this supply paid or liable to be paid on reverse charge basis?
-    grounding:
-    - F_SCB
-    handler: light
-  M_TOSGRRD_A_ROGDC:
-    statement: The date of the receipt of goods is one of the dates of which the earliest is the time of supply
-    order: LOW
-    rule: F_GRD IS_SET
-    handler: python
-  M_TOSGRCP_A_SIORC:
-    statement: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis
-    order: HIGH
-    interpretation: Is tax on this supply paid or liable to be paid on reverse charge basis (RCM_PAID or RCM_LIABLE)?
-    grounding:
-    - F_SCB
-    handler: light
-  M_TOSGRCP_A_PDEIB:
-    statement: A date of payment is entered in the books of account of the recipient
-    order: LOW
-    rule: F_PDIRB IS_SET
-    handler: python
-  M_TOSGRCP_A_PDIBA:
-    statement: The payment is debited in the bank account of the recipient on a date that is recorded
-    order: LOW
-    rule: F_PDDIB IS_SET
-    handler: python
-  M_RCGTID_A_SIORC:
-    statement: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis.
     order: LOW
     rule: F_SCB = 'REVERSE_CHARGE'
     handler: python
-  M_RCGTID_A_SII:
-    statement: An invoice has been issued by the supplier and its date of issue is known.
+  M_RCGTID_A_IIBS:
+    statement: An invoice was issued by the supplier for the supply and its date of issue is available
     order: LOW
     rule: F_DOII IS_SET
     handler: python
-  M_RCGTID_A_SILD:
-    statement: Any other document, by whatever name called, in lieu of the invoice has been issued by the supplier.
-    order: HIGH
-    if_false: F_LDIS is OTHER_PERSON
-    interpretation: Is this document, whatever its name, issued by the supplier in lieu of an invoice?
-    grounding:
-    - F_LDIS
-    - F_LDID
-    handler: light
-  M_RCGTID_A_DATD:
-    statement: The candidate date is the date immediately following thirty days from the date of issue of the invoice or of
-      the document in lieu thereof by the supplier.
+  M_RCGTID_A_LDIBS:
+    statement: Any other document by whatever name called in lieu of an invoice was issued by the supplier and its date of
+      issue is available
+    order: LOW
+    rule: F_LDID IS_SET AND F_LDIS = 'SUPPLIER'
+    handler: python
+  M_RCGTID_A_DFTDC:
+    statement: The date immediately following thirty days from the date of issue of the invoice or other document in lieu
+      thereof by the supplier is available as a candidate date for the time of supply
     order: LOW
     rule: F_CCCD IS_SET
     handler: python
-  M_LTPTOG_A_SIG:
-    statement: The supply involves goods, alone or together with services
+  M_TOSGRRD_A_SURCB:
+    statement: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis
     order: LOW
-    rule: F_SIK IN ['GOODS', 'BOTH']
+    rule: F_SCB = 'REVERSE_CHARGE'
     handler: python
-  M_EAOGTOS_A_SPTG:
-    statement: The supplier is a supplier of taxable goods, meaning the supply is of goods that are taxable goods for the
-      purposes of this proviso
+  M_TOSGRRD_A_GRDIL:
+    statement: The date of the receipt of goods is a date listed for determining the time of supply
+    order: LOW
+    rule: F_GRD IS_SET
+    handler: python
+  M_TOSGRRD_A_RDIEL:
+    statement: The date of the receipt of goods is the earliest of the dates listed for the time of supply
     order: HIGH
-    interpretation: Are the goods described in the supply taxable goods, so that the supplier is a supplier of taxable goods
-      for this proviso?
+    interpretation: Is the date of receipt of goods the earliest of all the dates listed for time of supply on reverse charge
+      supplies? Other listed dates are outside this MKP and must be compared with it. If they are not available the answer
+      is UNKNOWN.
     grounding:
-    - F_SIK
-    - F_DOS
+    - F_GRD
     handler: heavy
-  M_EAOGTOS_A_REIA:
+  M_TOSGRCP_A_SIORC:
+    statement: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis
+    order: LOW
+    rule: F_SCB = 'REVERSE_CHARGE'
+    handler: python
+  M_TOSGRCP_A_BPDIE:
+    statement: The date of payment as entered in the books of account of the recipient is the same as or earlier than the
+      date on which the payment is debited in his bank account
+    order: LOW
+    rule: F_PDO = 'BOOKS_EARLIER_OR_SAME'
+    handler: python
+  M_TOSGRCP_A_BDDIE:
+    statement: The date on which the payment is debited in the recipient's bank account is earlier than the date of payment
+      as entered in his books of account
+    order: LOW
+    rule: F_PDO = 'BANK_EARLIER'
+    handler: python
+  M_FTOSGRB_A_RBED:
+    statement: The time of supply shall be the date of entry in the books of account of the recipient of supply
+    order: LOW
+    rule: F_SRBED IS_SET
+    handler: python
+  M_TOSGPD_A_SIOG:
+    statement: The supply is a supply of goods
+    order: LOW
+    rule: F_SIK = 'GOODS'
+    handler: python
+  M_TOSGPD_A_PRFS:
+    statement: The supplier receives the payment with respect to the supply
+    order: HIGH
+    interpretation: Does the payment received by the supplier relate to this supply of goods?
+    grounding:
+    - F_PSR
+    - F_SPRD
+    handler: light
+  M_TOSGPD_A_PRDIR:
+    statement: The date on which the supplier receives the payment with respect to the supply is established
+    order: LOW
+    rule: F_SPRD IS_SET
+    handler: python
+  M_TOSGID_A_IIOOBDD:
+    statement: The date of issue of invoice by the supplier is not later than the last date on which the supplier is required,
+      under section 31, to issue the invoice with respect to the supply, so the invoice issue date is the earlier of the two
+      dates
+    order: LOW
+    rule: F_IITS = 'ON_OR_BEFORE_DUE_DATE'
+    handler: python
+  M_TOSGID_A_S31DIE:
+    statement: The last date on which the supplier is required, under section 31, to issue the invoice with respect to the
+      supply is earlier than the date of issue of invoice by the supplier
+    order: LOW
+    rule: F_IITS = 'AFTER_DUE_DATE'
+    handler: python
+  M_LTPTOG_A_SIOG:
+    statement: The supply on which the liability to pay tax arises is a supply of goods
+    order: LOW
+    rule: F_SIK IN ['GOODS','BOTH']
+    handler: python
+  M_LTPTOG_A_TOSDUS:
+    statement: The time of supply, at which the liability to pay tax arises, is determined in accordance with the provisions
+      of this section
+    order: LOW
+    rule: F_TDUC = 'YES'
+    handler: python
+  M_EAOGTOS_A_SOTG:
+    statement: The supplier is a supplier of taxable goods
+    order: LOW
+    rule: F_GTS = TRUE
+    handler: python
+  M_EAOGTOS_A_SREA:
     statement: The supplier receives an amount in excess of the amount indicated in the tax invoice
     order: LOW
     rule: F_SEA > 0
     handler: python
-  M_EAOGTOS_A_EWOTR:
-    statement: The excess amount received over the tax invoice amount is up to one thousand rupees, inclusive
+  M_EAOGTOS_A_EUTOT:
+    statement: The amount received is up to one thousand rupees in excess of the amount indicated in the tax invoice, the
+      limit being inclusive
     order: LOW
     rule: F_SEA <= 1000
     handler: python
-  M_EAOGTOS_A_SEIDO:
-    statement: At the option of the said supplier, the supplier elects the invoice issue date as the time of supply for the
-      excess amount
+  M_EAOGTOS_A_SEID:
+    statement: The said supplier has elected, at the option of the said supplier, to apply the date of issue of invoice as
+      the time of supply for such excess amount
     order: LOW
     rule: F_SOE = TRUE
     handler: python
@@ -394,29 +476,54 @@ groups:
     - M_SIAWC_A_AMOA
     - M_SIAWC_A_MWAC
     description: Each atom is tested independently and all three are required.
-  M_TOSGRCP_G_RPDA:
-    name: Recipient Payment Date Available
+  M_RCGTID_G_SIOLD:
+    name: Supplier Invoice Or Lieu Document
     logic: ANY
     members:
-    - M_TOSGRCP_A_PDEIB
-    - M_TOSGRCP_A_PDIBA
-    description: The two dates are alternatives joined by or. The earlier of whichever dates exist is taken. The source does
-      not say what applies if only one date exists, so ANY is used and the point is left for review.
-  M_RCGTID_G_IOLD:
-    name: Invoice Or Lieu Document
-    logic: ANY
-    members:
-    - M_RCGTID_A_SII
-    - M_RCGTID_A_SILD
-    description: The thirty days run from the date of issue of the invoice OR of any other document, by whatever name called,
-      issued in lieu of it by the supplier.
-  M_EAOGTOS_G_EACM:
-    name: Excess Amount Conditions Met
+    - M_RCGTID_A_IIBS
+    - M_RCGTID_A_LDIBS
+    description: Either an invoice or any other document in lieu of it was issued by the supplier
+  M_TOSGRRD_G_RCRC:
+    name: Reverse Charge Receipt Conditions
     logic: ALL
     members:
-    - M_EAOGTOS_A_REIA
-    - M_EAOGTOS_A_EWOTR
-    description: The receipt exceeds the invoice amount and the excess is within the one thousand rupee limit
+    - M_TOSGRRD_A_SURCB
+    - M_TOSGRRD_A_GRDIL
+    - M_TOSGRRD_A_RDIEL
+    description: All three must hold - reverse charge supply, a goods receipt date exists, and that date is the earliest of
+      the listed dates.
+  M_FTOSGRB_A_TNDUC:
+    name: Any of the referred steps (M_FTOSGRB_A_TNDUC)
+    logic: ANY
+    members:
+    - M_RCGTID_PD_CCCDA
+    - M_TOSGRCP_PD_TOSBD
+    - M_TOSGRCP_PD_TOSBD2
+    - M_TOSGRRD_PD_RDITOS
+    description: TRUE when any step of the law this check refers to is TRUE
+  M_FTOSGRB_G_BFTM:
+    name: Both Fallback Tests Met
+    logic: ALL
+    members:
+    - M_FTOSGRB_A_TNDUC
+    - M_FTOSGRB_A_RBED
+    description: Non-determinability under the clauses and the recipient books entry must both hold.
+  M_TOSGPD_G_PRTT:
+    name: Payment Receipt Tests Together
+    logic: ALL
+    members:
+    - M_TOSGPD_A_PRFS
+    - M_TOSGPD_A_PRDIR
+    description: The supplier receives payment with respect to the supply AND the date of that receipt is established.
+  M_EAOGTOS_G_PCA:
+    name: Proviso Conditions All
+    logic: ALL
+    members:
+    - M_EAOGTOS_A_SOTG
+    - M_EAOGTOS_A_SREA
+    - M_EAOGTOS_A_EUTOT
+    - M_EAOGTOS_A_SEID
+    description: All four proviso conditions must hold together.
 outcomes:
   M_SIAFOS_LE_ISO:
     outcome: INCLUDED_IN_SUPPLY
@@ -435,61 +542,88 @@ outcomes:
     expr: M_SIAWC_G_ASCM
     module: M_SIAWC
     description: The activity is included in supply when all three schedule conditions are met.
-  M_TOSGPD_LE_PRDC:
-    outcome: PAYMENT_RECEIPT_DATE_IS_CANDIDATE_TIME_OF_SUPPLY
-    expr: M_TOSGPD_A_SRPFS
-    module: M_TOSGPD
-    description: When the supplier receives the payment with respect to the supply, the date of that receipt is a date for
-      the 'earlier of' rule on the time of supply of goods. The comparison with the other dates is decided in the parent provision.
-  M_TOSGID_LE_TOSIID:
-    outcome: TIME_OF_SUPPLY_IS_INVOICE_ISSUE_DATE
-    expr: M_TOSGID_A_SIOG AND M_TOSGID_A_INLTD
-    module: M_TOSGID
-    description: For goods, the date of issue of the invoice is the time of supply when it is not later than the section 31
-      last date, so it is the earlier date or the two dates are the same.
-  M_TOSGID_LE_TOSIDD:
-    outcome: TIME_OF_SUPPLY_IS_SECTION_31_LAST_DATE
-    expr: M_TOSGID_A_SIOG AND M_TOSGID_A_DETID
-    module: M_TOSGID
-    description: For goods, the last date under section 31 to issue the invoice is the time of supply when it is earlier than
-      the date the invoice was actually issued.
-  M_TOSGRRD_LE_RDICD:
-    outcome: DATE_OF_RECEIPT_OF_GOODS_IS_A_CANDIDATE_DATE_FOR_TIME_OF_SUPPLY
-    expr: M_TOSGRRD_A_TPORC AND M_TOSGRRD_A_ROGDC
-    module: M_TOSGRRD
-    description: When tax is on reverse charge basis and the date of receipt of goods exists, that date takes part in the
-      earliest-of determination of the time of supply.
-  M_TOSGRCP_LE_TOSEPD:
-    outcome: TIME_OF_SUPPLY_IS_EARLIER_OF_RECIPIENT_PAYMENT_DATES
-    expr: M_TOSGRCP_A_SIORC AND M_TOSGRCP_G_RPDA
-    module: M_TOSGRCP
-    description: When the supply is on reverse charge basis and a recipient payment date exists, the time of supply is the
-      earlier of the recorded payment dates.
-  M_RCGTID_LE_CCDIC:
-    outcome: CLAUSE_C_DATE_IS_CANDIDATE
-    expr: M_RCGTID_A_SIORC AND M_RCGTID_G_IOLD AND M_RCGTID_A_DATD
+  M_GVTOSR_LE_TOSIRD:
+    outcome: The time of supply is the date of redemption of the voucher (value taken from F_VRD)
+    expr: M_GVTOSR_A_SIVBS AND M_GVTOSR_A_CIOTPC
+    module: M_GVTOSR
+    description: Where the supply is a supply of vouchers by a supplier and the case is one of the 'all other cases', the
+      time of supply shall be the voucher redemption date.
+  M_TOSVI_LE_TOSVID:
+    outcome: TIME_OF_SUPPLY_IS_VOUCHER_ISSUE_DATE
+    expr: M_TOSVI_A_SOVBS AND M_TOSVI_A_SIAI
+    module: M_TOSVI
+    description: 'The time of supply is the date of issue of the voucher when both conditions hold: it is a supply of vouchers
+      by a supplier, and the supply is identifiable at the point of issue.'
+  M_TOSGAIP_LE_SRSA:
+    outcome: SUPPLIER_RECEIVES_SUCH_ADDITION
+    expr: M_TOSGAIP_A_SRSA
+    module: M_TOSGAIP
+    description: The supplier receives such addition in value, and the date of that receipt fixes the time of supply of the
+      addition (Section 12(6), part of the law)
+  M_RCGTID_LE_CCCDA:
+    outcome: CLAUSE_C_CANDIDATE_DATE
+    expr: M_RCGTID_A_SORCB AND M_RCGTID_G_SIOLD AND M_RCGTID_A_DFTDC
     module: M_RCGTID
-    description: The clause (c) date is a candidate time of supply when the supply is on reverse charge, the supplier issued
-      an invoice or a document in lieu of it, and the date immediately following thirty days from that issue is established.
-      The final time of supply is the earliest of all the listed dates, decided
-  M_LTPTOG_LE_GTLAAST:
-    outcome: GOODS_TAX_LIABILITY_ARISES_AT_TIME_OF_SUPPLY
-    expr: M_LTPTOG_A_SIG
+    description: The clause (c) date is a candidate for the time of supply when the supply is under reverse charge and the
+      supplier issued an invoice or a document in lieu of it
+  M_TOSGRRD_LE_RDITOS:
+    outcome: TIME_OF_SUPPLY_IS_GOODS_RECEIPT_DATE
+    expr: M_TOSGRRD_G_RCRC
+    module: M_TOSGRRD
+    description: On a reverse charge supply the time of supply is the date of receipt of goods when that date is the earliest
+      of the listed dates.
+  M_TOSGRCP_LE_TOSBD:
+    outcome: TIME_OF_SUPPLY_IS_BOOKS_PAYMENT_DATE
+    expr: M_TOSGRCP_A_SIORC AND M_TOSGRCP_A_BPDIE
+    module: M_TOSGRCP
+    description: For a reverse charge supply where the books payment date is the same as or earlier than the bank debit date,
+      the time of supply is the date of payment entered in the recipient's books.
+  M_TOSGRCP_LE_TOSBD2:
+    outcome: TIME_OF_SUPPLY_IS_BANK_DEBIT_DATE
+    expr: M_TOSGRCP_A_SIORC AND M_TOSGRCP_A_BDDIE
+    module: M_TOSGRCP
+    description: For a reverse charge supply where the bank debit date is earlier than the books payment date, the time of
+      supply is the date on which the payment is debited in the recipient's bank account.
+  M_FTOSGRB_LE_FTA:
+    outcome: TIME_OF_SUPPLY_FALLBACK
+    expr: M_FTOSGRB_G_BFTM
+    module: M_FTOSGRB
+    description: Fallback applies only when the non-determinability condition and the recipient books entry both hold.
+  M_TOSGPD_LE_PDICD:
+    outcome: PAYMENT_RECEIPT_DATE_IS_CANDIDATE_TIME_OF_SUPPLY
+    expr: M_TOSGPD_A_SIOG AND M_TOSGPD_G_PRTT
+    module: M_TOSGPD
+    description: For a supply of goods where the supplier receives payment with respect to the supply, the date of that receipt
+      is the date offered by this clause as the time of supply. Under the parent chapeau it is the earlier of the listed dates.
+  M_TOSGID_LE_TIIID:
+    outcome: TIME_OF_SUPPLY_IS_INVOICE_ISSUE_DATE
+    expr: M_TOSGID_A_IIOOBDD
+    module: M_TOSGID
+    description: The time of supply of goods is the date of issue of the invoice by the supplier. This applies when that date
+      is not later than the section 31 last date, and on a tie both dates are the same.
+  M_TOSGID_LE_TIS31LD:
+    outcome: TIME_OF_SUPPLY_IS_LAST_DATE_TO_ISSUE_INVOICE
+    expr: M_TOSGID_A_S31DIE
+    module: M_TOSGID
+    description: The time of supply of goods is the last date on which the supplier is required under section 31 to issue
+      the invoice. This applies when that date is earlier than the invoice issue date.
+  M_LTPTOG_LE_GTLAAS:
+    outcome: LIABILITY_TO_PAY_TAX_ON_GOODS_ARISES_AT_TIME_OF_SUPPLY
+    expr: M_LTPTOG_A_SIOG AND M_LTPTOG_A_TOSDUS
     module: M_LTPTOG
-    description: When the supply involves goods, the liability to pay tax on the goods arises at the time of supply. That
-      time is determined in accordance with the other provisions of this section.
-  M_EAOGTOS_LE_IDAR:
-    outcome: time of supply to the extent of the excess amount is the date of issue of the invoice in respect of that excess
-      amount
-    expr: M_EAOGTOS_A_SPTG AND M_EAOGTOS_G_EACM AND M_EAOGTOS_A_SEIDO
+    description: For a supply of goods, the liability to pay tax arises at the time of supply, once that time is determined
+      under the provisions of this section.
+  M_EAOGTOS_LE_ETOS:
+    outcome: TIME_OF_SUPPLY_EXCESS_INVOICE_DATE
+    expr: M_EAOGTOS_G_PCA
     module: M_EAOGTOS
-    description: All conditions of the proviso are met, so the invoice issue date sets the time of supply for the excess amount
+    description: The excess-amount time of supply outcome applies only when all proviso conditions hold together.
 triggers:
-  M_RCGTID_CT_DBDR:
-    question: Where both an invoice and a document in lieu of it were issued by the supplier, which date is the base for the
-      thirty days?
-    trigger: F_DOII IS_SET AND F_LDID IS_SET
-    beside: M_RCGTID_LE_CCDIC
+  M_FTOSGRB_CT_DRR:
+    question: Does the time of supply determination record show whether clause (a), clause (b) or clause (c) fixes the time
+      of supply?
+    trigger: F_TDUC = 'UNKNOWN'
+    beside: M_FTOSGRB_LE_FTA
 products:
   M_SIAFOS_PD_ISO:
     statement: The transaction falls within the inclusive meaning of supply when it takes a listed or other form of supply,
@@ -499,30 +633,43 @@ products:
       business. Inclusion is not exhaustive and no business-context condition is applied.
   M_SIAWC_PD_SAIS:
     statement: The activity is included in supply when all three schedule conditions are met.
-  M_TOSGPD_PD_PRDC:
-    statement: When the supplier receives the payment with respect to the supply, the date of that receipt is a date for the
-      'earlier of' rule on the time of supply of goods. The comparison with the other dates is decided in the parent provision.
-  M_TOSGID_PD_TOSIID:
-    statement: For goods, the date of issue of the invoice is the time of supply when it is not later than the section 31
-      last date, so it is the earlier date or the two dates are the same.
-  M_TOSGID_PD_TOSIDD:
-    statement: For goods, the last date under section 31 to issue the invoice is the time of supply when it is earlier than
-      the date the invoice was actually issued.
-  M_TOSGRRD_PD_RDICD:
-    statement: When tax is on reverse charge basis and the date of receipt of goods exists, that date takes part in the earliest-of
-      determination of the time of supply.
-  M_TOSGRCP_PD_TOSEPD:
-    statement: When the supply is on reverse charge basis and a recipient payment date exists, the time of supply is the earlier
-      of the recorded payment dates.
-  M_RCGTID_PD_CCDIC:
-    statement: The clause (c) date is a candidate time of supply when the supply is on reverse charge, the supplier issued
-      an invoice or a document in lieu of it, and the date immediately following thirty days from that issue is established.
-      The final time of supply is the earliest of all the listed dates, decided
-  M_LTPTOG_PD_GTLAAST:
-    statement: When the supply involves goods, the liability to pay tax on the goods arises at the time of supply. That time
-      is determined in accordance with the other provisions of this section.
-  M_EAOGTOS_PD_IDAR:
-    statement: All conditions of the proviso are met, so the invoice issue date sets the time of supply for the excess amount
+  M_GVTOSR_PD_TOSIRD:
+    statement: Where the supply is a supply of vouchers by a supplier and the case is one of the 'all other cases', the time
+      of supply shall be the voucher redemption date.
+  M_TOSVI_PD_TOSVID:
+    statement: 'The time of supply is the date of issue of the voucher when both conditions hold: it is a supply of vouchers
+      by a supplier, and the supply is identifiable at the point of issue.'
+  M_TOSGAIP_PD_SRSA:
+    statement: The supplier receives such addition in value, and the date of that receipt fixes the time of supply of the
+      addition
+  M_RCGTID_PD_CCCDA:
+    statement: The clause (c) date is a candidate for the time of supply when the supply is under reverse charge and the supplier
+      issued an invoice or a document in lieu of it
+  M_TOSGRRD_PD_RDITOS:
+    statement: On a reverse charge supply the time of supply is the date of receipt of goods when that date is the earliest
+      of the listed dates.
+  M_TOSGRCP_PD_TOSBD:
+    statement: For a reverse charge supply where the books payment date is the same as or earlier than the bank debit date,
+      the time of supply is the date of payment entered in the recipient's books.
+  M_TOSGRCP_PD_TOSBD2:
+    statement: For a reverse charge supply where the bank debit date is earlier than the books payment date, the time of supply
+      is the date on which the payment is debited in the recipient's bank account.
+  M_FTOSGRB_PD_FTA:
+    statement: Fallback applies only when the non-determinability condition and the recipient books entry both hold.
+  M_TOSGPD_PD_PDICD:
+    statement: For a supply of goods where the supplier receives payment with respect to the supply, the date of that receipt
+      is the date offered by this clause as the time of supply. Under the parent chapeau it is the earlier of the listed dates.
+  M_TOSGID_PD_TIIID:
+    statement: The time of supply of goods is the date of issue of the invoice by the supplier. This applies when that date
+      is not later than the section 31 last date, and on a tie both dates are the same.
+  M_TOSGID_PD_TIS31LD:
+    statement: The time of supply of goods is the last date on which the supplier is required under section 31 to issue the
+      invoice. This applies when that date is earlier than the invoice issue date.
+  M_LTPTOG_PD_GTLAAS:
+    statement: For a supply of goods, the liability to pay tax arises at the time of supply, once that time is determined
+      under the provisions of this section.
+  M_EAOGTOS_PD_ETOS:
+    statement: The excess-amount time of supply outcome applies only when all proviso conditions hold together.
 compounds:
 - id: C_S7_SS1
   question: 'Section 7(1): which clause applies?'
@@ -540,53 +687,92 @@ compounds:
   - product: M_SIAWC_PD_SAIS
     from:
     - M_SIAWC_LE_SAIS
-- id: C_S12_SS2
-  question: 'Section 12(2): which clause applies?'
+- id: C_S12_SS4
+  question: 'Section 12(4): which clause applies?'
   includes:
-  - M_TOSGPD_LE_PRDC
-  - M_TOSGID_LE_TOSIID
-  - M_TOSGID_LE_TOSIDD
+  - M_GVTOSR_LE_TOSIRD
+  - M_TOSVI_LE_TOSVID
   produces:
-  - product: M_TOSGPD_PD_PRDC
+  - product: M_GVTOSR_PD_TOSIRD
     from:
-    - M_TOSGPD_LE_PRDC
-  - product: M_TOSGID_PD_TOSIID
+    - M_GVTOSR_LE_TOSIRD
+  - product: M_TOSVI_PD_TOSVID
     from:
-    - M_TOSGID_LE_TOSIID
-  - product: M_TOSGID_PD_TOSIDD
+    - M_TOSVI_LE_TOSVID
+- id: C_TOSGAIP
+  question: The supplier receives such addition in value, and the date of that receipt fixes the time of supply of the addition?
+    (Section 12(6))
+  includes:
+  - M_TOSGAIP_LE_SRSA
+  produces:
+  - product: M_TOSGAIP_PD_SRSA
     from:
-    - M_TOSGID_LE_TOSIDD
+    - M_TOSGAIP_LE_SRSA
 - id: C_S12_SS3
   question: 'Section 12(3): which clause applies?'
   includes:
-  - M_TOSGRRD_LE_RDICD
-  - M_TOSGRCP_LE_TOSEPD
-  - M_RCGTID_LE_CCDIC
+  - M_RCGTID_LE_CCCDA
+  - M_TOSGRRD_LE_RDITOS
+  - M_TOSGRCP_LE_TOSBD
+  - M_TOSGRCP_LE_TOSBD2
   produces:
-  - product: M_TOSGRRD_PD_RDICD
+  - product: M_RCGTID_PD_CCCDA
     from:
-    - M_TOSGRRD_LE_RDICD
-  - product: M_TOSGRCP_PD_TOSEPD
+    - M_RCGTID_LE_CCCDA
+  - product: M_TOSGRRD_PD_RDITOS
     from:
-    - M_TOSGRCP_LE_TOSEPD
-  - product: M_RCGTID_PD_CCDIC
+    - M_TOSGRRD_LE_RDITOS
+  - product: M_TOSGRCP_PD_TOSBD
     from:
-    - M_RCGTID_LE_CCDIC
+    - M_TOSGRCP_LE_TOSBD
+  - product: M_TOSGRCP_PD_TOSBD2
+    from:
+    - M_TOSGRCP_LE_TOSBD2
+  exclusive:
+  - M_TOSGRCP_LE_TOSBD
+  - M_TOSGRCP_LE_TOSBD2
+- id: C_FTOSGRB
+  question: 'Section 12(3), proviso: Fallback Time Of Supply Goods Recipient Books?'
+  includes:
+  - M_FTOSGRB_LE_FTA
+  produces:
+  - product: M_FTOSGRB_PD_FTA
+    from:
+    - M_FTOSGRB_LE_FTA
+- id: C_S12_SS2
+  question: 'Section 12(2): which clause applies?'
+  includes:
+  - M_TOSGPD_LE_PDICD
+  - M_TOSGID_LE_TIIID
+  - M_TOSGID_LE_TIS31LD
+  produces:
+  - product: M_TOSGPD_PD_PDICD
+    from:
+    - M_TOSGPD_LE_PDICD
+  - product: M_TOSGID_PD_TIIID
+    from:
+    - M_TOSGID_LE_TIIID
+  - product: M_TOSGID_PD_TIS31LD
+    from:
+    - M_TOSGID_LE_TIS31LD
+  exclusive:
+  - M_TOSGID_LE_TIIID
+  - M_TOSGID_LE_TIS31LD
 - id: C_LTPTOG
   question: 'Section 12(1): Liability To Pay Tax On Goods?'
   includes:
-  - M_LTPTOG_LE_GTLAAST
+  - M_LTPTOG_LE_GTLAAS
   produces:
-  - product: M_LTPTOG_PD_GTLAAST
+  - product: M_LTPTOG_PD_GTLAAS
     from:
-    - M_LTPTOG_LE_GTLAAST
+    - M_LTPTOG_LE_GTLAAS
 - id: C_EAOGTOS
-  question: 'Section 12(2), proviso: does it apply?'
+  question: 'Section 12(2), proviso: Excess Amount Of Goods Time Of Supply?'
   includes:
-  - M_EAOGTOS_LE_IDAR
+  - M_EAOGTOS_LE_ETOS
   produces:
-  - product: M_EAOGTOS_PD_IDAR
+  - product: M_EAOGTOS_PD_ETOS
     from:
-    - M_EAOGTOS_LE_IDAR
+    - M_EAOGTOS_LE_ETOS
 time:
   law_date: F_DOI

@@ -1,0 +1,24 @@
+# DARP LAW ARC - knowledge_breakdown
+# Install: python -m pip install -r requirements.txt
+# The database needs PostgreSQL with the pgvector extension (installed on the server, not with pip).
+
+# database
+psycopg2-binary
+
+# AI models and embeddings
+anthropic
+google-genai
+google-auth
+
+# PDF reading (IKP, scraper)
+pymupdf
+
+# settings, files, Excel
+python-dotenv
+PyYAML
+pandas
+openpyxl
+XlsxWriter
+
+# tests
+pytest

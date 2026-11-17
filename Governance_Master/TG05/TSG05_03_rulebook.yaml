@@ -6,7 +6,7 @@ facts:
   F_SPRD:
     name: Supplier Payment Receipt Date
     type: DATE
-    tier: T0
+    tier: T1
   F_PSR:
     name: Payment Supply Reference
     type: TEXT
@@ -19,9 +19,9 @@ predicates:
   M_TOSGPD_A_SRPFS:
     statement: The supplier receives the payment with respect to the supply.
     order: HIGH
-    if_false: the payment record shows the payment relates to a different supply, or no payment has been received by the supplier
-    interpretation: Does the payment record show that the supplier received a payment with respect to the supply described
-      in the invoice or contract? If so, the receipt date is F_SPRD.
+    if_false: No payment receipt by the supplier is recorded or the payment does not relate to this supply
+    interpretation: Does the record show a date on which the supplier received a payment, and is that payment made with respect
+      to this supply?
     grounding:
     - F_SPRD
     - F_PSR
@@ -29,15 +29,16 @@ predicates:
 groups: {}
 outcomes:
   M_TOSGPD_LE_PRDC:
-    outcome: PAYMENT_RECEIPT_DATE_IS_CANDIDATE_TIME_OF_SUPPLY
+    outcome: The date on which the supplier receives the payment with respect to the supply is a candidate date for the time
+      of supply of goods; the time of supply is the earlier of the candidate dates
     expr: M_TOSGPD_A_SRPFS
     module: M_TOSGPD
-    description: When the supplier receives the payment with respect to the supply, the date of that receipt is a date for
-      the 'earlier of' rule on the time of supply of goods. The comparison with the other dates is decided in the parent provision.
+    description: When the supplier receives payment with respect to the supply, the receipt date becomes a candidate time
+      of supply of goods. The earlier-of comparison with the other dates is made at parent level.
 products:
   M_TOSGPD_PD_PRDC:
-    statement: When the supplier receives the payment with respect to the supply, the date of that receipt is a date for the
-      'earlier of' rule on the time of supply of goods. The comparison with the other dates is decided in the parent provision.
+    statement: When the supplier receives payment with respect to the supply, the receipt date becomes a candidate time of
+      supply of goods. The earlier-of comparison with the other dates is made at parent level.
 compounds:
 - id: C_TOSGPD
   question: 'Section 12(2)(b): Time Of Supply Goods Payment Date?'

@@ -1,0 +1,44 @@
+# GOVERNANCE MASTER TSG12_01 Tax payment & ledgers (TG12 Payment, Interest & Fees)
+# LAW ARC - 1 laws - status APPROVED
+name: TSG12_01 Tax payment & ledgers - GOVERNANCE MASTER rulebook
+version: TSG12_01
+facts:
+  F_TPS:
+    name: Tax Payer Status
+    type: CODE
+    options:
+    - OTHER_PERSON
+    - TAXABLE_PERSON
+    - UNKNOWN
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_LOCGAST_A_TSBPBTP:
+    statement: The tax shall be paid by the taxable person
+    order: LOW
+    rule: F_TPS = 'TAXABLE_PERSON'
+    handler: python
+groups: {}
+outcomes:
+  M_LOCGAST_LE_TSBPBTP:
+    outcome: TAX_SHALL_BE_PAID_BY_TAXABLE_PERSON
+    expr: M_LOCGAST_A_TSBPBTP
+    module: M_LOCGAST
+    description: The tax shall be paid by the taxable person (Section 9(1), part of the law)
+products:
+  M_LOCGAST_PD_TSBPBTP:
+    statement: The tax shall be paid by the taxable person
+compounds:
+- id: C_LOCGAST
+  question: The tax shall be paid by the taxable person? (Section 9(1))
+  includes:
+  - M_LOCGAST_LE_TSBPBTP
+  produces:
+  - product: M_LOCGAST_PD_TSBPBTP
+    from:
+    - M_LOCGAST_LE_TSBPBTP
+time:
+  law_date: F_DOI

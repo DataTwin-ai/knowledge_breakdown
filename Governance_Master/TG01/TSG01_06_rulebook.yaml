@@ -1,5 +1,5 @@
 # GOVERNANCE MASTER TSG01_06 Business test (TG01 Supply & Taxability)
-# LAW ARC - 1 laws - status APPROVED
+# LAW ARC - 2 laws - status APPROVED
 name: TSG01_06 Business test - GOVERNANCE MASTER rulebook
 version: TSG01_06
 facts:
@@ -25,6 +25,14 @@ predicates:
     - F_SLS
     - F_AOTD
     handler: heavy
+  M_SGOSRDP_A_SICOB:
+    statement: The supply is made in the course or furtherance of business
+    order: HIGH
+    interpretation: Is the activity of making the supply in the course or furtherance of business? Ordinary activity that
+      is not business does not satisfy this atom
+    grounding:
+    - F_AOTD
+    handler: heavy
 groups: {}
 outcomes:
   M_SIAFOS_LE_SBPIB:
@@ -33,9 +41,16 @@ outcomes:
     module: M_SIAFOS
     description: The supply is made or agreed to be made by a person in the course or furtherance of business (Section 7(1),
       part of the law)
+  M_SGOSRDP_LE_SICOB:
+    outcome: SUPPLY_IN_COURSE_OF_BUSINESS
+    expr: M_SGOSRDP_A_SICOB
+    module: M_SGOSRDP
+    description: The supply is made in the course or furtherance of business (Schedule I, paragraph 2, part of the law)
 products:
   M_SIAFOS_PD_SBPIB:
     statement: The supply is made or agreed to be made by a person in the course or furtherance of business
+  M_SGOSRDP_PD_SICOB:
+    statement: The supply is made in the course or furtherance of business
 compounds:
 - id: C_SIAFOS
   question: The supply is made or agreed to be made by a person in the course or furtherance of business? (Section 7(1))
@@ -45,5 +60,13 @@ compounds:
   - product: M_SIAFOS_PD_SBPIB
     from:
     - M_SIAFOS_LE_SBPIB
+- id: C_SGOSRDP
+  question: The supply is made in the course or furtherance of business? (Schedule I, paragraph 2)
+  includes:
+  - M_SGOSRDP_LE_SICOB
+  produces:
+  - product: M_SGOSRDP_PD_SICOB
+    from:
+    - M_SGOSRDP_LE_SICOB
 time:
   law_date: F_DOI

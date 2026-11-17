@@ -45,9 +45,10 @@ def read(conn, schema: str, tables: dict, kinds: dict) -> List[dict]:
                       "derived_from": derived, "description": nl or "", "kind": kind if kind in KINDS else "DOCUMENT",
                       "how": given.get("how", ""), "reviewed": bool(given), "laws": [], "tsgs": {},
                       "checks": {"python": 0, "judge": 0}}
-    # atom -> fact edges of the latest AKP versions, with the atom's order (LOW = Python, HIGH = judge)
+    # atom -> fact edges of the latest AKP versions, with the atom's order (LOW = Python, HIGH = judge);
+    # akp_atom_fact.atom is the atom's abbreviated id = akp.akp_id (akp has no element column)
     edges = _rows(conn, sql.SQL("""SELECT e.fact_id, e.source_mkp, e.atom, COALESCE(a.results, '')
-        FROM {} e LEFT JOIN {} a ON a.source_mkp = e.source_mkp AND a.element = e.atom AND a.version_id = e.version_id
+        FROM {} e LEFT JOIN {} a ON a.source_mkp = e.source_mkp AND a.akp_id = e.atom AND a.version_id = e.version_id
              AND COALESCE(a.is_latest, true)
         WHERE e.is_latest""").format(_t(schema, tables["atom_fact"]), _t(schema, tables["akp"])))
     groups = defaultdict(set)

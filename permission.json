@@ -6,13 +6,13 @@
     "akp": true,
     "gkp": true,
     "governance_master": true,
-    "fact_catalog": false
+    "fact_catalog": true
   },
   "use_cache": {
     "ikp": true,
     "mkp": true,
-    "akp": false,
-    "gkp": false,
+    "akp": true,
+    "gkp": true,
     "governance_master": true
   },
   "read": {
@@ -39,7 +39,7 @@
   "features": {
     "download_missing_pdfs": true,
     "cross_ref_record": true,
-    "web_scraping": false,
+    "web_scraping": true,
     "push_amending_notifications": false,
     "gkp_create_groups": true,
     "prompt_caching": true

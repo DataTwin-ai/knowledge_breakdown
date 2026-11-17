@@ -338,6 +338,7 @@ job - whichever worker finishes first. A job = MKP for the unit → AKP for its 
 |---|---|
 | MKP gate fails | The unit is split into its parts; the parts go to the **front** of the queue (row `SPLIT` in the error log) |
 | "Too many requests" | `llm_runtime.py` waits longer each time (up to a minute, `MAX_RATE_LIMIT_RETRIES`); still limited → the unit goes to the **end** of the queue (`pool.requeue_limit` times). Answers already received are cached, so nothing is paid twice |
+| Database connection lost | Every connection sends TCP keepalive signals (`Config/settings.json` `database`) so a worker waiting minutes for a model is not dropped as idle; MKP ends its open read before AKP starts. If a connection is still lost (`server closed the connection`, `connection already closed`), the unit goes back in the queue (`pool.requeue_limit` times) and the next try opens a new connection (`kp_pool.py`, `db_insert.is_alive`) |
 | Any other error | One row in `Output/<DOC>/error_log.csv`; the worker takes the next job |
 | AKP comparison FALSE | The other MKPs of the unit are saved; the unit is logged (stage AKP) |
 

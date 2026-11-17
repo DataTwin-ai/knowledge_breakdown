@@ -1,16 +1,8 @@
 # GOVERNANCE MASTER TSG07_01 Reverse charge on notified supplies (TG07 Reverse Charge, TDS, TCS)
-# LAW ARC - 9 laws - status APPROVED
+# LAW ARC - 10 laws - status APPROVED
 name: TSG07_01 Reverse charge on notified supplies - GOVERNANCE MASTER rulebook
 version: TSG07_01
 facts:
-  F_NOCR:
-    name: Notification On Council Recommendation
-    type: BOOLEAN
-    tier: T1
-  F_TLIN:
-    name: Transaction Listed In Notification
-    type: BOOLEAN
-    tier: T1
   F_SCB:
     name: Supply Charge Basis
     type: CODE
@@ -19,9 +11,34 @@ facts:
     - REVERSE_CHARGE
     - UNKNOWN
     tier: T0
-  F_GRD:
-    name: Goods Receipt Date
-    type: DATE
+  F_NOCR2:
+    name: Notification On Council Recommendation
+    type: BOOLEAN
+    tier: T1
+  F_TLIN:
+    name: Transaction Listed In Notification
+    type: BOOLEAN
+    tier: T1
+  F_NCD:
+    name: Notified Class Description
+    type: TEXT
+    tier: T1
+  F_DOS:
+    name: Description Of Supply
+    type: TEXT
+    tier: T1
+  F_SIK:
+    name: Supply Item Kind
+    type: CODE
+    options:
+    - BOTH
+    - GOODS
+    - SERVICES
+    - UNKNOWN
+    tier: T1
+  F_RDD:
+    name: Recipient Description Details
+    type: TEXT
     tier: T0
   F_FOS:
     name: Form Of Supply
@@ -36,10 +53,6 @@ facts:
     - LEASE
     - DISPOSAL
     - OTHER
-    tier: T1
-  F_DOS:
-    name: Description Of Supply
-    type: TEXT
     tier: T1
   F_SES:
     name: Supply Execution Status
@@ -192,37 +205,18 @@ predicates:
     order: LOW
     rule: F_SCS = 'NONE'
     handler: python
-  M_NRCCOS_A_NOCR:
-    statement: The Government issued the notification on the recommendations of the Council.
-    order: LOW
-    rule: F_NOCR = TRUE
-    handler: python
-  M_NRCCOS_A_SINC:
-    statement: The supply of goods or services or both falls within a category of supply specified by the Government by notification.
-    order: LOW
-    rule: F_TLIN = TRUE
-    handler: python
-  M_TOSGRRD_A_TPORC:
+  M_RCGTID_A_SORCB:
     statement: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis
-    order: HIGH
-    interpretation: Is tax on this supply paid or liable to be paid on reverse charge basis?
-    grounding:
-    - F_SCB
-    handler: light
-  M_TOSGRRD_A_ROGDC:
-    statement: The date of the receipt of goods is one of the dates of which the earliest is the time of supply
     order: LOW
-    rule: F_GRD IS_SET
+    rule: F_SCB = 'REVERSE_CHARGE'
+    handler: python
+  M_TOSGRRD_A_SURCB:
+    statement: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis
+    order: LOW
+    rule: F_SCB = 'REVERSE_CHARGE'
     handler: python
   M_TOSGRCP_A_SIORC:
     statement: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis
-    order: HIGH
-    interpretation: Is tax on this supply paid or liable to be paid on reverse charge basis (RCM_PAID or RCM_LIABLE)?
-    grounding:
-    - F_SCB
-    handler: light
-  M_RCGTID_A_SIORC:
-    statement: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis.
     order: LOW
     rule: F_SCB = 'REVERSE_CHARGE'
     handler: python
@@ -236,6 +230,63 @@ predicates:
     order: LOW
     rule: F_SCB = 'REVERSE_CHARGE'
     handler: python
+  M_NRCCOS_A_NOCR:
+    statement: The Government specifies the category of supply by notification issued on the recommendations of the Council
+    order: LOW
+    rule: F_NOCR2 = TRUE
+    handler: python
+  M_NRCCOS_A_SINC:
+    statement: The supply falls within a category of supply of goods or services or both that the Government has specified
+      by notification for payment of tax on reverse charge basis
+    order: HIGH
+    interpretation: Does the notified class description in the notification cover the described supply so that the supply
+      is within a category specified for reverse charge?
+    grounding:
+    - F_TLIN
+    - F_NCD
+    - F_DOS
+    handler: heavy
+  M_NRCCOS_A_SOGOS:
+    statement: The supply is of goods or services or both
+    order: LOW
+    rule: F_SIK IN ['GOODS','SERVICES','BOTH']
+    handler: python
+  M_NRCCOS_A_PISR:
+    statement: The person on whom the tax is to be paid is the recipient of such goods or services or both
+    order: HIGH
+    interpretation: Is the person the recipient of the goods or services supplied under this supply?
+    grounding:
+    - F_RDD
+    handler: light
+  M_RCFUS_A_SISNC:
+    statement: The supply is of a specified category of goods or services or both, as specified in the notification
+    order: HIGH
+    interpretation: Does the supplied goods or services or both, by kind and description, fall within a category specified
+      in the notification, whether goods, services or both?
+    grounding:
+    - F_SIK
+    - F_DOS
+    - F_NCD
+    handler: heavy
+    valid_from: '2019-02-01'
+  M_RCFUS_A_RPTORC:
+    statement: The registered recipient shall pay the tax on reverse charge basis as the recipient of such supply of goods
+      or services or both
+    order: HIGH
+    interpretation: Where the trigger conditions of M_RCFUS_LE_RCTC are met, is the tax on this supply payable on reverse
+      charge basis by the recipient?
+    grounding:
+    - F_SCB
+    handler: heavy
+  M_RCFUS_A_RTALP:
+    statement: All the provisions of this Act shall apply to such recipient as if he is the person liable for paying the tax
+      in relation to such supply of goods or services or both
+    order: HIGH
+    interpretation: Where the trigger conditions of M_RCFUS_LE_RCTC are met, is the recipient treated for all provisions of
+      the Act as the person liable for paying the tax on this supply?
+    grounding:
+    - F_SCB
+    handler: heavy
 groups:
   M_SIAFOS_G_LOOF:
     name: Listed Or Other Form
@@ -274,13 +325,14 @@ groups:
     - M_SIAWC_A_AMOA
     - M_SIAWC_A_MWAC
     description: Each atom is tested independently and all three are required.
-  M_NRCCOS_G_NSC:
-    name: Notified Supply Conditions
+  M_NRCCOS_G_NPC:
+    name: Notification Power Conditions
     logic: ALL
     members:
     - M_NRCCOS_A_NOCR
     - M_NRCCOS_A_SINC
-    description: The notification must be issued on Council recommendation AND the supply must fall within a category it specifies.
+    description: The notification must be issued on the Council's recommendation and the supply must fall within a category
+      it specifies.
 outcomes:
   M_SIAFOS_LE_ISO:
     outcome: INCLUDED_IN_SUPPLY
@@ -299,36 +351,24 @@ outcomes:
     expr: M_SIAWC_G_ASCM
     module: M_SIAWC
     description: The activity is included in supply when all three schedule conditions are met.
-  M_NRCCOS_LE_RPRCT:
-    outcome: RC_TAX_PAYABLE_BY_RECIPIENT
-    expr: M_NRCCOS_G_NSC
-    module: M_NRCCOS
-    description: The tax on a supply in a notified category is paid on reverse charge basis by the recipient of the goods
-      or services or both.
-  M_NRCCOS_LE_RTALP:
-    outcome: RECIPIENT_DEEMED_LIABLE_PERSON
-    expr: M_NRCCOS_G_NSC
-    module: M_NRCCOS
-    description: All provisions of the Act apply to the recipient as if he is the person liable for paying the tax on that
-      supply.
-  M_TOSGRRD_LE_RDICD:
-    outcome: DATE_OF_RECEIPT_OF_GOODS_IS_A_CANDIDATE_DATE_FOR_TIME_OF_SUPPLY
-    expr: M_TOSGRRD_A_TPORC AND M_TOSGRRD_A_ROGDC
+  M_RCGTID_LE_SORCB:
+    outcome: SUPPLY_ON_REVERSE_CHARGE_BASIS
+    expr: M_RCGTID_A_SORCB
+    module: M_RCGTID
+    description: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis (Section 12(3),
+      part of the law)
+  M_TOSGRRD_LE_SURCB:
+    outcome: SUPPLY_UNDER_REVERSE_CHARGE_BASIS
+    expr: M_TOSGRRD_A_SURCB
     module: M_TOSGRRD
-    description: When tax is on reverse charge basis and the date of receipt of goods exists, that date takes part in the
-      earliest-of determination of the time of supply.
+    description: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis (Section 12(3),
+      part of the law)
   M_TOSGRCP_LE_SIORC:
     outcome: SUPPLY_IS_ON_REVERSE_CHARGE
     expr: M_TOSGRCP_A_SIORC
     module: M_TOSGRCP
     description: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis (Section 12(3),
       part of the law)
-  M_RCGTID_LE_SIORC:
-    outcome: SUPPLY_IS_ON_REVERSE_CHARGE
-    expr: M_RCGTID_A_SIORC
-    module: M_RCGTID
-    description: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis. (Section
-      12(3), part of the law)
   M_RCSPD_LE_SORCB:
     outcome: SUPPLY_ON_REVERSE_CHARGE_BASIS
     expr: M_RCSPD_A_SORCB
@@ -341,6 +381,30 @@ outcomes:
     module: M_RCSISD
     description: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis. (Section
       13(3), part of the law)
+  M_NRCCOS_LE_RLURC:
+    outcome: NOTIFIED_RC_BY_RECIPIENT
+    expr: M_NRCCOS_G_NPC AND M_NRCCOS_A_SOGOS AND M_NRCCOS_A_PISR
+    module: M_NRCCOS
+    description: The notified reverse charge outcome applies when the notification conditions are met, the supply is of goods
+      or services or both, and the person is the recipient.
+  M_RCFUS_LE_SISNC:
+    outcome: SUPPLY_IN_SPECIFIED_NOTIFIED_CATEGORY
+    expr: M_RCFUS_A_SISNC
+    module: M_RCFUS
+    description: The supply is of a specified category of goods or services or both, as specified in the notification (Section
+      9(4), part of the law)
+  M_RCFUS_LE_RPTORC:
+    outcome: RECIPIENT_PAYS_TAX_ON_REVERSE_CHARGE
+    expr: M_RCFUS_A_RPTORC
+    module: M_RCFUS
+    description: The registered recipient shall pay the tax on reverse charge basis as the recipient of such supply of goods
+      or services or both (Section 9(4), part of the law)
+  M_RCFUS_LE_RTALP:
+    outcome: RECIPIENT_TREATED_AS_LIABLE_PERSON
+    expr: M_RCFUS_A_RTALP
+    module: M_RCFUS
+    description: All the provisions of this Act shall apply to such recipient as if he is the person liable for paying the
+      tax in relation to such supply of goods or services or both (Section 9(4), part of the law)
 products:
   M_SIAFOS_PD_ISO:
     statement: The transaction falls within the inclusive meaning of supply when it takes a listed or other form of supply,
@@ -350,22 +414,27 @@ products:
       business. Inclusion is not exhaustive and no business-context condition is applied.
   M_SIAWC_PD_SAIS:
     statement: The activity is included in supply when all three schedule conditions are met.
-  M_NRCCOS_PD_RPRCT:
-    statement: The tax on a supply in a notified category is paid on reverse charge basis by the recipient of the goods or
-      services or both.
-  M_NRCCOS_PD_RTALP:
-    statement: All provisions of the Act apply to the recipient as if he is the person liable for paying the tax on that supply.
-  M_TOSGRRD_PD_RDICD:
-    statement: When tax is on reverse charge basis and the date of receipt of goods exists, that date takes part in the earliest-of
-      determination of the time of supply.
+  M_RCGTID_PD_SORCB:
+    statement: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis
+  M_TOSGRRD_PD_SURCB:
+    statement: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis
   M_TOSGRCP_PD_SIORC:
     statement: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis
-  M_RCGTID_PD_SIORC:
-    statement: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis.
   M_RCSPD_PD_SORCB:
     statement: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis
   M_RCSISD_PD_SORCB:
     statement: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis.
+  M_NRCCOS_PD_RLURC:
+    statement: The notified reverse charge outcome applies when the notification conditions are met, the supply is of goods
+      or services or both, and the person is the recipient.
+  M_RCFUS_PD_SISNC:
+    statement: The supply is of a specified category of goods or services or both, as specified in the notification
+  M_RCFUS_PD_RPTORC:
+    statement: The registered recipient shall pay the tax on reverse charge basis as the recipient of such supply of goods
+      or services or both
+  M_RCFUS_PD_RTALP:
+    statement: All the provisions of this Act shall apply to such recipient as if he is the person liable for paying the tax
+      in relation to such supply of goods or services or both
 compounds:
 - id: C_S7_SS1
   question: 'Section 7(1): which clause applies?'
@@ -383,34 +452,22 @@ compounds:
   - product: M_SIAWC_PD_SAIS
     from:
     - M_SIAWC_LE_SAIS
-- id: C_NRCCOS
-  question: 'Section 9(3): Notified Reverse Charge Categories Of Supply?'
-  includes:
-  - M_NRCCOS_LE_RPRCT
-  - M_NRCCOS_LE_RTALP
-  produces:
-  - product: M_NRCCOS_PD_RPRCT
-    from:
-    - M_NRCCOS_LE_RPRCT
-  - product: M_NRCCOS_PD_RTALP
-    from:
-    - M_NRCCOS_LE_RTALP
 - id: C_S12_SS3
   question: 'Section 12(3): which clause applies?'
   includes:
-  - M_TOSGRRD_LE_RDICD
+  - M_RCGTID_LE_SORCB
+  - M_TOSGRRD_LE_SURCB
   - M_TOSGRCP_LE_SIORC
-  - M_RCGTID_LE_SIORC
   produces:
-  - product: M_TOSGRRD_PD_RDICD
+  - product: M_RCGTID_PD_SORCB
     from:
-    - M_TOSGRRD_LE_RDICD
+    - M_RCGTID_LE_SORCB
+  - product: M_TOSGRRD_PD_SURCB
+    from:
+    - M_TOSGRRD_LE_SURCB
   - product: M_TOSGRCP_PD_SIORC
     from:
     - M_TOSGRCP_LE_SIORC
-  - product: M_RCGTID_PD_SIORC
-    from:
-    - M_RCGTID_LE_SIORC
 - id: C_S13_SS3
   question: 'Section 13(3): which clause applies?'
   includes:
@@ -423,5 +480,31 @@ compounds:
   - product: M_RCSISD_PD_SORCB
     from:
     - M_RCSISD_LE_SORCB
+- id: C_NRCCOS
+  question: 'Section 9(3): Notified Reverse Charge Categories Of Supply?'
+  includes:
+  - M_NRCCOS_LE_RLURC
+  produces:
+  - product: M_NRCCOS_PD_RLURC
+    from:
+    - M_NRCCOS_LE_RLURC
+- id: C_RCFUS
+  question: The supply is of a specified category of goods or services or both, as specified in the notification; The registered
+    recipient shall pay the tax on reverse charge basis as the recipient of such supply of goods or services or both; All
+    the provisions of this Act shall apply to such recipient as if he
+  includes:
+  - M_RCFUS_LE_SISNC
+  - M_RCFUS_LE_RPTORC
+  - M_RCFUS_LE_RTALP
+  produces:
+  - product: M_RCFUS_PD_SISNC
+    from:
+    - M_RCFUS_LE_SISNC
+  - product: M_RCFUS_PD_RPTORC
+    from:
+    - M_RCFUS_LE_RPTORC
+  - product: M_RCFUS_PD_RTALP
+    from:
+    - M_RCFUS_LE_RTALP
 time:
   law_date: F_DOI

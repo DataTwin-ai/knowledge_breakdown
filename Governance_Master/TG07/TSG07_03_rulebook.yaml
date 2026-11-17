@@ -3,6 +3,10 @@
 name: TSG07_03 E-commerce operator liability - GOVERNANCE MASTER rulebook
 version: TSG07_03
 facts:
+  F_PECOS:
+    name: Person Electronic Commerce Operator Status
+    type: BOOLEAN
+    tier: T0
   F_EPPIT:
     name: ECO Physical Presence In Territory
     type: BOOLEAN
@@ -15,30 +19,35 @@ facts:
     name: ECO Appointed Person For Tax
     type: BOOLEAN
     tier: T0
-  F_NOCR:
+  F_SIK:
+    name: Supply Item Kind
+    type: CODE
+    options:
+    - BOTH
+    - GOODS
+    - SERVICES
+    - UNKNOWN
+    tier: T1
+  F_TLIN:
+    name: Transaction Listed In Notification
+    type: BOOLEAN
+    tier: T1
+  F_NOCR2:
     name: Notification On Council Recommendation
     type: BOOLEAN
     tier: T1
-  F_NAET:
-    name: Notified Activity Entry Text
-    type: TEXT
-    tier: T1
-  F_DOS:
-    name: Description Of Supply
-    type: TEXT
-    tier: T1
-  F_SOSL:
-    name: State Of Supplier Location
-    type: TEXT
-    tier: T1
-  F_SOPOS:
-    name: State Of Place Of Supply
-    type: TEXT
+  F_SISS:
+    name: Supply Intra State Status
+    type: CODE
+    options:
+    - INTER_STATE
+    - INTRA_STATE
+    - UNKNOWN
     tier: T1
   F_STECO:
     name: Supply Through Electronic Commerce Operator
     type: BOOLEAN
-    tier: T1
+    tier: T0
   F_FOS:
     name: Form Of Supply
     type: CODE
@@ -52,6 +61,10 @@ facts:
     - LEASE
     - DISPOSAL
     - OTHER
+    tier: T1
+  F_DOS:
+    name: Description Of Supply
+    type: TEXT
     tier: T1
   F_SES:
     name: Supply Execution Status
@@ -204,64 +217,61 @@ predicates:
     order: LOW
     rule: F_SCS = 'NONE'
     handler: python
-  M_EOAPFT_A_EDNHPP:
-    statement: An electronic commerce operator does not have a physical presence in the taxable territory
+  M_EOAPFT_A_PIECO:
+    statement: The person is an electronic commerce operator
+    order: HIGH
+    interpretation: Does the person fall within the meaning of electronic commerce operator under the Act?
+    grounding:
+    - F_PECOS
+    handler: heavy
+  M_EOAPFT_A_OHNPP:
+    statement: The electronic commerce operator does not have a physical presence in the taxable territory
     order: LOW
     rule: F_EPPIT = FALSE
     handler: python
-  M_EOAPFT_A_EDNHR:
-    statement: The electronic commerce operator does not have a representative in the said territory
+  M_EOAPFT_A_OHNR:
+    statement: The electronic commerce operator does not have a representative in the said territory, being the taxable territory
     order: LOW
     rule: F_EHRIT = FALSE
     handler: python
-  M_EOAPFT_A_ESATP:
-    statement: Such electronic commerce operator shall appoint a person in the taxable territory for the purpose of paying
+  M_EOAPFT_A_OATP:
+    statement: The electronic commerce operator shall appoint a person in the taxable territory for the purpose of paying
       tax
-    order: HIGH
-    interpretation: Does the operator, lacking both a physical presence and a representative in the taxable territory, come
-      under a mandatory duty to appoint a person in that territory for paying tax?
-    grounding:
-    - F_EAPFT
-    handler: heavy
-  M_EOAPFT_A_APSBL:
-    statement: Such person shall be liable to pay tax
-    order: HIGH
-    interpretation: Is the person appointed by the electronic commerce operator under this proviso liable to pay tax?
-    grounding:
-    - F_EAPFT
-    handler: heavy
-  M_ECOPNST_A_NOCR:
-    statement: The Government issued the notification on the recommendations of the Council
     order: LOW
-    rule: F_NOCR = TRUE
+    rule: F_EAPFT = TRUE
     handler: python
-  M_ECOPNST_A_SWNC:
-    statement: The services supplied fall within a category of services specified by the Government by notification under
-      this provision
+  M_EOAPFT_A_APLTP:
+    statement: Such person, appointed for paying tax, shall be liable to pay tax
     order: HIGH
-    interpretation: Does the described service fall within a category of services specified in the notification entry, and
-      is the notification one issued under this provision?
+    interpretation: Is the person appointed under this proviso liable to pay the tax under this proviso?
     grounding:
-    - F_NAET
-    - F_DOS
-    handler: heavy
-  M_ECOPNST_A_SIIS:
-    statement: The supply of the services is an intra-State supply
-    order: HIGH
-    interpretation: On the supplier's State and the State of the place of supply, is this supply of services an intra-State
-      supply as the Act's own provisions determine?
-    grounding:
-    - F_SOSL
-    - F_SOPOS
-    handler: heavy
-  M_ECOPNST_A_SSTO:
-    statement: The notified services are supplied through an electronic commerce operator
-    order: HIGH
-    interpretation: Was the service supplied through an electronic commerce operator, according to the platform order record
-      and the invoice?
-    grounding:
-    - F_STECO
+    - F_EAPFT
     handler: light
+  M_ECOPNST_A_SIOS:
+    statement: The supply is a supply of services.
+    order: LOW
+    rule: F_SIK IN ['SERVICES','BOTH']
+    handler: python
+  M_ECOPNST_A_SCSBN:
+    statement: The services supplied fall within a category of services specified by the Government by notification.
+    order: LOW
+    rule: F_TLIN = TRUE
+    handler: python
+  M_ECOPNST_A_NOCR:
+    statement: The notification specifying the category of services was issued on the recommendations of the Council.
+    order: LOW
+    rule: F_NOCR2 = TRUE
+    handler: python
+  M_ECOPNST_A_SIIS:
+    statement: The supply of such services is an intra-State supply.
+    order: LOW
+    rule: F_SISS = 'INTRA_STATE'
+    handler: python
+  M_ECOPNST_A_SSTO:
+    statement: The notified services are supplied through the electronic commerce operator.
+    order: LOW
+    rule: F_STECO = TRUE
+    handler: python
 groups:
   M_SIAFOS_G_LOOF:
     name: Listed Or Other Form
@@ -304,24 +314,24 @@ groups:
     name: No Presence And No Representative
     logic: ALL
     members:
-    - M_EOAPFT_A_EDNHPP
-    - M_EOAPFT_A_EDNHR
-    description: Both absences are cumulative under the words and also
-  M_ECOPNST_G_VNOSC:
-    name: Valid Notification Of Service Category
+    - M_EOAPFT_A_OHNPP
+    - M_EOAPFT_A_OHNR
+    description: Both absences must hold together, joined by also.
+  M_ECOPNST_G_NCC:
+    name: Notified Category Conditions
     logic: ALL
     members:
+    - M_ECOPNST_A_SIOS
+    - M_ECOPNST_A_SCSBN
     - M_ECOPNST_A_NOCR
-    - M_ECOPNST_A_SWNC
-    description: The category of services must be specified by notification issued on the Council's recommendation, and the
-      supplied service must fall within that category.
-  M_ECOPNST_G_ISSTE:
-    name: Intra State Supply Through ECO
+    description: The supply is of services in a category specified by a notification issued on the Council's recommendation.
+  M_ECOPNST_G_OSC:
+    name: Operator Supply Conditions
     logic: ALL
     members:
     - M_ECOPNST_A_SIIS
     - M_ECOPNST_A_SSTO
-    description: The supply must be intra-State and the services must be supplied through the electronic commerce operator.
+    description: The supply is intra-State and the services are supplied through the electronic commerce operator.
 outcomes:
   M_SIAFOS_LE_ISO:
     outcome: INCLUDED_IN_SUPPLY
@@ -340,25 +350,32 @@ outcomes:
     expr: M_SIAWC_G_ASCM
     module: M_SIAWC
     description: The activity is included in supply when all three schedule conditions are met.
-  M_EOAPFT_LE_OMAP:
-    outcome: ECO_MUST_APPOINT_PAYER
-    expr: M_EOAPFT_G_NPANR AND M_EOAPFT_A_ESATP
+  M_EOAPFT_LE_AOA:
+    outcome: APPOINTMENT_REQUIRED
+    expr: M_EOAPFT_A_PIECO AND M_EOAPFT_G_NPANR
     module: M_EOAPFT
-    description: The appointment duty arises only when both absence conditions hold and the operator comes under the mandatory
-      appointment duty
-  M_EOAPFT_LE_APLFT:
+    description: The proviso conditions are met, so the appointment obligation applies.
+  M_EOAPFT_LE_AMUP:
+    outcome: APPOINTMENT_MADE
+    expr: M_EOAPFT_A_PIECO AND M_EOAPFT_G_NPANR AND M_EOAPFT_A_OATP
+    module: M_EOAPFT
+    description: The operator has appointed a tax paying person under the proviso.
+  M_EOAPFT_LE_APLA:
     outcome: APPOINTED_PERSON_LIABLE
-    expr: M_EOAPFT_G_NPANR AND M_EOAPFT_A_APSBL
+    expr: M_EOAPFT_A_PIECO AND M_EOAPFT_G_NPANR AND M_EOAPFT_A_OATP AND M_EOAPFT_A_APLTP
     module: M_EOAPFT
-    description: Liability of the appointed person arises only when both absence conditions hold and the appointed person
-      is liable to pay tax under this proviso
-  M_ECOPNST_LE_EPNST:
-    outcome: ECO_PAYS_TAX_AS_DEEMED_SUPPLIER
-    expr: M_ECOPNST_G_VNOSC AND M_ECOPNST_G_ISSTE
+    description: The appointed person is liable to pay tax under the proviso.
+  M_ECOPNST_LE_EPTONS:
+    outcome: ECO_PAYS_TAX
+    expr: M_ECOPNST_G_NCC AND M_ECOPNST_G_OSC
     module: M_ECOPNST
-    description: 'When a notification issued on the Council''s recommendation specifies the category of services and the intra-State
-      supply of those services is made through an electronic commerce operator, the tax is paid by the operator and all provisions
-      of this Act apply to him as if he is the supplier liable for '
+    description: The tax on the intra-State supply of the notified service shall be paid by the electronic commerce operator.
+  M_ECOPNST_LE_ETALS:
+    outcome: ECO_DEEMED_SUPPLIER
+    expr: M_ECOPNST_G_NCC AND M_ECOPNST_G_OSC
+    module: M_ECOPNST
+    description: All provisions of the Act apply to the operator as if it is the supplier liable for paying the tax on the
+      supply of such services.
 products:
   M_SIAFOS_PD_ISO:
     statement: The transaction falls within the inclusive meaning of supply when it takes a listed or other form of supply,
@@ -368,16 +385,17 @@ products:
       business. Inclusion is not exhaustive and no business-context condition is applied.
   M_SIAWC_PD_SAIS:
     statement: The activity is included in supply when all three schedule conditions are met.
-  M_EOAPFT_PD_OMAP:
-    statement: The appointment duty arises only when both absence conditions hold and the operator comes under the mandatory
-      appointment duty
-  M_EOAPFT_PD_APLFT:
-    statement: Liability of the appointed person arises only when both absence conditions hold and the appointed person is
-      liable to pay tax under this proviso
-  M_ECOPNST_PD_EPNST:
-    statement: 'When a notification issued on the Council''s recommendation specifies the category of services and the intra-State
-      supply of those services is made through an electronic commerce operator, the tax is paid by the operator and all provisions
-      of this Act apply to him as if he is the supplier liable for '
+  M_EOAPFT_PD_AOA:
+    statement: The proviso conditions are met, so the appointment obligation applies.
+  M_EOAPFT_PD_AMUP:
+    statement: The operator has appointed a tax paying person under the proviso.
+  M_EOAPFT_PD_APLA:
+    statement: The appointed person is liable to pay tax under the proviso.
+  M_ECOPNST_PD_EPTONS:
+    statement: The tax on the intra-State supply of the notified service shall be paid by the electronic commerce operator.
+  M_ECOPNST_PD_ETALS:
+    statement: All provisions of the Act apply to the operator as if it is the supplier liable for paying the tax on the supply
+      of such services.
 compounds:
 - id: C_S7_SS1
   question: 'Section 7(1): which clause applies?'
@@ -398,22 +416,30 @@ compounds:
 - id: C_EOAPFT
   question: 'Section 9(5), further proviso: E-commerce Operator Appoints Person For Tax?'
   includes:
-  - M_EOAPFT_LE_OMAP
-  - M_EOAPFT_LE_APLFT
+  - M_EOAPFT_LE_AOA
+  - M_EOAPFT_LE_AMUP
+  - M_EOAPFT_LE_APLA
   produces:
-  - product: M_EOAPFT_PD_OMAP
+  - product: M_EOAPFT_PD_AOA
     from:
-    - M_EOAPFT_LE_OMAP
-  - product: M_EOAPFT_PD_APLFT
+    - M_EOAPFT_LE_AOA
+  - product: M_EOAPFT_PD_AMUP
     from:
-    - M_EOAPFT_LE_APLFT
+    - M_EOAPFT_LE_AMUP
+  - product: M_EOAPFT_PD_APLA
+    from:
+    - M_EOAPFT_LE_APLA
 - id: C_ECOPNST
   question: 'Section 9(5): Electronic Commerce Operator Pays Notified Services Tax?'
   includes:
-  - M_ECOPNST_LE_EPNST
+  - M_ECOPNST_LE_EPTONS
+  - M_ECOPNST_LE_ETALS
   produces:
-  - product: M_ECOPNST_PD_EPNST
+  - product: M_ECOPNST_PD_EPTONS
     from:
-    - M_ECOPNST_LE_EPNST
+    - M_ECOPNST_LE_EPTONS
+  - product: M_ECOPNST_PD_ETALS
+    from:
+    - M_ECOPNST_LE_ETALS
 time:
   law_date: F_DOI

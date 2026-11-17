@@ -206,6 +206,12 @@
     "min_score": 0.55,
     "vertex_location": "global"
   },
+  "database": {
+    "_about": "Connection to PostgreSQL (db_insert.get_connection). TCP keepalive: while a worker waits minutes for a model answer, the connection sends a small signal every keepalive_interval_seconds after keepalive_idle_seconds of silence, so the network does not drop it as idle. keepalive_count missed answers = the connection is dead. If a connection is still lost, the worker opens a new one and the unit goes back in the queue (pool.requeue_limit times).",
+    "keepalive_idle_seconds": 30,
+    "keepalive_interval_seconds": 10,
+    "keepalive_count": 5
+  },
   "pool": {
     "_about": "Worker pool: a unit bigger than max_job_chars is split at sub-sections, then clauses; the unit's heading becomes one small extra job. 0 = always split down to the smallest part (one MKP-sized job per clause or per sub-section without clauses; each clause still gets its parent's lead-in). A unit the provider rate-limits goes back in the queue up to requeue_limit times.",
     "max_job_chars": 0,

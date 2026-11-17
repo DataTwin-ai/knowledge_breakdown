@@ -48,7 +48,7 @@ def test_catalog_from_the_fact_tables(tmp_path):
                           derived_from jsonb, nl text);
     CREATE TABLE fc_atom_fact (instrument text, version_id text, source_mkp text, akp_version int, atom text,
                                fact_id text, rule text, is_latest boolean);
-    CREATE TABLE fc_akp (version_id text, source_mkp text, element text, results text, is_latest boolean);
+    CREATE TABLE fc_akp (version_id text, source_mkp text, akp_id text, results text, is_latest boolean);
     CREATE TABLE fc_gkp (source_mkp text, akp_element text, tsg_id text, status text, is_latest boolean);
     INSERT INTO fc_fact VALUES ('F_SUPPLY_CONSIDERATION','Consideration','SUPPLY','CODE',NULL,'[]','[]','x');
     INSERT INTO fc_atom_fact VALUES ('CGSTA17','V1','CGSTA17_S7_SS1_Ca#TEXT',1,'A_SALE','F_SUPPLY_CONSIDERATION','r',true),

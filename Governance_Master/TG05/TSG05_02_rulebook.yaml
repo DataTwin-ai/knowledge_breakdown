@@ -1,32 +1,8 @@
 # GOVERNANCE MASTER TSG05_02 Time of supply – services (TG05 Time & Period)
-# LAW ARC - 12 laws - status NEEDS_REVIEW
+# LAW ARC - 14 laws - status NEEDS_REVIEW
 name: TSG05_02 Time of supply – services - GOVERNANCE MASTER rulebook
 version: TSG05_02
 facts:
-  F_DOS:
-    name: Description Of Supply
-    type: TEXT
-    tier: T1
-  F_STD:
-    name: Supply Transaction Date
-    type: DATE
-    tier: T1
-  F_DOII:
-    name: Date Of Invoice Issue
-    type: DATE
-    tier: T0
-  F_SPRD:
-    name: Supplier Payment Receipt Date
-    type: DATE
-    tier: T0
-  F_ICA:
-    name: Invoice Covered Amount
-    type: AMOUNT
-    tier: T0
-  F_PCA:
-    name: Payment Covered Amount
-    type: AMOUNT
-    tier: T1
   F_PBED:
     name: Payment Books Entry Date
     type: DATE
@@ -34,6 +10,78 @@ facts:
   F_PBCD:
     name: Payment Bank Credit Date
     type: DATE
+    tier: T1
+  F_DOII:
+    name: Date Of Invoice Issue
+    type: DATE
+    tier: T0
+  F_IITS:
+    name: Invoice Issue Timing Status
+    type: CODE
+    options:
+    - AFTER_DUE_DATE
+    - ON_OR_BEFORE_DUE_DATE
+    - UNKNOWN
+    tier: T0
+  F_SPRD:
+    name: Supplier Payment Receipt Date
+    type: DATE
+    tier: T0
+  F_IPDO:
+    name: Invoice Payment Date Order
+    type: CODE
+    options:
+    - INVOICE_NOT_LATER
+    - PAYMENT_EARLIER
+    - UNKNOWN
+    tier: T0
+  F_VSS:
+    name: Voucher Supply Status
+    type: CODE
+    options:
+    - NOT_VOUCHER_BY_SUPPLIER
+    - UNKNOWN
+    - VOUCHER_BY_SUPPLIER
+    tier: T1
+  F_SIS2:
+    name: Supply Identifiability Status
+    type: CODE
+    options:
+    - IDENTIFIABLE
+    - NOT_IDENTIFIABLE
+    - UNKNOWN
+    tier: T1
+  F_SCB:
+    name: Supply Charge Basis
+    type: CODE
+    options:
+    - FORWARD_CHARGE
+    - REVERSE_CHARGE
+    - UNKNOWN
+    tier: T0
+  F_PDIRB:
+    name: Payment Date In Recipient Books
+    type: DATE
+    tier: T0
+  F_PDDIB:
+    name: Payment Debit Date In Bank
+    type: DATE
+    tier: T1
+  F_PDO:
+    name: Payment Date Order
+    type: CODE
+    options:
+    - BANK_EARLIER
+    - BOOKS_EARLIER_OR_SAME
+    - UNKNOWN
+    tier: T0
+  F_ICA:
+    name: Invoice Covered Amount
+    type: AMOUNT
+    tier: T1
+  F_PCA:
+    name: Payment Covered Amount
+    type: AMOUNT
     tier: T1
   F_SIK:
     name: Supply Item Kind
@@ -44,30 +92,18 @@ facts:
     - SERVICES
     - UNKNOWN
     tier: T1
+  F_DOS:
+    name: Description Of Supply
+    type: TEXT
+    tier: T1
   F_SEA:
     name: Supply Excess Amount
     type: AMOUNT
-    tier: T1
+    tier: T0
   F_SOE:
     name: Supplier Option Elected
     type: BOOLEAN
     tier: T1
-  F_IITS:
-    name: Invoice Issue Timing Status
-    type: CODE
-    options:
-    - AFTER_DUE_DATE
-    - ON_OR_BEFORE_DUE_DATE
-    - UNKNOWN
-    tier: T0
-  F_IPDO:
-    name: Invoice Payment Date Order
-    type: CODE
-    options:
-    - INVOICE_NOT_LATER
-    - PAYMENT_EARLIER
-    - UNKNOWN
-    tier: T0
   F_PDOS:
     name: Provision Date Order Status
     type: CODE
@@ -80,35 +116,11 @@ facts:
   F_SRBED:
     name: Supply Recipient Books Entry Date
     type: DATE
-    tier: T0
-  F_SCB:
-    name: Supply Charge Basis
-    type: CODE
-    options:
-    - FORWARD_CHARGE
-    - REVERSE_CHARGE
-    - UNKNOWN
-    tier: T0
-  F_PDIRB:
-    name: Payment Date In Recipient Books
-    type: DATE
     tier: T1
-  F_PDDIB:
-    name: Payment Debit Date In Bank
-    type: DATE
-    tier: T1
-  F_PDO:
-    name: Payment Date Order
-    type: CODE
-    options:
-    - BOOKS_EARLIER_OR_SAME
-    - BANK_EARLIER
-    - UNKNOWN
-    tier: T0
   F_LDID:
     name: Lieu Document Issue Date
     type: DATE
-    tier: T1
+    tier: T0
   F_LDIS:
     name: Lieu Document Issuer Status
     type: CODE
@@ -120,6 +132,18 @@ facts:
   F_CCCD:
     name: Clause C Candidate Date
     type: DATE
+    tier: T0
+  F_STD:
+    name: Supply Transaction Date
+    type: DATE
+    tier: T1
+  F_SPCC:
+    name: Supply Preceding Case Coverage
+    type: CODE
+    options:
+    - COVERED_BY_PRECEDING_CASE
+    - NOT_COVERED
+    - UNKNOWN
     tier: T1
   F_FOS:
     name: Form Of Supply
@@ -286,23 +310,6 @@ predicates:
     order: LOW
     rule: F_SCS = 'NONE'
     handler: python
-  M_LTPTOS_A_SIOS:
-    statement: The supply on which the liability to pay tax is being considered is a supply of services
-    order: HIGH
-    interpretation: Does the description of the supply show that it is a supply of services?
-    grounding:
-    - F_DOS
-    handler: light
-  M_LTPTOS_A_TOSDUS:
-    statement: The time of supply of the services is determined in accordance with the provisions of this section
-    order: HIGH
-    interpretation: Under which provision of this section is the time of supply of these services fixed, weighing the supply
-      date, the invoice issue date and the payment receipt date, and has that time been established?
-    grounding:
-    - F_STD
-    - F_DOII
-    - F_SPRD
-    handler: heavy
   M_SDMBIOP_A_ICSE:
     statement: The supply is covered by the invoice to some extent
     order: LOW
@@ -312,32 +319,6 @@ predicates:
     statement: The supply is covered by the payment to some extent
     order: LOW
     rule: F_PCA > 0
-    handler: python
-  M_TOSOSEA_A_SOTS:
-    statement: The supply is a taxable service and the person receiving the excess amount is the supplier of that taxable
-      service
-    order: HIGH
-    interpretation: Is the supply a service (not goods only) that is taxable, and is the person who receives the amount its
-      supplier?
-    grounding:
-    - F_SIK
-    - F_DOS
-    handler: heavy
-  M_TOSOSEA_A_ARIEOI:
-    statement: The supplier receives an amount in excess of the amount indicated in the tax invoice
-    order: LOW
-    rule: F_SEA > 0
-    handler: python
-  M_TOSOSEA_A_EAUTTR:
-    statement: The amount received in excess of the amount indicated in the tax invoice is up to one thousand rupees
-    order: LOW
-    rule: F_SEA <= 1000
-    handler: python
-  M_TOSOSEA_A_SETO:
-    statement: The said supplier opts, at the supplier's option, to treat the time of supply to the extent of the excess amount
-      as the date of issue of invoice relating to that excess amount
-    order: LOW
-    rule: F_SOE = TRUE
     handler: python
   M_EOIOPFS_A_SHII:
     statement: The supplier has issued an invoice for the supply of services, so a date of issue of invoice by the supplier
@@ -392,6 +373,34 @@ predicates:
     order: LOW
     rule: F_PDOS = 'PROVISION_NOT_LATER'
     handler: python
+  M_TOSSVI_A_SIVBS:
+    statement: The supply is a supply of vouchers by a supplier
+    order: LOW
+    rule: F_VSS = 'VOUCHER_BY_SUPPLIER'
+    handler: python
+  M_TOSSVI_A_SIAIP:
+    statement: The supply is identifiable at the point of issue of the voucher
+    order: HIGH
+    interpretation: From the voucher, contract or terms and conditions, is the supply to which the voucher relates identifiable
+      at the point (date) the voucher is issued?
+    grounding:
+    - F_SIS2
+    handler: light
+  M_VSTOSRD_A_SIVBS:
+    statement: The supply is a supply of vouchers by a supplier
+    order: LOW
+    rule: F_VSS = 'VOUCHER_BY_SUPPLIER'
+    handler: python
+  M_VSTOSRD_A_CNCBPC:
+    statement: The case is one of all other cases and is not a case already covered by the preceding case in the same sub-section
+      on the time of supply of vouchers
+    order: HIGH
+    interpretation: Is this voucher supply one that is covered by the preceding case of the same sub-section or is it one
+      of all other cases left over after that case? The preceding case is not restated in this MKP so it must be read from
+      the parent sub-section
+    grounding:
+    - F_SPCC
+    handler: light
   M_RCSPD_A_SORCB:
     statement: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis
     order: LOW
@@ -440,11 +449,54 @@ predicates:
     order: LOW
     rule: F_CCCD IS_SET
     handler: python
+  M_TOSOSEA_A_SOTS:
+    statement: The supply is a taxable service and the person receiving the excess amount is the supplier of that taxable
+      service
+    order: HIGH
+    interpretation: Is the supply a service (not goods only) that is taxable, and is the person who receives the amount its
+      supplier?
+    grounding:
+    - F_SIK
+    - F_DOS
+    handler: heavy
+  M_TOSOSEA_A_ARIEOI:
+    statement: The supplier receives an amount in excess of the amount indicated in the tax invoice
+    order: LOW
+    rule: F_SEA > 0
+    handler: python
+  M_TOSOSEA_A_EAUTTR:
+    statement: The amount received in excess of the amount indicated in the tax invoice is up to one thousand rupees
+    order: LOW
+    rule: F_SEA <= 1000
+    handler: python
+  M_TOSOSEA_A_SETO:
+    statement: The said supplier opts, at the supplier's option, to treat the time of supply to the extent of the excess amount
+      as the date of issue of invoice relating to that excess amount
+    order: LOW
+    rule: F_SOE = TRUE
+    handler: python
   M_TOSSRBE_A_SRBER:
     statement: The date of entry of the supply in the books of account of the recipient of supply is recorded
     order: LOW
     rule: F_SRBED IS_SET
     handler: python
+  M_LTPTOS_A_SIOS:
+    statement: The supply on which the liability to pay tax is being considered is a supply of services
+    order: HIGH
+    interpretation: Does the description of the supply show that it is a supply of services?
+    grounding:
+    - F_DOS
+    handler: light
+  M_LTPTOS_A_TOSDUS:
+    statement: The time of supply of the services is determined in accordance with the provisions of this section
+    order: HIGH
+    interpretation: Under which provision of this section is the time of supply of these services fixed, weighing the supply
+      date, the invoice issue date and the payment receipt date, and has that time been established?
+    grounding:
+    - F_STD
+    - F_DOII
+    - F_SPRD
+    handler: heavy
 groups:
   M_SIAFOS_G_LOOF:
     name: Listed Or Other Form
@@ -490,15 +542,6 @@ groups:
     - M_SDMBIOP_A_ICSE
     - M_SDMBIOP_A_PCSE
     description: The supply is covered by the invoice or, as the case may be, by the payment
-  M_TOSOSEA_G_ERTC:
-    name: Excess Receipt Trigger Conditions
-    logic: ALL
-    members:
-    - M_TOSOSEA_A_SOTS
-    - M_TOSOSEA_A_ARIEOI
-    - M_TOSOSEA_A_EAUTTR
-    description: The supplier of taxable service receives an amount over the invoice amount and that excess is up to one thousand
-      rupees.
   M_EOIOPFS_G_TIDC:
     name: Timely Invoice Date Candidate
     logic: ALL
@@ -536,6 +579,15 @@ groups:
     - M_RCSISD_A_SILD
     description: The date of issue is that of the supplier's invoice or of any other document, by whatever name called, issued
       in lieu of it by the supplier.
+  M_TOSOSEA_G_ERTC:
+    name: Excess Receipt Trigger Conditions
+    logic: ALL
+    members:
+    - M_TOSOSEA_A_SOTS
+    - M_TOSOSEA_A_ARIEOI
+    - M_TOSOSEA_A_EAUTTR
+    description: The supplier of taxable service receives an amount over the invoice amount and that excess is up to one thousand
+      rupees.
   M_TOSSRBE_A_CCDT:
     name: Any of the referred steps (M_TOSSRBE_A_CCDT)
     logic: ANY
@@ -569,24 +621,12 @@ outcomes:
     expr: M_SIAWC_G_ASCM
     module: M_SIAWC
     description: The activity is included in supply when all three schedule conditions are met.
-  M_LTPTOS_LE_TLAATOS:
-    outcome: LIABILITY_TO_PAY_TAX_ON_SERVICES_ARISES_AT_TIME_OF_SUPPLY
-    expr: M_LTPTOS_A_SIOS AND M_LTPTOS_A_TOSDUS
-    module: M_LTPTOS
-    description: Where the supply is a supply of services and its time of supply is determined under this section, the liability
-      to pay tax arises at that time of supply.
   M_SDMBIOP_LE_SDMTE:
     outcome: DEEMED_MADE_TO_EXTENT
     expr: M_SDMBIOP_G_SCBIOP
     module: M_SDMBIOP
     description: For the purposes of clauses (a) and (b) the supply is deemed made to the extent covered by the invoice or
       the payment
-  M_TOSOSEA_LE_EATRA:
-    outcome: EXCESS_TOS_IS_EXCESS_INVOICE_DATE
-    expr: M_TOSOSEA_G_ERTC AND M_TOSOSEA_A_SETO
-    module: M_TOSOSEA
-    description: The proviso fixes the time of supply for the excess amount only when the trigger conditions are met and the
-      supplier exercises the option.
   M_EOIOPFS_LE_IDITOS:
     outcome: TIME_OF_SUPPLY_IS_INVOICE_DATE
     expr: M_EOIOPFS_G_TIDC AND (NOT M_EOIOPFS_A_PRDE OR M_EOIOPFS_A_IDNLTP)
@@ -617,6 +657,18 @@ outcomes:
     module: M_TOSOSPD
     description: The invoice is not issued within the section 31 period and the date of receipt of payment is earlier than
       the date of provision of service.
+  M_TOSSVI_LE_VIDO:
+    outcome: TIME_OF_SUPPLY_IS_VOUCHER_ISSUE_DATE
+    expr: M_TOSSVI_A_SIVBS AND M_TOSSVI_A_SIAIP
+    module: M_TOSSVI
+    description: The time of supply is the date of issue of the voucher when the supply is a supply of vouchers by a supplier
+      AND the supply is identifiable at the point of issue.
+  M_VSTOSRD_LE_TOSIRD:
+    outcome: TOS_IS_VOUCHER_REDEMPTION_DATE
+    expr: M_VSTOSRD_A_SIVBS AND M_VSTOSRD_A_CNCBPC
+    module: M_VSTOSRD
+    description: When the supply is a supply of vouchers by a supplier and the case is one of all other cases the time of
+      supply is the date of redemption of the voucher.
   M_RCSPD_LE_BDITOS:
     outcome: TIME_OF_SUPPLY_IS_BOOKS_PAYMENT_DATE
     expr: M_RCSPD_A_SORCB AND M_RCSPD_G_BPDA AND M_RCSPD_A_BPDIE
@@ -636,12 +688,24 @@ outcomes:
     description: When the supply is on reverse charge basis and the supplier issued an invoice or a document in lieu of it,
       the date immediately following sixty days from that issue date is a candidate time of supply. The actual time of supply
       is the earlier of the applicable candidates, compared outside this MKP.
+  M_TOSOSEA_LE_EATRA:
+    outcome: EXCESS_TOS_IS_EXCESS_INVOICE_DATE
+    expr: M_TOSOSEA_G_ERTC AND M_TOSOSEA_A_SETO
+    module: M_TOSOSEA
+    description: The proviso fixes the time of supply for the excess amount only when the trigger conditions are met and the
+      supplier exercises the option.
   M_TOSSRBE_LE_RBTO:
     outcome: TIME_OF_SUPPLY_RECIPIENT_BOOKS_ENTRY
     expr: M_TOSSRBE_G_FCG
     module: M_TOSSRBE
     description: The proviso gives the recipient books entry date as the time of supply only when the clause condition and
       the recipient entry condition both hold
+  M_LTPTOS_LE_TLAATOS:
+    outcome: LIABILITY_TO_PAY_TAX_ON_SERVICES_ARISES_AT_TIME_OF_SUPPLY
+    expr: M_LTPTOS_A_SIOS AND M_LTPTOS_A_TOSDUS
+    module: M_LTPTOS
+    description: Where the supply is a supply of services and its time of supply is determined under this section, the liability
+      to pay tax arises at that time of supply.
 triggers:
   M_RCSISD_CT_LDIC:
     question: Was the document issued in lieu of the invoice actually issued by the supplier?
@@ -656,15 +720,9 @@ products:
       business. Inclusion is not exhaustive and no business-context condition is applied.
   M_SIAWC_PD_SAIS:
     statement: The activity is included in supply when all three schedule conditions are met.
-  M_LTPTOS_PD_TLAATOS:
-    statement: Where the supply is a supply of services and its time of supply is determined under this section, the liability
-      to pay tax arises at that time of supply.
   M_SDMBIOP_PD_SDMTE:
     statement: For the purposes of clauses (a) and (b) the supply is deemed made to the extent covered by the invoice or the
       payment
-  M_TOSOSEA_PD_EATRA:
-    statement: The proviso fixes the time of supply for the excess amount only when the trigger conditions are met and the
-      supplier exercises the option.
   M_EOIOPFS_PD_IDITOS:
     statement: The invoice issue date is the time of supply when a timely invoice exists and either no payment date exists
       or the invoice date is not later than the payment date.
@@ -680,6 +738,12 @@ products:
   M_TOSOSPD_PD_TOSIPD2:
     statement: The invoice is not issued within the section 31 period and the date of receipt of payment is earlier than the
       date of provision of service.
+  M_TOSSVI_PD_VIDO:
+    statement: The time of supply is the date of issue of the voucher when the supply is a supply of vouchers by a supplier
+      AND the supply is identifiable at the point of issue.
+  M_VSTOSRD_PD_TOSIRD:
+    statement: When the supply is a supply of vouchers by a supplier and the case is one of all other cases the time of supply
+      is the date of redemption of the voucher.
   M_RCSPD_PD_BDITOS:
     statement: On a reverse charge supply the time of supply is the payment date entered in the recipient's books, where that
       date is earlier than or the same as the bank debit date.
@@ -690,9 +754,15 @@ products:
     statement: When the supply is on reverse charge basis and the supplier issued an invoice or a document in lieu of it,
       the date immediately following sixty days from that issue date is a candidate time of supply. The actual time of supply
       is the earlier of the applicable candidates, compared outside this MKP.
+  M_TOSOSEA_PD_EATRA:
+    statement: The proviso fixes the time of supply for the excess amount only when the trigger conditions are met and the
+      supplier exercises the option.
   M_TOSSRBE_PD_RBTO:
     statement: The proviso gives the recipient books entry date as the time of supply only when the clause condition and the
       recipient entry condition both hold
+  M_LTPTOS_PD_TLAATOS:
+    statement: Where the supply is a supply of services and its time of supply is determined under this section, the liability
+      to pay tax arises at that time of supply.
 compounds:
 - id: C_S7_SS1
   question: 'Section 7(1): which clause applies?'
@@ -710,22 +780,6 @@ compounds:
   - product: M_SIAWC_PD_SAIS
     from:
     - M_SIAWC_LE_SAIS
-- id: C_LTPTOS
-  question: 'Section 13(1): Liability To Pay Tax On Services?'
-  includes:
-  - M_LTPTOS_LE_TLAATOS
-  produces:
-  - product: M_LTPTOS_PD_TLAATOS
-    from:
-    - M_LTPTOS_LE_TLAATOS
-- id: C_TOSOSEA
-  question: 'Section 13(2), proviso: Time Of Supply Of Services Excess Amount?'
-  includes:
-  - M_TOSOSEA_LE_EATRA
-  produces:
-  - product: M_TOSOSEA_PD_EATRA
-    from:
-    - M_TOSOSEA_LE_EATRA
 - id: C_S13_SS2
   question: 'Section 13(2): which clause applies?'
   includes:
@@ -761,6 +815,18 @@ compounds:
   - product: M_DOROPD_PD_DORP
     from:
     - M_DOROPD_LE_DORD
+- id: C_S13_SS4
+  question: 'Section 13(4): which clause applies?'
+  includes:
+  - M_TOSSVI_LE_VIDO
+  - M_VSTOSRD_LE_TOSIRD
+  produces:
+  - product: M_TOSSVI_PD_VIDO
+    from:
+    - M_TOSSVI_LE_VIDO
+  - product: M_VSTOSRD_PD_TOSIRD
+    from:
+    - M_VSTOSRD_LE_TOSIRD
 - id: C_S13_SS3
   question: 'Section 13(3): which clause applies?'
   includes:
@@ -780,6 +846,14 @@ compounds:
   exclusive:
   - M_RCSPD_LE_BDITOS
   - M_RCSPD_LE_BDITOS2
+- id: C_TOSOSEA
+  question: 'Section 13(2), proviso: Time Of Supply Of Services Excess Amount?'
+  includes:
+  - M_TOSOSEA_LE_EATRA
+  produces:
+  - product: M_TOSOSEA_PD_EATRA
+    from:
+    - M_TOSOSEA_LE_EATRA
 - id: C_TOSSRBE
   question: 'Section 13(3), proviso: Time Of Supply Services Recipient Books Entry?'
   includes:
@@ -788,5 +862,13 @@ compounds:
   - product: M_TOSSRBE_PD_RBTO
     from:
     - M_TOSSRBE_LE_RBTO
+- id: C_LTPTOS
+  question: 'Section 13(1): Liability To Pay Tax On Services?'
+  includes:
+  - M_LTPTOS_LE_TLAATOS
+  produces:
+  - product: M_LTPTOS_PD_TLAATOS
+    from:
+    - M_LTPTOS_LE_TLAATOS
 time:
   law_date: F_DOI

@@ -16,3 +16,38 @@
 2026-11-16 12:07:36,CGSTA17,CGSTA17_S13_SS5_Cb,MKP,W7,InterfaceError: connection already closed,0,FAILED
 2026-11-16 12:07:36,CGSTA17,CGSTA17_S13_SS6,MKP,W7,InterfaceError: connection already closed,0,FAILED
 2026-11-16 13:21:23,CGSTA17,CGSTA17_S7_SS3_Cb,ALL,W3,finished on a later run,0,DONE
+2026-11-16 15:46:45,CGSTA17,CGSTA17_S9_SS5_P1#TEXT,AKP,W7,"{""verdict"": ""FALSE"", ""reconstructed_mkp"": ""(not compared - Python checks failed)"", ""missing"": [], ""added_or_changed"": [], ""logic_problems"": [""F_OPP: fact id must be F_<ENTITY>_<ATTRIBUTE> in capitals"", ""F_RR: fact id must be F_<ENTITY>_<ATTRIBUTE> in capitals"", ""F_EHRIT: fact id must be F_<ENTITY>_<ATTRIBUTE> in capitals""], ""same_matches"": [], ""references"": []}",0,FAILED
+2026-11-16 15:47:20,CGSTA17,CGSTA17_S9_SS5_P1,AKP,W7,comparison FALSE for CGSTA17_S9_SS5_P1#TEXT (other MKPs of the unit saved),0,FAILED
+2026-11-16 16:06:48,CGSTA17,CGSTA17_S12_SS5_Ca,MKP,W6,OperationalError: server closed the connection unexpectedly This probably means the server terminated abnormally before or while processing the request.,0,FAILED
+2026-11-16 16:06:48,CGSTA17,CGSTA17_S12_SS5_Cb,MKP,W6,InterfaceError: connection already closed,0,FAILED
+2026-11-16 16:06:48,CGSTA17,CGSTA17_S12_SS6,MKP,W6,InterfaceError: connection already closed,0,FAILED
+2026-11-16 16:10:46,CGSTA17,CGSTA17_S12_SS4_Ca,ALL,W8,finished on a later run,0,DONE
+2026-11-16 16:10:51,CGSTA17,CGSTA17_S12_SS3_P1,ALL,W4,finished on a later run,0,DONE
+2026-11-16 16:49:44,CGSTA17,CGSTA17_S12_SS4_Cb,RUN,W5,InterfaceError: connection already closed,0,FAILED
+2026-11-16 17:44:04,CGSTA17,CGSTA17_S9_SS5_P1,ALL,W1,finished on a later run,0,DONE
+2026-11-16 17:50:02,CGSTA17,CGSTA17_S13_SS5_Cb,MKP,W6,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-16 17:50:13,CGSTA17,CGSTA17_S13_SS6,MKP,W5,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-16 17:50:25,CGSTA17,CGSTA17_S13_SS3_P2#TEXT,AKP,W6,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-16 17:50:33,CGSTA17,CGSTA17_S13_SS3_P2,AKP,W6,comparison FALSE for CGSTA17_S13_SS3_P2#TEXT (other MKPs of the unit saved),1,FAILED
+2026-11-16 18:26:38,CGSTA17,CGSTA17_S12_SS4_Cb,ALL,W8,finished on a later run,0,DONE
+2026-11-16 18:28:44,CGSTA17,CGSTA17_S12_SS5_Cb,ALL,W2,finished on a later run,0,DONE
+2026-11-16 18:29:26,CGSTA17,CGSTA17_S12_SS6,ALL,W5,finished on a later run,0,DONE
+2026-11-16 18:29:55,CGSTA17,CGSTA17_S12_SS5_Ca,ALL,W3,finished on a later run,0,DONE
+2026-11-16 18:59:54,CGSTA17,CGSTA17_S13_SS4_Ca,ALL,W4,finished on a later run,0,DONE
+2026-11-16 19:03:14,CGSTA17,CGSTA17_S13_SS4_Cb,ALL,W6,finished on a later run,0,DONE
+2026-11-16 19:29:51,CGSTA17,CGSTA17_S13_SS5_Ca,RUN,W8,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",3,FAILED
+2026-11-16 19:37:43,CGSTA17,CGSTA17_S13_SS6,RUN,W2,InterfaceError: connection already closed,3,FAILED
+2026-11-16 19:38:05,CGSTA17,CGSTA17_S13_SS5_Cb,RUN,W3,InterfaceError: connection already closed,3,FAILED
+2026-11-16 19:38:46,CGSTA17,CGSTA17_S13_SS3_P2,RUN,W1,InterfaceError: connection already closed,3,FAILED
+2026-11-16 20:21:05,CGSTA17,CGSTA17_SCHI_EN3_Cb,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",2,FAILED
+2026-11-16 20:21:11,CGSTA17,CGSTA17_SCHI_EN3_Ca,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-16 20:21:11,CGSTA17,CGSTA17_SCHI_EN1,RUN,W2,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-16 20:21:11,CGSTA17,CGSTA17_SCHI_EN4,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-16 20:31:16,CGSTA17,CGSTA17_SCHI_EN1,ALL,W1,finished on a later run,0,DONE
+2026-11-16 20:32:04,CGSTA17,CGSTA17_SCHI_EN3_Ca,ALL,W5,finished on a later run,0,DONE
+2026-11-16 20:35:07,CGSTA17,CGSTA17_SCHI_EN4#TEXT,AKP,W7,"{""verdict"": ""FALSE"", ""reconstructed_mkp"": ""(not compared - Python checks failed)"", ""missing"": [], ""added_or_changed"": [], ""logic_problems"": [""A_FROM_OTHER_ESTABLISHMENT: every operative atom must name the fact(s) it tests (facts: [F_...]) or the PD it uses"", ""F_SIS: fact id must be F_<ENTITY>_<ATTRIBUTE> in capitals"", ""F_PRS: fact id must be F_<ENTITY>_<ATTRIBUTE> in capitals"", ""F_AOTD: fact id must be F_<ENTITY>_<ATTRIBUTE> in capitals"", ""ORDER: A_FROM_OTHER_ESTABLISHMENT order must be LOW or HIGH, not '' (LOW = a rule on facts decides it; HIGH = the judge decides it)""], ""same_matches"": [], ""references"": []}",0,FAILED
+2026-11-16 20:35:22,CGSTA17,CGSTA17_SCHI_EN3_Cb,ALL,W6,finished on a later run,0,DONE
+2026-11-16 20:35:25,CGSTA17,CGSTA17_SCHI_EN4,AKP,W7,comparison FALSE for CGSTA17_SCHI_EN4#TEXT (other MKPs of the unit saved),0,FAILED
+2026-11-17 10:42:47,CGSTA17,CGSTA17,IKP,,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Connection refused (0x0000274D/10061) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 10:43:25,CGSTA17,CGSTA17,IKP,,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Connection refused (0x0000274D/10061) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 11:02:52,CGSTA17,CGSTA17,IKP,,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Connection refused (0x0000274D/10061) Is the server running on that host and accepting TCP/IP connections?",0,FAILED

@@ -22,13 +22,18 @@ facts:
     name: Recipient Description Details
     type: TEXT
     tier: T0
+  F_SIK:
+    name: Supply Item Kind
+    type: CODE
+    options:
+    - BOTH
+    - GOODS
+    - SERVICES
+    - UNKNOWN
+    tier: T1
   F_DOS:
     name: Description Of Supply
     type: TEXT
-    tier: T1
-  F_TLIN:
-    name: Transaction Listed In Notification
-    type: BOOLEAN
     tier: T1
   F_SRS:
     name: Supplier Registration Status
@@ -41,8 +46,16 @@ facts:
     name: Supply Receipt Status
     type: CODE
     options:
-    - RECEIVED
     - NOT_RECEIVED
+    - RECEIVED
+    tier: T0
+  F_SCB:
+    name: Supply Charge Basis
+    type: CODE
+    options:
+    - FORWARD_CHARGE
+    - REVERSE_CHARGE
+    - UNKNOWN
     tier: T0
   F_FOS:
     name: Form Of Supply
@@ -210,42 +223,60 @@ predicates:
     rule: F_SCS = 'NONE'
     handler: python
   M_RCFUS_A_NOCRI:
-    statement: The Government has, on the recommendations of the Council, by notification, specified the class of registered
-      persons and the categories of goods or services or both for reverse charge
+    statement: The Government has, by notification issued on the recommendations of the Council, specified the class of registered
+      persons and the categories of supply
     order: LOW
     rule: F_NOCR = TRUE
     handler: python
+    valid_from: '2019-02-01'
   M_RCFUS_A_RIARP:
-    statement: The recipient of the supply is a registered person
+    statement: The person receiving the supply is a registered person
     order: LOW
     rule: F_RRS = 'REGISTERED'
     handler: python
   M_RCFUS_A_RINC:
-    statement: The recipient belongs to the class of registered persons specified in the notification
+    statement: The recipient belongs to the class of registered persons specified by the notification
     order: HIGH
-    interpretation: Does the recipient fall within the class of registered persons described in the notification?
+    interpretation: Does the recipient description fall within the class of registered persons described in the notification?
     grounding:
     - F_NCD
     - F_RDD
-    handler: light
-  M_RCFUS_A_SIOSC:
-    statement: The supply is of a specified category of goods or services or both as specified in the notification
+    handler: heavy
+    valid_from: '2019-02-01'
+  M_RCFUS_A_SISNC:
+    statement: The supply is of a specified category of goods or services or both, as specified in the notification
     order: HIGH
-    interpretation: Does the described supply of goods or services or both fall within a category specified in the notification?
+    interpretation: Does the supplied goods or services or both, by kind and description, fall within a category specified
+      in the notification, whether goods, services or both?
     grounding:
+    - F_SIK
     - F_DOS
-    - F_TLIN
-    handler: light
-  M_RCFUS_A_SIAUP:
-    statement: The supply is received from an unregistered supplier
+    - F_NCD
+    handler: heavy
+    valid_from: '2019-02-01'
+  M_RCFUS_A_SRFUS:
+    statement: The supply of goods or services or both is received by the recipient from an unregistered supplier
     order: LOW
-    rule: F_SRS = 'UNREGISTERED'
+    rule: F_SRS = 'UNREGISTERED' AND F_SRS2 = 'RECEIVED'
     handler: python
-  M_RCFUS_A_RRTSS:
-    statement: The recipient receives the supply of goods or services or both from the supplier
-    order: LOW
-    rule: F_SRS2 = 'RECEIVED'
-    handler: python
+  M_RCFUS_A_RPTORC:
+    statement: The registered recipient shall pay the tax on reverse charge basis as the recipient of such supply of goods
+      or services or both
+    order: HIGH
+    interpretation: Where the trigger conditions of M_RCFUS_LE_RCTC are met, is the tax on this supply payable on reverse
+      charge basis by the recipient?
+    grounding:
+    - F_SCB
+    handler: heavy
+  M_RCFUS_A_RTALP:
+    statement: All the provisions of this Act shall apply to such recipient as if he is the person liable for paying the tax
+      in relation to such supply of goods or services or both
+    order: HIGH
+    interpretation: Where the trigger conditions of M_RCFUS_LE_RCTC are met, is the recipient treated for all provisions of
+      the Act as the person liable for paying the tax on this supply?
+    grounding:
+    - F_SCB
+    handler: heavy
 groups:
   M_SIAFOS_G_LOOF:
     name: Listed Or Other Form
@@ -284,21 +315,21 @@ groups:
     - M_SIAWC_A_AMOA
     - M_SIAWC_A_MWAC
     description: Each atom is tested independently and all three are required.
-  M_RCFUS_G_NRRC:
-    name: Notified Registered Recipient Conditions
+  M_RCFUS_G_RRIC:
+    name: Registered Recipient In Class
     logic: ALL
     members:
     - M_RCFUS_A_RIARP
     - M_RCFUS_A_RINC
-    description: The recipient is a registered person and belongs to the class specified in the notification.
-  M_RCFUS_G_NSRC:
-    name: Notified Supply Received Conditions
+    description: The recipient is a registered person and belongs to the class specified by the notification.
+  M_RCFUS_G_RCLE:
+    name: Reverse Charge Legal Effects
     logic: ALL
     members:
-    - M_RCFUS_A_SIOSC
-    - M_RCFUS_A_SIAUP
-    - M_RCFUS_A_RRTSS
-    description: The supply is of a specified category, is received, and comes from an unregistered supplier.
+    - M_RCFUS_A_RPTORC
+    - M_RCFUS_A_RTALP
+    description: The two legal effects applied to the recipient when M_RCFUS_LE_RCTC is TRUE. They are used only in M_RCFUS_LE_RCLEA
+      and never as conditions of M_RCFUS_LE_RCTC.
 outcomes:
   M_SIAFOS_LE_ISO:
     outcome: INCLUDED_IN_SUPPLY
@@ -317,18 +348,20 @@ outcomes:
     expr: M_SIAWC_G_ASCM
     module: M_SIAWC
     description: The activity is included in supply when all three schedule conditions are met.
-  M_RCFUS_LE_RPTORC:
-    outcome: RECIPIENT_PAYS_TAX_ON_REVERSE_CHARGE
-    expr: M_RCFUS_A_NOCRI AND M_RCFUS_G_NRRC AND M_RCFUS_G_NSRC
+  M_RCFUS_LE_RCTC:
+    outcome: RC_RECIPIENT_LIABLE
+    expr: M_RCFUS_A_NOCRI AND M_RCFUS_G_RRIC AND M_RCFUS_A_SISNC AND M_RCFUS_A_SRFUS
     module: M_RCFUS
-    description: Where a notification exists and the recipient, supply and supplier all meet it, the recipient shall pay the
-      tax on reverse charge basis.
-  M_RCFUS_LE_RDPLFT:
-    outcome: ACT_APPLIES_TO_RECIPIENT_AS_PERSON_LIABLE
-    expr: M_RCFUS_A_NOCRI AND M_RCFUS_G_NRRC AND M_RCFUS_G_NSRC
+    description: A notification on the Council's recommendation exists, the recipient is a registered person of the notified
+      class, and the supply is of a notified category received from an unregistered supplier. The consequences in M_RCFUS_G_RCLE
+      follow from this outcome and are not part of the expression.
+  M_RCFUS_LE_RCLEA:
+    outcome: RC_EFFECTS_APPLY
+    expr: M_RCFUS_G_RCLE
     module: M_RCFUS
-    description: Under the same conditions, all provisions of the Act apply to the recipient as if he were the person liable
-      for paying the tax on that supply (deeming).
+    description: 'The legal effects on the recipient: payment of tax on reverse charge basis and treatment as the person liable
+      for paying the tax. This expression is selected through M_RCFUS_OR_RCOS only when M_RCFUS_LE_RCTC is TRUE. It is never
+      an input to M_RCFUS_LE_RCTC.'
 products:
   M_SIAFOS_PD_ISO:
     statement: The transaction falls within the inclusive meaning of supply when it takes a listed or other form of supply,
@@ -338,12 +371,14 @@ products:
       business. Inclusion is not exhaustive and no business-context condition is applied.
   M_SIAWC_PD_SAIS:
     statement: The activity is included in supply when all three schedule conditions are met.
-  M_RCFUS_PD_RPTORC:
-    statement: Where a notification exists and the recipient, supply and supplier all meet it, the recipient shall pay the
-      tax on reverse charge basis.
-  M_RCFUS_PD_RDPLFT:
-    statement: Under the same conditions, all provisions of the Act apply to the recipient as if he were the person liable
-      for paying the tax on that supply (deeming).
+  M_RCFUS_PD_RCTC:
+    statement: A notification on the Council's recommendation exists, the recipient is a registered person of the notified
+      class, and the supply is of a notified category received from an unregistered supplier. The consequences in M_RCFUS_G_RCLE
+      follow from this outcome and are not part of the expression.
+  M_RCFUS_PD_RCLEA:
+    statement: 'The legal effects on the recipient: payment of tax on reverse charge basis and treatment as the person liable
+      for paying the tax. This expression is selected through M_RCFUS_OR_RCOS only when M_RCFUS_LE_RCTC is TRUE. It is never
+      an input to M_RCFUS_LE_RCTC.'
 compounds:
 - id: C_S7_SS1
   question: 'Section 7(1): which clause applies?'
@@ -364,14 +399,14 @@ compounds:
 - id: C_RCFUS
   question: 'Section 9(4): Reverse Charge For Unregistered Supplies?'
   includes:
-  - M_RCFUS_LE_RPTORC
-  - M_RCFUS_LE_RDPLFT
+  - M_RCFUS_LE_RCTC
+  - M_RCFUS_LE_RCLEA
   produces:
-  - product: M_RCFUS_PD_RPTORC
+  - product: M_RCFUS_PD_RCTC
     from:
-    - M_RCFUS_LE_RPTORC
-  - product: M_RCFUS_PD_RDPLFT
+    - M_RCFUS_LE_RCTC
+  - product: M_RCFUS_PD_RCLEA
     from:
-    - M_RCFUS_LE_RDPLFT
+    - M_RCFUS_LE_RCLEA
 time:
   law_date: F_DOI

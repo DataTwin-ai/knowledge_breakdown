@@ -7,14 +7,14 @@ facts:
     name: Petroleum Product Type
     type: CODE
     options:
-    - PETROLEUM_CRUDE
+    - AVIATION_TURBINE_FUEL
     - HIGH_SPEED_DIESEL
     - MOTOR_SPIRIT
     - NATURAL_GAS
-    - AVIATION_TURBINE_FUEL
     - OTHER
+    - PETROLEUM_CRUDE
     tier: T1
-  F_NOCR:
+  F_NOCR2:
     name: Notification On Council Recommendation
     type: BOOLEAN
     tier: T1
@@ -26,26 +26,23 @@ facts:
     name: Supply Levy Timing Status
     type: CODE
     options:
-    - ON_OR_AFTER_LEVY_DATE
     - BEFORE_LEVY_DATE
+    - ON_OR_AFTER_LEVY_DATE
     - UNKNOWN
     tier: T1
-  F_DOS:
-    name: Description Of Supply
-    type: TEXT
-    tier: T1
-  F_TCM:
-    name: Tax Collection Method
-    type: TEXT
-    tier: T0
-  F_TPS:
-    name: Tax Payer Status
+  F_SIK:
+    name: Supply Item Kind
     type: CODE
     options:
-    - TAXABLE_PERSON
-    - OTHER_PERSON
+    - BOTH
+    - GOODS
+    - SERVICES
     - UNKNOWN
-    tier: T0
+    tier: T1
+  F_SIALFHC:
+    name: Supply Is Alcoholic Liquor For Human Consumption
+    type: BOOLEAN
+    tier: T1
   F_FOS:
     name: Form Of Supply
     type: CODE
@@ -59,6 +56,10 @@ facts:
     - LEASE
     - DISPOSAL
     - OTHER
+    tier: T1
+  F_DOS:
+    name: Description Of Supply
+    type: TEXT
     tier: T1
   F_SES:
     name: Supply Execution Status
@@ -211,48 +212,38 @@ predicates:
     order: LOW
     rule: F_SCS = 'NONE'
     handler: python
-  M_LOCTOPP_A_SOLPP:
-    statement: The supply is of petroleum crude, high speed diesel, motor spirit (commonly known as petrol), natural gas or
-      aviation turbine fuel
+  M_LOCTOPP_A_SILPP:
+    statement: The central tax applies to a supply of petroleum crude, high speed diesel, motor spirit (commonly known as
+      petrol), natural gas or aviation turbine fuel
     order: LOW
-    rule: F_PPT IN ['PETROLEUM_CRUDE','HIGH_SPEED_DIESEL','MOTOR_SPIRIT','NATURAL_GAS','AVIATION_TURBINE_FUEL']
+    rule: F_PPT IN ['PETROLEUM_CRUDE', 'HIGH_SPEED_DIESEL', 'MOTOR_SPIRIT', 'NATURAL_GAS', 'AVIATION_TURBINE_FUEL']
     handler: python
   M_LOCTOPP_A_NOCR:
     statement: The levy date is notified by the Government on the recommendations of the Council
     order: LOW
-    rule: F_NOCR = TRUE
+    rule: F_NOCR2 = TRUE
     handler: python
-  M_LOCTOPP_A_LDNBG:
-    statement: A date has been notified by the Government from which central tax is levied on these petroleum products
+  M_LOCTOPP_A_LEDN:
+    statement: A levy effective date has been notified by the Government as the date from which central tax is levied
     order: LOW
     rule: F_NLED IS_SET
     handler: python
   M_LOCTOPP_A_SOOALD:
-    statement: The supply is made on or after the notified date with effect from which the central tax is levied
+    statement: The supply is made on or after the notified levy effective date, so central tax is levied with effect from
+      that date
     order: LOW
     rule: F_SLTS = 'ON_OR_AFTER_LEVY_DATE'
     handler: python
-  M_LOCGAST_A_SIALFHC:
-    statement: The supply is a supply of alcoholic liquor for human consumption
-    order: HIGH
-    interpretation: From the description of the supply, is the item supplied alcoholic liquor for human consumption?
-    grounding:
-    - F_DOS
-    handler: light
-  M_LOCGAST_A_TCAP:
-    statement: The tax is collected in such manner as may be prescribed
-    order: HIGH
-    interpretation: Is the tax collected in the manner laid down by the rules prescribed for its collection?
-    grounding:
-    - F_TCM
-    handler: light
-  M_LOCGAST_A_TPPT:
-    statement: The tax is paid by the taxable person
-    order: HIGH
-    interpretation: Is the person who pays the tax the taxable person liable to pay it?
-    grounding:
-    - F_TPS
-    handler: light
+  M_LOCGAST_A_SIGOS:
+    statement: The supply is of goods or services or both
+    order: LOW
+    rule: F_SIK IN ['GOODS', 'SERVICES', 'BOTH']
+    handler: python
+  M_LOCGAST_A_SINAL:
+    statement: The supply is not a supply of alcoholic liquor for human consumption
+    order: LOW
+    rule: F_SIALFHC = FALSE
+    handler: python
 groups:
   M_SIAFOS_G_LOOF:
     name: Listed Or Other Form
@@ -291,21 +282,14 @@ groups:
     - M_SIAWC_A_AMOA
     - M_SIAWC_A_MWAC
     description: Each atom is tested independently and all three are required.
-  M_LOCTOPP_G_NLD:
-    name: Notified Levy Date
+  M_LOCTOPP_G_LDNC:
+    name: Levy Date Notification Conditions
     logic: ALL
     members:
-    - M_LOCTOPP_A_LDNBG
+    - M_LOCTOPP_A_LEDN
     - M_LOCTOPP_A_NOCR
-    description: The levy date must be notified by the Government on the recommendations of the Council
-  M_LOCTOPP_G_LCM:
-    name: Levy Conditions Met
-    logic: ALL
-    members:
-    - M_LOCTOPP_A_SOLPP
-    - M_LOCTOPP_G_NLD
-    - M_LOCTOPP_A_SOOALD
-    description: The listed product, the notified levy date and the supply timing are all required
+    description: The levy date must be notified by the Government, and that notification must be on the recommendations of
+      the Council.
 outcomes:
   M_SIAFOS_LE_ISO:
     outcome: INCLUDED_IN_SUPPLY
@@ -324,31 +308,22 @@ outcomes:
     expr: M_SIAWC_G_ASCM
     module: M_SIAWC
     description: The activity is included in supply when all three schedule conditions are met.
-  M_LOCTOPP_LE_CTL:
-    outcome: CENTRAL_TAX_LEVIED
-    expr: M_LOCTOPP_G_LCM
+  M_LOCTOPP_LE_CTLOP:
+    outcome: CENTRAL_TAX_LEVIED_ON_PETROLEUM
+    expr: M_LOCTOPP_A_SILPP AND M_LOCTOPP_G_LDNC AND M_LOCTOPP_A_SOOALD
     module: M_LOCTOPP
-    description: All levy conditions are met, so central tax is levied under this provision
-  M_LOCTOPP_LE_LNAH:
-    outcome: NOT_LEVIED_UNDER_THIS_PROVISION
-    expr: NOT M_LOCTOPP_G_LCM
-    module: M_LOCTOPP
-    description: A levy condition is not met, so this provision does not levy central tax
-  M_LOCGAST_LE_SIALFHC:
-    outcome: SUPPLY_IS_ALCOHOLIC_LIQUOR_FOR_HUMAN_CONSUMPTION
-    expr: M_LOCGAST_A_SIALFHC
+    description: Central tax is levied on a listed petroleum product supplied on or after the notified levy date, where the
+      levy date is notified on the recommendations of the Council.
+  M_LOCGAST_LE_SIGOS:
+    outcome: SUPPLY_IS_GOODS_OR_SERVICES
+    expr: M_LOCGAST_A_SIGOS
     module: M_LOCGAST
-    description: The supply is a supply of alcoholic liquor for human consumption (Section 9(1), part of the law)
-  M_LOCGAST_LE_TCAP:
-    outcome: TAX_COLLECTED_AS_PRESCRIBED
-    expr: M_LOCGAST_A_TCAP
+    description: The supply is of goods or services or both (Section 9(1), part of the law)
+  M_LOCGAST_LE_SINAL:
+    outcome: SUPPLY_IS_NOT_ALCOHOLIC_LIQUOR
+    expr: M_LOCGAST_A_SINAL
     module: M_LOCGAST
-    description: The tax is collected in such manner as may be prescribed (Section 9(1), part of the law)
-  M_LOCGAST_LE_TPPT:
-    outcome: TAXABLE_PERSON_PAYS_TAX
-    expr: M_LOCGAST_A_TPPT
-    module: M_LOCGAST
-    description: The tax is paid by the taxable person (Section 9(1), part of the law)
+    description: The supply is not a supply of alcoholic liquor for human consumption (Section 9(1), part of the law)
 products:
   M_SIAFOS_PD_ISO:
     statement: The transaction falls within the inclusive meaning of supply when it takes a listed or other form of supply,
@@ -358,16 +333,13 @@ products:
       business. Inclusion is not exhaustive and no business-context condition is applied.
   M_SIAWC_PD_SAIS:
     statement: The activity is included in supply when all three schedule conditions are met.
-  M_LOCTOPP_PD_CTL:
-    statement: All levy conditions are met, so central tax is levied under this provision
-  M_LOCTOPP_PD_LNAH:
-    statement: A levy condition is not met, so this provision does not levy central tax
-  M_LOCGAST_PD_SIALFHC:
-    statement: The supply is a supply of alcoholic liquor for human consumption
-  M_LOCGAST_PD_TCAP:
-    statement: The tax is collected in such manner as may be prescribed
-  M_LOCGAST_PD_TPPT:
-    statement: The tax is paid by the taxable person
+  M_LOCTOPP_PD_CTLOP:
+    statement: Central tax is levied on a listed petroleum product supplied on or after the notified levy date, where the
+      levy date is notified on the recommendations of the Council.
+  M_LOCGAST_PD_SIGOS:
+    statement: The supply is of goods or services or both
+  M_LOCGAST_PD_SINAL:
+    statement: The supply is not a supply of alcoholic liquor for human consumption
 compounds:
 - id: C_S7_SS1
   question: 'Section 7(1): which clause applies?'
@@ -388,34 +360,23 @@ compounds:
 - id: C_LOCTOPP
   question: 'Section 9(2): Levy Of Central Tax On Petroleum Products?'
   includes:
-  - M_LOCTOPP_LE_CTL
-  - M_LOCTOPP_LE_LNAH
+  - M_LOCTOPP_LE_CTLOP
   produces:
-  - product: M_LOCTOPP_PD_CTL
+  - product: M_LOCTOPP_PD_CTLOP
     from:
-    - M_LOCTOPP_LE_CTL
-  - product: M_LOCTOPP_PD_LNAH
-    from:
-    - M_LOCTOPP_LE_LNAH
-  exclusive:
-  - M_LOCTOPP_LE_CTL
-  - M_LOCTOPP_LE_LNAH
+    - M_LOCTOPP_LE_CTLOP
 - id: C_LOCGAST
-  question: The supply is a supply of alcoholic liquor for human consumption; The tax is collected in such manner as may be
-    prescribed; The tax is paid by the taxable person? (Section 9(1))
+  question: The supply is of goods or services or both; The supply is not a supply of alcoholic liquor for human consumption?
+    (Section 9(1))
   includes:
-  - M_LOCGAST_LE_SIALFHC
-  - M_LOCGAST_LE_TCAP
-  - M_LOCGAST_LE_TPPT
+  - M_LOCGAST_LE_SIGOS
+  - M_LOCGAST_LE_SINAL
   produces:
-  - product: M_LOCGAST_PD_SIALFHC
+  - product: M_LOCGAST_PD_SIGOS
     from:
-    - M_LOCGAST_LE_SIALFHC
-  - product: M_LOCGAST_PD_TCAP
+    - M_LOCGAST_LE_SIGOS
+  - product: M_LOCGAST_PD_SINAL
     from:
-    - M_LOCGAST_LE_TCAP
-  - product: M_LOCGAST_PD_TPPT
-    from:
-    - M_LOCGAST_LE_TPPT
+    - M_LOCGAST_LE_SINAL
 time:
   law_date: F_DOI
