@@ -1,0 +1,94 @@
+# GOVERNANCE MASTER TSG06_03 Composition & special taxpayers / recipients (TG06 Parties & Registration)
+# LAW ARC - 2 laws - status APPROVED
+name: TSG06_03 Composition & special taxpayers / recipients - GOVERNANCE MASTER rulebook
+version: TSG06_03
+facts:
+  F_PTC:
+    name: Person Tax Category
+    type: CODE
+    options:
+    - COMPOSITION_S10
+    - ISD
+    - NON_RESIDENT
+    - REGULAR
+    - TCS_S52
+    - TDS_S51
+    - UNKNOWN
+    tier: T0
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_FORBRP_A_PINTP:
+    statement: The person is a non-resident taxable person (an excluded category)
+    order: LOW
+    rule: F_PTC = 'NON_RESIDENT'
+    handler: python
+  M_FORBRP_A_PPTUS10:
+    statement: The person is paying tax under the provisions of section 10 (an excluded category)
+    order: LOW
+    rule: F_PTC = 'COMPOSITION_S10'
+    handler: python
+groups: {}
+outcomes:
+  M_FORBRP_LE_PINTP:
+    outcome: PERSON_IS_NON_RESIDENT_TAXABLE_PERSON
+    expr: M_FORBRP_A_PINTP
+    module: M_FORBRP
+    description: The person is a non-resident taxable person (an excluded category) (Section 39(1), part of the law)
+  M_FORBRP_LE_PPTUS10:
+    outcome: PERSON_PAYS_TAX_UNDER_SECTION_10
+    expr: M_FORBRP_A_PPTUS10
+    module: M_FORBRP
+    description: The person is paying tax under the provisions of section 10 (an excluded category) (Section 39(1), part of
+      the law)
+  M_FORBRP_LE_PINTP_FOSD:
+    outcome: PERSON_IS_NON_RESIDENT_TAXABLE_PERSON
+    expr: M_FORBRP_A_PINTP
+    module: M_FOSD
+    description: The person is a non-resident taxable person (an excluded category) (Section 37(1), part of the law)
+  M_FORBRP_LE_PPTUS10_FOSD:
+    outcome: PERSON_PAYS_TAX_UNDER_SECTION_10
+    expr: M_FORBRP_A_PPTUS10
+    module: M_FOSD
+    description: The person is paying tax under the provisions of section 10 (an excluded category) (Section 37(1), part of
+      the law)
+products:
+  M_FORBRP_PD_PINTP:
+    statement: The person is a non-resident taxable person (an excluded category)
+  M_FORBRP_PD_PPTUS10:
+    statement: The person is paying tax under the provisions of section 10 (an excluded category)
+  M_FORBRP_PD_PINTP_FOSD:
+    statement: The person is a non-resident taxable person
+  M_FORBRP_PD_PPTUS10_FOSD:
+    statement: The person is paying tax under the provisions of section 10
+compounds:
+- id: C_FORBRP
+  question: The person is a non-resident taxable person (an excluded category); The person is paying tax under the provisions
+    of section 10 (an excluded category)? (Section 39(1))
+  includes:
+  - M_FORBRP_LE_PINTP
+  - M_FORBRP_LE_PPTUS10
+  produces:
+  - product: M_FORBRP_PD_PINTP
+    from:
+    - M_FORBRP_LE_PINTP
+  - product: M_FORBRP_PD_PPTUS10
+    from:
+    - M_FORBRP_LE_PPTUS10
+- id: C_FOSD
+  question: The person is a non-resident taxable person (an excluded category); The person is paying tax under the provisions
+    of section 10 (an excluded category)? (Section 37(1))
+  includes:
+  - M_FORBRP_LE_PINTP_FOSD
+  - M_FORBRP_LE_PPTUS10_FOSD
+  produces:
+  - product: M_FORBRP_PD_PINTP_FOSD
+    from:
+    - M_FORBRP_LE_PINTP_FOSD
+  - product: M_FORBRP_PD_PPTUS10_FOSD
+    from:
+    - M_FORBRP_LE_PPTUS10_FOSD
+time:
+  law_date: F_DOI

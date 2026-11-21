@@ -58,3 +58,32 @@ def test_db_upgrade_sql_takes_the_schema_parameter():
     import db_migrate
     sql = db_migrate.MIGRATION_SQL % {"schema": "'public'"}      # psycopg2 fills %(schema)s the same way
     assert "'^pass0_index$', 'ikp'" in sql and "'^ikp_index$', 'ikp'" in sql and "%(schema)s" not in sql
+
+
+# ---- 2026-11-19: every table name after MKP comes from Config/settings.json and ends with _new
+
+def test_every_table_after_mkp_is_named_in_settings_and_ends_with_new():
+    import kp_settings
+    cfg = kp_settings.load(fresh=True)
+    for sec, keys in kp_settings.TABLE_KEYS.items():
+        for k in keys:
+            if sec == "mkp" or k == "mkp_table":
+                continue                                          # MKP and before keep their tables
+            assert cfg[sec][k].endswith("_new"), f"{sec}.{k} = {cfg[sec][k]}"
+    for k in ("akp", "fact", "atom_fact", "gkp", "time_fact"):
+        assert cfg["governance_master"]["tables"][k].endswith("_new")
+
+
+def test_a_missing_or_different_table_name_stops_with_the_key():
+    import copy
+    import pytest
+    import kp_settings
+    cfg = kp_settings.load(fresh=True)
+    bad = copy.deepcopy(cfg)
+    del bad["akp"]["fact_table"]
+    with pytest.raises(kp_settings.SettingsError, match="akp.fact_table"):
+        kp_settings.check_tables(bad)
+    bad = copy.deepcopy(cfg)
+    bad["gkp"]["akp_table"] = "akp"
+    with pytest.raises(kp_settings.SettingsError, match="gkp.akp_table"):
+        kp_settings.check_tables(bad)

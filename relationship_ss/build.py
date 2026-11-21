@@ -158,7 +158,7 @@ def links(mkp: str, akp: List[dict], edges: List[dict], gkp: List[dict], gm: Lis
             s = same[r["same_akp_id"]]
             f_id, f_nm = ident("ATOM", el)
             t_id = s["element"] if ABBREVIATED.match(s["element"]) else f"{s['source_mkp']}::{s['element']}"
-            if ("ATOM", f_id, "SAME_AS", "ATOM", t_id) not in seen:
+            if f_id != t_id and ("ATOM", f_id, "SAME_AS", "ATOM", t_id) not in seen:   # same id: one shared node
                 seen.add(("ATOM", f_id, "SAME_AS", "ATOM", t_id))
                 out.append({"from_type": "ATOM", "from_id": f_id, "from_name": f_nm[:300], "relation": "SAME_AS",
                             "to_type": "ATOM", "to_id": t_id, "to_name": str(s.get("label") or s["element"])[:300],

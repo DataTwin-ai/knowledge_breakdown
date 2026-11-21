@@ -65,10 +65,59 @@ def concept_warnings(rows: List[dict]) -> List[str]:
     return out
 
 
+
+def retry_concepts(rows: List[dict], known: Dict[str, dict], ask: Callable[[str], str], prompt: str,
+                   note: Callable[[str], None] = lambda _m: None) -> int:
+    """Bug list B11: a NEW fact whose concept is missing, longer than 3 words or only its name gets one more try
+    (one small call for all of them). A concept that is still weak is kept as it was. Returns the concepts fixed."""
+    from transport import get_field
+    weak = {w.split(":", 1)[0]: w.split(":", 1)[1].strip() for w in concept_warnings(rows)}
+    todo = [r for r in rows if r.get("TYPE") == "FACTS" and r["ELEMENT"] in weak and r["ELEMENT"] not in known]
+    if not todo:
+        return 0
+    req = {"facts": [{"fact": r["ELEMENT"], "name": get_field(r, "name"), "type": rfield(r, "type"),
+                      "options": field_list(r, "options"), "nl": get_field(r, "nl"), "concept_now": _concept(r),
+                      "problem": weak[r["ELEMENT"]]} for r in todo]}
+    try:
+        raw = ask(prompt + "\nINPUT:\n" + json.dumps(req, ensure_ascii=False))
+        text = re.sub(r"^```(?:json)?\s*|\s*```$", "", str(raw or "").strip(), flags=re.I)
+        got = {str(c.get("fact")): str(c.get("concept") or "") for c in
+               (json.loads(text[text.find("{"): text.rfind("}") + 1]).get("concepts") or [])}
+    except Exception as exc:
+        from llm_runtime_errors import is_rate_limited
+        if is_rate_limited(exc):
+            raise
+        note(f"FACT CONCEPT           : retry not done - {type(exc).__name__}: {str(exc)[:120]}")
+        return 0
+    fixed = 0
+    for r in todo:
+        old = r.get("CONCEPT")
+        r["CONCEPT"] = got.get(r["ELEMENT"], "") or old
+        if concept_warnings([r]):
+            r["CONCEPT"] = old                          # still weak: keep what the model first wrote
+            continue
+        note(f"FACT CONCEPT           : {r['ELEMENT']} concept '{_concept({'CONCEPT': old})}' -> '{_concept(r)}'")
+        fixed += 1
+    return fixed
+
+
+def _note_embed(fact_id: str, what: str, exc: Exception) -> None:
+    """An embedding that could not be made is logged, not hidden (bug list B7)."""
+    try:
+        from kp_console import log
+        log(f"FACT EMBEDDING         : {fact_id} {what} embedding not made - {type(exc).__name__}: {str(exc)[:120]}")
+    except Exception:
+        pass
+
 class FactRegistry:
-    def __init__(self, conn, schema: str, prefix: str = "pass_2"):
+    def __init__(self, conn, schema: str, fact_table: str, edge_table: str):
+        """Table names from Config/settings.json akp.fact_table / akp.atom_fact_table - none is made here."""
         self.conn, self.schema = conn, schema
-        self.fact_t, self.edge_t = f"{prefix}_fact", f"{prefix}_atom_fact"
+        self.fact_t, self.edge_t = fact_table, edge_table
+
+    @classmethod
+    def from_settings(cls, conn, schema: str, s: dict) -> "FactRegistry":
+        return cls(conn, schema, s["fact_table"], s["atom_fact_table"])
 
     def t(self, name):
         return sql.SQL("{}.{}").format(sql.Identifier(self.schema), sql.Identifier(name))
@@ -160,6 +209,32 @@ class FactRegistry:
             add(cur.fetchall())
         return out
 
+    def backfill(self, embed: Callable, note: Callable[[str], None] = lambda _m: None, limit: int = 2000) -> int:
+        """Bug list B7: a fact with no name embedding or no concept embedding (saved before the concept, or its
+        embedding failed) gets them now - the fact check searches by both. Returns the facts filled."""
+        if not embed:
+            return 0
+        with self.conn.cursor() as cur:
+            cur.execute(sql.SQL("""SELECT fact_id, name, nl, concept, embedding IS NULL, concept_embedding IS NULL
+                FROM {} WHERE embedding IS NULL OR (COALESCE(concept, '') <> '' AND concept_embedding IS NULL)
+                LIMIT %s""").format(self.t(self.fact_t)), (limit,))
+            rows = cur.fetchall()
+        done = 0
+        for fid, name, nl, concept, no_vec, no_cvec in rows:
+            try:
+                v = embed(f"{name} - {nl or ''}".strip(" -")) if no_vec else None
+                cv = embed(concept) if no_cvec and concept else None
+            except Exception as exc:
+                note(f"FACT EMBEDDING         : {fid} not embedded - {type(exc).__name__}: {str(exc)[:120]}")
+                break
+            with self.conn.cursor() as cur:
+                cur.execute(sql.SQL("""UPDATE {} SET embedding = COALESCE(embedding, %s::vector),
+                    concept_embedding = COALESCE(concept_embedding, %s::vector) WHERE fact_id=%s""")
+                            .format(self.t(self.fact_t)), (_vec(v), _vec(cv), fid))
+            done += 1
+        self.conn.commit()
+        return done
+
     def nearest(self, vector, k: int, min_similarity: float, concept_vector=None) -> List[dict]:
         """Fact flow layer 3: the registered facts nearest in meaning to a new fact (all facts, not only a slice) -
         by name + nl (embedding) AND by concept (concept_embedding), like atoms. similarity = the higher of both."""
@@ -238,8 +313,9 @@ class FactRegistry:
                     if embed:
                         try:
                             cv = embed(concept)
-                        except Exception:
+                        except Exception as exc:
                             cv = None
+                            _note_embed(fid, "concept", exc)
                     cur.execute(sql.SQL("""UPDATE {} SET concept=%s, concept_embedding=%s::vector
                         WHERE fact_id=%s AND COALESCE(concept, '') = ''""").format(self.t(self.fact_t)),
                                 (concept, _vec(cv), fid))
@@ -257,12 +333,14 @@ class FactRegistry:
             if embed:
                 try:
                     vector = embed(f"{name} - {nl}".strip(" -"))
-                except Exception:
+                except Exception as exc:              # logged (bug list B7); the catch-up step fills it next run
                     vector = None
+                    _note_embed(fid, "name", exc)
                 try:
                     cvector = embed(concept) if concept else None
-                except Exception:
+                except Exception as exc:
                     cvector = None
+                    _note_embed(fid, "concept", exc)
             if vector:
                 cur.execute(sql.SQL("SELECT fact_id, 1 - (embedding <=> %s::vector) FROM {} WHERE embedding IS NOT NULL "
                                     "AND vector_dims(embedding)=%s ORDER BY embedding <=> %s::vector LIMIT 1")

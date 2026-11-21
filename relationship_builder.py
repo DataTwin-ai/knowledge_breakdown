@@ -34,7 +34,7 @@ CHUNK = 200                                # MKPs read and written per transacti
 def _names(cfg: dict) -> dict:
     from db_migrate import _names as tables
     n = tables(cfg)
-    fact = (cfg["governance_master"].get("tables") or {}).get("fact", "akp_fact")
+    fact = cfg["akp"]["fact_table"]
     return {"akp": n["akp"], "fact_edge": n["fact_edge"], "fact": fact, "gkp": n["gkp"], "gm": n["gm"]}
 
 

@@ -308,9 +308,56 @@ def load(fresh: bool = False, permission: Optional[dict] = None, settings: Optio
     emb = llm.get("embedding") or {}
     cfg["vector"] = {**st["vector"], "embedding_model": str(emb.get("model") or "text-embedding-005")}
     cfg["documents"] = discover_documents(perm, st)
+    check_tables(cfg)
     if permission is None and settings is None:
         _cache = cfg
     return copy.deepcopy(cfg)
+
+
+TABLE_KEYS = {          # every table after MKP has its own name in Config/settings.json (2026-11-19: all end in _new)
+    "mkp": ("table", "taxonomy_table"),
+    "akp": ("mkp_table", "table", "cache_table", "llm_cache_table", "fact_table", "atom_fact_table", "time_fact_table",
+            "gkp_table"),
+    "gkp": ("akp_table", "mkp_table", "table", "cache_table", "llm_cache_table", "coverage_table", "taxonomy_table",
+            "atom_fact_table"),
+    "governance_master": ("table", "history_table"),
+    "relationship": ("table",),
+    "fact_catalog": ("table", "index_table"),
+}
+SAME_TABLE = (         # the same table named in two places must have the same name
+    (("akp", "table"), ("gkp", "akp_table")), (("akp", "gkp_table"), ("gkp", "table")),
+    (("akp", "atom_fact_table"), ("gkp", "atom_fact_table")),
+    (("mkp", "table"), ("akp", "mkp_table")), (("mkp", "table"), ("gkp", "mkp_table")),
+    (("akp", "table"), ("governance_master", "tables", "akp")), (("akp", "fact_table"), ("governance_master", "tables", "fact")),
+    (("akp", "atom_fact_table"), ("governance_master", "tables", "atom_fact")),
+    (("akp", "time_fact_table"), ("governance_master", "tables", "time_fact")),
+    (("gkp", "table"), ("governance_master", "tables", "gkp")), (("mkp", "table"), ("governance_master", "tables", "mkp")),
+    (("refs", "link_table"), ("governance_master", "tables", "ref_link")),
+)
+
+
+def check_tables(cfg: dict) -> None:
+    """Every table name is read from Config/settings.json - no name is made in the code. A missing name, or one table
+    named differently in two sections, stops the run with the key."""
+    for sec, keys in TABLE_KEYS.items():
+        for k in keys:
+            if not str((cfg.get(sec) or {}).get(k) or "").strip():
+                raise SettingsError(f"Config/settings.json {sec}.{k} (table name) is missing")
+    for k in ("akp", "fact", "atom_fact", "gkp", "time_fact", "mkp", "ref_link"):
+        if not str(((cfg.get("governance_master") or {}).get("tables") or {}).get(k) or "").strip():
+            raise SettingsError(f"Config/settings.json governance_master.tables.{k} (table name) is missing")
+    for a, b in SAME_TABLE:
+        va, vb = (_dig(cfg, a), _dig(cfg, b))
+        if va != vb:
+            raise SettingsError(f"Config/settings.json {'.'.join(a)} = {va!r} but {'.'.join(b)} = {vb!r} - "
+                                "the same table must have the same name")
+
+
+def _dig(cfg: dict, path: tuple):
+    cur = cfg
+    for p in path:
+        cur = (cur or {}).get(p)
+    return cur
 
 
 def _fallback(block) -> dict:

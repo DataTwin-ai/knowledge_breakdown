@@ -1,0 +1,548 @@
+# GOVERNANCE MASTER TSG01_08 Schedule II Building Lease Deeming (TG01 Supply & Taxability)
+# LAW ARC - 8 laws - status APPROVED
+name: TSG01_08 Schedule II Building Lease Deeming - GOVERNANCE MASTER rulebook
+version: TSG01_08
+facts:
+  F_DOS:
+    name: Description Of Supply
+    type: TEXT
+    tier: T1
+  F_GUK:
+    name: Goods Use Kind
+    type: CODE
+    options:
+    - PRIVATE_USE
+    - USED
+    - MADE_AVAILABLE
+    - NONE
+    - UNKNOWN
+    tier: T1
+  F_CIT:
+    name: Certificate Issuer Type
+    type: CODE
+    options:
+    - AUTHORISED_UNDER_LAW
+    - GOVERNMENT
+    - OTHER
+    - UNKNOWN
+    tier: T0
+  F_IAUL:
+    name: Issuer Authorisation Under Law
+    type: CODE
+    options:
+    - AUTHORISED_UNDER_LAW
+    - NOT_AUTHORISED
+    - UNKNOWN
+    tier: T1
+  F_CCR:
+    name: Completion Certificate Requirement
+    type: CODE
+    options:
+    - NOT_REQUIRED
+    - REQUIRED
+    - UNKNOWN
+    tier: T1
+  F_ACR:
+    name: Architect Council Registration
+    type: BOOLEAN
+    tier: T0
+  F_KOWP:
+    name: Kind Of Work Performed
+    type: CODE
+    options:
+    - ADDITION
+    - ALTERATION
+    - REPLACEMENT
+    - REMODELLING
+    - OTHER
+    - UNKNOWN
+    tier: T1
+  F_SES2:
+    name: Structure Existence Status
+    type: CODE
+    options:
+    - EXISTING
+    - NOT_EXISTING
+    - UNKNOWN
+    tier: T1
+  F_SCS2:
+    name: Structure Civil Status
+    type: CODE
+    options:
+    - CIVIL
+    - NOT_CIVIL
+    - UNKNOWN
+    tier: T1
+  F_FOS:
+    name: Form Of Supply
+    type: CODE
+    options:
+    - BARTER
+    - DISPOSAL
+    - EXCHANGE
+    - LEASE
+    - LICENCE
+    - OTHER
+    - RENTAL
+    - SALE
+    - TRANSFER
+    tier: T1
+  F_SPT2:
+    name: Supply Property Type
+    type: CODE
+    options:
+    - LAND
+    - BUILDING
+    - OTHER
+    - UNKNOWN
+    tier: T1
+  F_SLS2:
+    name: Surveyor Licence Status
+    type: CODE
+    options:
+    - LICENSED_LOCAL_BODY_SURVEYOR
+    - LICENSED_DEVELOPMENT_OR_PLANNING_SURVEYOR
+    - LICENSED_OTHER
+    - NOT_LICENSED
+    - UNKNOWN
+    tier: T1
+  F_CERS:
+    name: Chartered Engineer Registration Status
+    type: CODE
+    options:
+    - REGISTERED_IEI
+    - NOT_REGISTERED_IEI
+    - UNKNOWN
+    tier: T0
+  F_AOTD:
+    name: Activity Or Transaction Description
+    type: TEXT
+    tier: T1
+  F_PCTS:
+    name: Payment Certificate Timing Status
+    type: CODE
+    options:
+    - AFTER_CERTIFICATE
+    - NOT_AFTER_CERTIFICATE
+    - NOT_FULLY_RECEIVED
+    - NOT_REQUIRED
+    - UNKNOWN
+    tier: T1
+  F_POTS:
+    name: Payment Occupation Timing Status
+    type: CODE
+    options:
+    - AFTER_OCCUPATION
+    - NOT_AFTER_OCCUPATION
+    - NOT_FULLY_RECEIVED
+    - UNKNOWN
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_CAA_A_AITG:
+    statement: The competent authority is the Government
+    order: LOW
+    rule: F_CIT = 'GOVERNMENT'
+    handler: python
+  M_CAA_A_AAUL:
+    statement: The competent authority is any authority authorised to issue completion certificate under any law for the time
+      being in force
+    order: HIGH
+    interpretation: Is the issuing authority authorised to issue a completion certificate under any law for the time being
+      in force?
+    grounding:
+    - F_IAUL
+    handler: light
+  M_CAA_A_CNRFA:
+    statement: A completion certificate is not required from the Government or authority authorised under any law to issue
+      it
+    order: LOW
+    rule: F_CCR = 'NOT_REQUIRED'
+    handler: python
+  M_CAA_A_ARWC:
+    statement: The competent authority is an architect registered with the Council of Architecture constituted under the Architects
+      Act, 1972
+    order: LOW
+    rule: F_ACR = TRUE
+    handler: python
+  M_CALS_A_AITG:
+    statement: The competent authority is the Government
+    order: LOW
+    rule: F_CIT = 'GOVERNMENT'
+    handler: python
+  M_CALS_A_AIAI:
+    statement: The competent authority is an authority authorised to issue completion certificate under any law for the time
+      being in force
+    order: HIGH
+    interpretation: Is the authority authorised under any law for the time being in force to issue a completion certificate?
+    grounding:
+    - F_IAUL
+    handler: heavy
+  M_CALS_A_CNRFA:
+    statement: A completion certificate is not required from the Government or the authority authorised to issue it (non-requirement
+      of such certificate from such authority)
+    order: HIGH
+    interpretation: Is there a non-requirement of a completion certificate from such authority for the property or work concerned?
+    grounding:
+    - F_CCR
+    handler: light
+  M_CALS_A_AILS:
+    statement: The competent authority is a licensed surveyor of the respective local body of the city or town or village
+      or development or planning authority
+    order: HIGH
+    interpretation: Is the person a licensed surveyor of the respective local body of the city or town or village or of the
+      development or planning authority? The source wording is ambiguous on how the list attaches and is retained as written.
+    grounding:
+    - F_SLS2
+    handler: heavy
+  M_DOCACE_A_CAIG:
+    statement: The competent authority is the Government
+    order: LOW
+    rule: F_CIT = 'GOVERNMENT'
+    handler: python
+  M_DOCACE_A_AULA:
+    statement: The competent authority is any authority authorised to issue completion certificate under any law for the time
+      being in force
+    order: HIGH
+    interpretation: Is the issuing authority authorised to issue completion certificates under a law for the time being in
+      force?
+    grounding:
+    - F_CIT
+    handler: heavy
+  M_DOCACE_A_CNRFA:
+    statement: In case of non-requirement of such completion certificate from such authority, the certificate is not required
+      from that authority
+    order: LOW
+    rule: F_CCR = 'NOT_REQUIRED'
+    handler: python
+  M_DOCACE_A_CERWI:
+    statement: The competent authority is a chartered engineer registered with the Institution of Engineers (India)
+    order: LOW
+    rule: F_CERS = 'REGISTERED_IEI'
+    handler: python
+  M_DOCFS_A_WIAA:
+    statement: The work is an addition, which the expression construction includes
+    order: LOW
+    rule: F_KOWP = 'ADDITION'
+    handler: python
+  M_DOCFS_A_WIAA2:
+    statement: The work is an alteration, which the expression construction includes
+    order: LOW
+    rule: F_KOWP = 'ALTERATION'
+    handler: python
+  M_DOCFS_A_WIAR:
+    statement: The work is a replacement, which the expression construction includes
+    order: LOW
+    rule: F_KOWP = 'REPLACEMENT'
+    handler: python
+  M_DOCFS_A_WIAR2:
+    statement: The work is a remodelling, which the expression construction includes
+    order: LOW
+    rule: F_KOWP = 'REMODELLING'
+    handler: python
+  M_DOCFS_A_SEBW:
+    statement: The civil structure worked on existed before the work, as the qualifier of any existing civil structure requires
+    order: LOW
+    rule: F_SES2 = 'EXISTING'
+    handler: python
+  M_DOCFS_A_SIC:
+    statement: The structure worked on is a civil structure, as the qualifier of any existing civil structure requires
+    order: HIGH
+    if_false: The structure is not a civil structure
+    interpretation: Is the structure worked on a civil structure, rather than another kind of structure?
+    grounding:
+    - F_SCS2
+    handler: light
+  M_DOCFS_A_OCBLW:
+    statement: The activity is construction beyond the listed works, which the open word includes
+    order: HIGH
+    if_false: The activity is not construction in its ordinary sense
+    interpretation: Is the described activity construction in a sense similar to additions, alterations, replacements or remodelling,
+      even though it is not one of the listed works? The source does not state whether the existing civil structure condition
+      also governs this route, so do not apply that condition unless the source supports it.
+    grounding:
+    - F_KOWP
+    - F_SCS2
+    handler: heavy
+  M_LOBIS_A_PIAB:
+    statement: The property leased or let out is a building, including a commercial, industrial or residential complex
+    order: HIGH
+    interpretation: Is the property leased or let out a building, including a commercial, industrial or residential complex
+      (the listed complexes are illustrative and not a closed list)?
+    grounding:
+    - F_DOS
+    handler: light
+  M_PUOBGIS_A_GPTPU:
+    statement: The goods are put to any private use
+    order: HIGH
+    interpretation: Are the goods put to any private use?
+    grounding:
+    - F_GUK
+    handler: light
+  M_COCAS_A_AICOS:
+    statement: The activity is the construction of a complex, building, civil structure or a part thereof
+    order: HIGH
+    interpretation: Does the described activity amount to construction of a complex, building, civil structure or a part thereof?
+    grounding:
+    - F_AOTD
+    handler: light
+  M_COCAS_A_BIFS:
+    statement: The construction is of a complex or building intended for sale to a buyer, wholly or partly
+    order: HIGH
+    interpretation: Is the complex or building under construction intended for sale to a buyer, wholly or partly?
+    grounding:
+    - F_AOTD
+    handler: light
+  M_COCAS_A_ECACC:
+    statement: Where a completion certificate is required by the competent authority, the entire consideration has been received
+      after issuance of that completion certificate
+    order: LOW
+    rule: F_PCTS = 'AFTER_CERTIFICATE'
+    handler: python
+  M_COCAS_A_ECAFO:
+    statement: The entire consideration has been received after the first occupation of the complex or building
+    order: LOW
+    rule: F_POTS = 'AFTER_OCCUPATION'
+    handler: python
+  M_NSSOLAB_A_SIAS:
+    statement: The transaction takes the form of a sale
+    order: LOW
+    rule: F_FOS = 'SALE'
+    handler: python
+  M_NSSOLAB_A_SIOL:
+    statement: The property sold is land
+    order: LOW
+    rule: F_SPT2 = 'LAND'
+    handler: python
+  M_NSSOLAB_A_SIOB:
+    statement: The property sold is a building
+    order: LOW
+    rule: F_SPT2 = 'BUILDING'
+    handler: python
+groups:
+  M_CAA_G_GOAA:
+    name: Government Or Authorised Authority
+    logic: ANY
+    members:
+    - M_CAA_A_AITG
+    - M_CAA_A_AAUL
+    description: The Government or any authority authorised under any law in force to issue a completion certificate
+  M_CAA_G_RAR:
+    name: Registered Architect Route
+    logic: ALL
+    members:
+    - M_CAA_A_CNRFA
+    - M_CAA_A_ARWC
+    description: No certificate is required from such authority and the certifier is a registered architect
+  M_CALS_G_PAA:
+    name: Primary Authority Alternatives
+    logic: ANY
+    members:
+    - M_CALS_A_AITG
+    - M_CALS_A_AIAI
+    description: The Government or any authority authorised to issue completion certificate under any law for the time being
+      in force.
+  M_CALS_G_SRC:
+    name: Surveyor Route Conditions
+    logic: ALL
+    members:
+    - M_CALS_A_CNRFA
+    - M_CALS_A_AILS
+    description: Where a completion certificate is not required from such authority - the licensed surveyor listed in the
+      clause.
+  M_DOCACE_G_GOAIR:
+    name: Government Or Authorised Issuer Route
+    logic: ANY
+    members:
+    - M_DOCACE_A_CAIG
+    - M_DOCACE_A_AULA
+    description: The competent authority is the Government or an authority authorised to issue the completion certificate
+  M_DOCACE_G_ERCNR:
+    name: Engineer Route Certificate Not Required
+    logic: ALL
+    members:
+    - M_DOCACE_A_CNRFA
+    - M_DOCACE_A_CERWI
+    description: Where the certificate is not required from such authority, a chartered engineer registered with the Institution
+      of Engineers (India) is the competent authority
+  M_DOCFS_G_ECW:
+    name: Extended Construction Works
+    logic: ANY
+    members:
+    - M_DOCFS_A_WIAA
+    - M_DOCFS_A_WIAA2
+    - M_DOCFS_A_WIAR
+    - M_DOCFS_A_WIAR2
+    description: Any one of the four listed works, which the expression includes.
+  M_DOCFS_G_ECSC:
+    name: Existing Civil Structure Condition
+    logic: ALL
+    members:
+    - M_DOCFS_A_SEBW
+    - M_DOCFS_A_SIC
+    description: The listed works must be carried out on an existing civil structure, so both qualifiers apply together.
+  M_COCAS_G_COS:
+    name: Construction Object Scope
+    logic: ANY
+    members:
+    - M_COCAS_A_AICOS
+    - M_COCAS_A_BIFS
+    description: Construction of a complex, building, civil structure or part thereof, and the inclusive (non-exhaustive)
+      route of a complex or building intended for sale to a buyer wholly or partly.
+  M_COCAS_G_CTE:
+    name: Consideration Timing Exception
+    logic: ANY
+    members:
+    - M_COCAS_A_ECACC
+    - M_COCAS_A_ECAFO
+    description: Entire consideration received after the earlier of completion certificate (where required) or first occupation.
+      Receipt after either event satisfies this because of whichever is earlier.
+  M_NSSOLAB_A_BSUST:
+    name: Any of the referred steps (M_NSSOLAB_A_BSUST)
+    logic: ANY
+    members:
+    - M_CAA_PD_CAO
+    - M_CALS_PD_CADM
+    - M_COCAS_PD_CDSOS
+    - M_DOCACE_PD_CADO
+    - M_DOCFS_PD_CMO
+    description: TRUE when any step of the law this check refers to is TRUE
+  M_NSSOLAB_G_LOBO:
+    name: Land Or Building Object
+    logic: ANY
+    members:
+    - M_NSSOLAB_A_SIOL
+    - M_NSSOLAB_A_SIOB
+    description: The property sold is land or a building.
+outcomes:
+  M_CAA_LE_CAO:
+    outcome: IS_COMPETENT_AUTHORITY
+    expr: M_CAA_G_GOAA OR M_CAA_G_RAR
+    module: M_CAA
+    description: The certifying body is a competent authority if it is the Government or an authority authorised under law,
+      or if no certificate is required from such authority and it is a registered architect
+  M_CALS_LE_CADM:
+    outcome: IS_COMPETENT_AUTHORITY
+    expr: M_CALS_G_PAA OR M_CALS_G_SRC
+    module: M_CALS
+    description: The expression competent authority is satisfied by either the primary authority route or the licensed surveyor
+      route.
+  M_DOCACE_LE_CADO:
+    outcome: COMPETENT_AUTHORITY_DEFINED
+    expr: M_DOCACE_G_GOAIR OR M_DOCACE_G_ERCNR
+    module: M_DOCACE
+    description: The entity is a competent authority for paragraph 5(b) under the exhaustive definition
+  M_DOCFS_LE_CMO:
+    outcome: WITHIN_CONSTRUCTION
+    expr: (M_DOCFS_G_ECW AND M_DOCFS_G_ECSC) OR M_DOCFS_A_OCBLW
+    module: M_DOCFS
+    description: The activity is within construction for this clause if it is a listed extended work on an existing civil
+      structure, or other construction within the open inclusion.
+  M_LOBIS_LE_PIAB:
+    outcome: PROPERTY_IS_A_BUILDING
+    expr: M_LOBIS_A_PIAB
+    module: M_LOBIS
+    description: The property leased or let out is a building, including a commercial, industrial or residential complex (Schedule
+      II, paragraph 2, part of the law)
+  M_PUOBGIS_LE_GPTPU:
+    outcome: GOODS_PUT_TO_PRIVATE_USE
+    expr: M_PUOBGIS_A_GPTPU
+    module: M_PUOBGIS
+    description: The goods are put to any private use (Schedule II, paragraph 4, part of the law)
+  M_COCAS_LE_CDSOS:
+    outcome: TREATED_AS_SUPPLY_OF_SERVICES
+    expr: M_COCAS_G_COS AND NOT M_COCAS_G_CTE
+    module: M_COCAS
+    description: Construction of the specified immovable property is treated as a supply of services unless the entire consideration
+      was received after the earlier of completion certificate (where required) or first occupation.
+  M_NSSOLAB_LE_LOBNS:
+    outcome: NEITHER_SUPPLY
+    expr: M_NSSOLAB_A_SIAS AND M_NSSOLAB_G_LOBO AND NOT (M_NSSOLAB_A_SIOB AND M_NSSOLAB_A_BSUST)
+    module: M_NSSOLAB
+    description: The transaction is a sale of land, or a sale of building that is not one to which clause (b) of paragraph
+      5 of Schedule II applies.
+products:
+  M_CAA_PD_CAO:
+    statement: The certifying body is a competent authority if it is the Government or an authority authorised under law,
+      or if no certificate is required from such authority and it is a registered architect
+  M_CALS_PD_CADM:
+    statement: The expression competent authority is satisfied by either the primary authority route or the licensed surveyor
+      route.
+  M_DOCACE_PD_CADO:
+    statement: The entity is a competent authority for paragraph 5(b) under the exhaustive definition
+  M_DOCFS_PD_CMO:
+    statement: The activity is within construction for this clause if it is a listed extended work on an existing civil structure,
+      or other construction within the open inclusion.
+  M_LOBIS_PD_PIAB:
+    statement: The property leased or let out is a building, including a commercial, industrial or residential complex
+  M_PUOBGIS_PD_GPTPU:
+    statement: The goods are put to any private use
+  M_COCAS_PD_CDSOS:
+    statement: Construction of the specified immovable property is treated as a supply of services unless the entire consideration
+      was received after the earlier of completion certificate (where required) or first occupation.
+  M_NSSOLAB_PD_LOBNS:
+    statement: The transaction is a sale of land, or a sale of building that is not one to which clause (b) of paragraph 5
+      of Schedule II applies.
+compounds:
+- id: C_SCHII_EN5_CB_E1_N1
+  question: 'Schedule II, paragraph 5(b), Explanation, sub-item (1): which clause applies?'
+  includes:
+  - M_CAA_LE_CAO
+  - M_CALS_LE_CADM
+  - M_DOCACE_LE_CADO
+  produces:
+  - product: M_CAA_PD_CAO
+    from:
+    - M_CAA_LE_CAO
+  - product: M_CALS_PD_CADM
+    from:
+    - M_CALS_LE_CADM
+  - product: M_DOCACE_PD_CADO
+    from:
+    - M_DOCACE_LE_CADO
+- id: C_DOCFS
+  question: 'Schedule II, paragraph 5(b), Explanation (2): Definition Of Construction For Services?'
+  includes:
+  - M_DOCFS_LE_CMO
+  produces:
+  - product: M_DOCFS_PD_CMO
+    from:
+    - M_DOCFS_LE_CMO
+- id: C_LOBIS
+  question: The property leased or let out is a building, including a commercial, industrial or residential complex? (Schedule
+    II, paragraph 2)
+  includes:
+  - M_LOBIS_LE_PIAB
+  produces:
+  - product: M_LOBIS_PD_PIAB
+    from:
+    - M_LOBIS_LE_PIAB
+- id: C_PUOBGIS
+  question: The goods are put to any private use? (Schedule II, paragraph 4)
+  includes:
+  - M_PUOBGIS_LE_GPTPU
+  produces:
+  - product: M_PUOBGIS_PD_GPTPU
+    from:
+    - M_PUOBGIS_LE_GPTPU
+- id: C_COCAS
+  question: 'Schedule II, paragraph 5(b): Construction Of Complex As Services?'
+  includes:
+  - M_COCAS_LE_CDSOS
+  produces:
+  - product: M_COCAS_PD_CDSOS
+    from:
+    - M_COCAS_LE_CDSOS
+- id: C_NSSOLAB
+  question: 'Schedule III paragraph 5: Neither Supply Sale Of Land And Building?'
+  includes:
+  - M_NSSOLAB_LE_LOBNS
+  produces:
+  - product: M_NSSOLAB_PD_LOBNS
+    from:
+    - M_NSSOLAB_LE_LOBNS
+time:
+  law_date: F_DOI

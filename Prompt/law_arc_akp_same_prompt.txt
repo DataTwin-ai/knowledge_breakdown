@@ -1,3 +1,5 @@
+PROMPT EDIT 2026-11-19: NOT SAME when one atom tests more than the other; the same condition with a different fact shape is SAME (the saved atom's facts are used).
+PROMPT EDIT 2026-11-18: this call is the SAME check only (INPUT = source, new_atoms, same_candidates; sections 2, 3 and 5 are not asked); candidates are named by akp_id and canonical = that akp_id; SAME rule = the same legal condition on the same subject testing the same input, even when the two laws' outcomes differ.
 PROMPT EDIT 2026-11-16: section 4 - candidates are also found by CONCEPT (concept_similarity); each has source_text (its MKP law text).
 PROMPT EDIT 2026-11-15: section 4 - candidates 0.80-0.90 with the same facts and rule are also sent.
 ROLE
@@ -11,6 +13,15 @@ This is NOT a new split, a source-law research exercise or GST topic grouping.
 You do NOT generate new AKPs or decide any real transaction verdict.
 Your response is exactly one JSON object with a TRUE/FALSE verdict.
 Python will SAVE only on TRUE and RETRY on FALSE.
+
+THIS CALL IS THE SAME CHECK ONLY. The meaning comparison was already done and
+approved. The INPUT holds only:
+  source          : the new atoms' source MKP (source_mkp, text, instrument)
+  new_atoms       : this law's approved atoms (TYPE A rows: MKP, TYPE, ELEMENT, CONCEPT, RESULTS)
+  same_candidates : for each new atom (element), up to 5 saved atoms of OTHER laws
+Do ONLY section 4 (SAME CANDIDATE CHECK) and answer in the section 6 format with
+"verdict": "TRUE", empty lists for missing / added_or_changed / logic_problems /
+references, and your same_matches. Sections 2, 3 and 5 are not asked here.
 
 One comparison call examines ONE source MKP. Complete the thorough reasoning
 internally and return a SHORT actionable verdict; do not request further
@@ -136,27 +147,39 @@ atom texts.
 Even 0.99 similarity is NOT sufficient to conclude legal identity, and a shared
 fact and rule is NOT sufficient either: judge the complete legal meaning.
 
-For each Standard TYPE=A and every supplied same_candidates candidate, compare
-its COMPLETE new_results against the candidate's COMPLETE results, concept,
-source instrument, version, and source provision. Verify strict equivalence of:
-  - subject, object, operative act and complete legal proposition;
-  - scope, legal role, facts, rule, false_if and all conditions;
-  - exceptions, alternatives, qualifications and cross-references;
-  - legal effect, jurisdiction, statutory version and effective period.
-Different wording is permitted if and only if meaning is identical.
-If any legally material context differs or is unknown, do NOT mark SAME.
-Do not confuse related laws, common concepts or different purposes as SAME.
-Across different instruments or versions, approve SAME only if the evidence
-provided establishes the SAME operative meaning and applicability; otherwise
-leave both atoms distinct. Never invent missing external law information.
+For each new atom (new_atoms, TYPE A) and every candidate supplied for it, compare
+the new atom's RESULTS (statement, facts, rule) with the candidate's results.
+An atom is ONE condition. Two atoms are SAME when ALL of these hold:
+  - they state the same legal condition (different words allowed);
+  - about the same subject and object (the same person, supply, goods,
+    document, defined term ...);
+  - they test the same input (the same facts, or facts with the same meaning)
+    with an equivalent rule / false_if.
+SAME does NOT need the two laws to have the same outcome, consequence or
+purpose: "The person is an electronic commerce operator" is the SAME atom in a
+law that makes a representative pay and in a law that makes an appointed person
+pay. Compare the atom, not the whole law.
+NOT SAME when anything material in the condition itself differs, e.g.:
+  - a different defined term ("meaning of 'business'" vs "meaning of 'person'");
+  - a different subject or object (goods vs services, credit note vs debit note);
+  - one is narrower or broader ("such goods" of one paragraph vs any goods;
+    clause (a) or (b) vs clause (a), (b) or (c));
+  - a different number, date, rate, threshold or period;
+  - the opposite polarity (requires vs does not require);
+  - one tests MORE than the other (A vs A and B: one more condition, fact or limit) - a big atom and a small
+    atom are never SAME.
+The same condition written with a different fact shape (a yes/no fact vs one value of a category fact) IS the
+same test: SAME - the saved atom's facts are used for both laws.
+Use the candidate's source_text only to understand what its words refer to
+(e.g. what "such goods" means). Never invent missing law.
 
-Each candidate includes a globally unique `canonical` containing
-instrument::version::source_mkp::atom_element. COPY it EXACTLY; do not use the
-short element alone. For every truly identical pair return:
-  {"element":"<existing new A ID>",
-   "canonical":"<unchanged supplied canonical>",
+Each candidate has its `akp_id` (e.g. M_LTPTOG_A_SIG). For every SAME pair
+return the candidate's akp_id EXACTLY as `canonical`:
+  {"element":"<the new atom's ELEMENT>",
+   "canonical":"<the candidate's akp_id, copied exactly>",
    "same_verdict":"TRUE",
-   "reason":"<short, specific explanation of matched legal conditions>"}
+   "reason":"<short: the condition, subject and input they share>"}
+When several candidates are SAME, return the one with the highest similarity.
 If no candidate qualifies, return same_matches: [].
 SAME review is INDEPENDENT of the main reconstruction verdict: it must NOT
 change the main TRUE/FALSE decision.
@@ -202,7 +225,7 @@ Use the SAME property names, types and capitalization shown here:
   "same_matches": [
     {
       "element": "A_NEW",
-      "canonical": "CGSTA17::V_EXAMPLE::CGSTA17_S7_SS1_Ca#TEXT::A_EXISTING",
+      "canonical": "M_LTPTOG_A_SIG",
       "same_verdict": "TRUE",
       "reason": "Same legal proposition, conditions, and applicability"
     }
@@ -218,8 +241,8 @@ Use the SAME property names, types and capitalization shown here:
 `verdict` is EXACTLY the string "TRUE" or "FALSE", never a JSON boolean.
 `missing`, `added_or_changed`, `logic_problems`, `same_matches`,
 `references` are ALWAYS JSON arrays; use [] for none.
-`element` must be an existing Standard A ELEMENT, and `canonical` must be
-an EXACT unchanged full canonical string supplied under same_candidates.
+`element` must be an ELEMENT of new_atoms, and `canonical` must be the EXACT
+akp_id of a candidate supplied for that element under same_candidates.
 Every same_matches entry MUST contain same_verdict: "TRUE" and a reason.
 Include a pair ONLY after a genuinely strict SAME determination.
 No fabricated IDs, no unresolved placeholder objects.

@@ -27,7 +27,7 @@ def _exists(conn, schema: str, table: str) -> bool:
 def ensure_views(conn, schema: str, tables: dict, governance_master_table: str) -> list:
     """(Re)create v_molecule_elements and v_element_links. Returns the view names created."""
     T = lambda name: sql.SQL("{}.{}").format(sql.Identifier(schema), sql.Identifier(name))  # noqa: E731
-    akp, edge, gkp = tables["akp"], tables["fact"].rsplit("_fact", 1)[0] + "_atom_fact", tables["gkp"]
+    akp, edge, gkp = tables["akp"], tables["atom_fact"], tables["gkp"]      # Config/settings.json governance_master.tables
     have_edge, have_gkp = _exists(conn, schema, edge), _exists(conn, schema, gkp)
     have_rb = _exists(conn, schema, governance_master_table)
     parts = [sql.SQL("""

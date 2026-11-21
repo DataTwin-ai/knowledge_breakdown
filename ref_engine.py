@@ -115,7 +115,8 @@ def _register(cfg: dict, ref: dict, file_name: str, title: str, url: str) -> str
     return ref["ref_id"]
 
 
-def run(limit: int = 50, then_run: bool = False) -> List[str]:
+def run(limit: int = 50, then_run: bool = False, ref_ids: Optional[List[str]] = None) -> List[str]:
+    """ref_ids: only these documents (main.py's automatic step after the workers, bug list C1)."""
     cfg = kp_settings.load()
     if not cfg["features"]["web_scraping"]:
         flow("WEB SCRAPING : switched off - set features.web_scraping = true in permission.json to run it")
@@ -134,7 +135,9 @@ def run(limit: int = 50, then_run: bool = False) -> List[str]:
     mkp_table = (cfg.get("mkp") or {}).get("table", "mkp")
     got: List[str] = []
     try:
-        todo = store.pending(limit=limit)
+        todo = store.pending(limit=limit if ref_ids is None else 10000)
+        if ref_ids is not None:
+            todo = [r for r in todo if r["ref_id"] in set(ref_ids)][:limit]
         flow(f"WEB SCRAPING : {len(todo)} document(s) waiting")
         for ref in todo:
             tries, bad = int(rc.get("max_link_tries", 2)), []

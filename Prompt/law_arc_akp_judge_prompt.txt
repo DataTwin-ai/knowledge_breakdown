@@ -1,3 +1,4 @@
+PROMPT EDIT 2026-11-19: 6A - a fact is an attribute with values (one CODE fact for the alternatives of one choice), not a yes/no fact per value; Python FACT SHAPE check.
 PROMPT EDIT 2026-11-15: NAME AND HANDLER FIELDS added (keep / fix name and handler on the final table).
 PROMPT EDIT 2026-11-09: groups field (TG / TSG) added; the GST taxonomy is now sent with this prompt.
 ROLE
@@ -227,6 +228,12 @@ amendment row has no transaction atom.
   derived_from (if computed), registry: NEW. A fact is an observable input, never a legal conclusion.
 - Every operative A names at least one fact in facts: [...] (or its PD). Atoms that test the same input
   share one fact with different rules.
+- A FACT IS AN ATTRIBUTE WITH VALUES, not a yes/no question per value: gender (MALE / FEMALE) is a fact, "is male"
+  + "is female" are not. Alternatives of ONE choice ("other than an Input Service Distributor, a non-resident
+  taxable person and a person paying tax under section 10, 51 or 52") are ONE CODE fact - e.g.
+  F_PERSON_TAX_CATEGORY: options [ISD, NON_RESIDENT, COMPOSITION_S10, TDS_S51, TCS_S52, REGULAR] - and each atom
+  tests its value (rule: "F_PERSON_TAX_CATEGORY = 'ISD'"). Use BOOL only for a real yes / no input (input tax
+  credit availed or not). Python rejects yes/no facts that are values of one attribute (FACT SHAPE).
 - Never flip or drop: without, not, neither / nor, other than, except, unless, notwithstanding, subject to,
   shall / shall not / may, deemed, only, within, not later than, or any number. "without a consideration"
   stays "without a consideration" in the statement and the rule tests the NONE value.

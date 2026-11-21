@@ -84,9 +84,10 @@ def validate_gkp_settings(raw: dict, permission: dict) -> dict:
     # meaning-based candidates from atoms of other documents (0 = off)
     s["similar_atoms"] = max(0, min(20, int(s.get("similar_atoms", 8))))
     s["similar_atom_min"] = float(s.get("similar_atom_min", 0.75))
-    s["akp_table"] = s.get("akp_table") or permission.get("akp", {}).get("table", "akp")
-    s["mkp_table"] = s.get("mkp_table") or permission.get("akp", {}).get("mkp_table", "mkp")
-    s["table_prefix"] = s.get("table_prefix", "gkp")
+    for k in ("akp_table", "mkp_table", "table", "cache_table", "llm_cache_table", "coverage_table", "taxonomy_table",
+              "atom_fact_table"):                       # every table name from Config/settings.json (no name made here)
+        if not str(s.get(k) or "").strip():
+            raise ValueError(f"Config/settings.json gkp.{k} (table name) is missing")
     s["create_groups"] = bool(s["create_groups"] if "create_groups" in s
                               else (permission.get("features") or {}).get("gkp_create_groups", True))
     s["create_reuse_similarity"] = float(s.get("create_reuse_similarity", 0.85))
@@ -195,7 +196,7 @@ def run_gkp_scope(instrument, scope_key="ALL", version_id=None, fake_llm: Option
     from akp_engine import _in_scope, _version
     embed_fn, emb_model = _embedder(embed)
     conn = get_connection()
-    store = GkpStore(conn, get_db_schema(), s["akp_table"], s["table_prefix"])
+    store = GkpStore.from_settings(conn, get_db_schema(), s)
     reasons: List[tuple] = []
     counts = {"mkps": 0, "atoms": 0, "unchanged": 0, "approved_mappings": 0, "agree": 0, "judge": 0, "same_inherited": 0,
               "amendment_rows": 0, "akp_group": 0, "mkp_group": 0, "review": 0, "unclassified": 0, "groups_created": 0,
@@ -206,14 +207,14 @@ def run_gkp_scope(instrument, scope_key="ALL", version_id=None, fake_llm: Option
     by_tg_name = {g["tg_id"]: g["name"] for g in data["groups"]}
     from llm_runtime_marker import CACHE_BREAK
     call = Models(paths, store, s["use_cache"], counts, fake_llm)
-    finder = CandidateFinder(store, by_id, s, f"{s['table_prefix']}_taxonomy")
+    finder = CandidateFinder(store, by_id, s, s["taxonomy_table"])
     try:
         store.ensure()
         if not s["taxonomy_synced"]:          # the worker pool syncs once before the workers start
             counts["taxonomy_embeddings"] = tax.sync(conn, get_db_schema(), subs, embed_fn, emb_model,
-                                                     f"{s['table_prefix']}_taxonomy")
+                                                     s["taxonomy_table"])
         # the ONE taxonomy (notes section 9): the gkp_taxonomy table - base groups + the groups GKP created
-        data, subs = tax.current(conn, get_db_schema(), f"{s['table_prefix']}_taxonomy", _path(s["taxonomy_file"]))
+        data, subs = tax.current(conn, get_db_schema(), s["taxonomy_table"], _path(s["taxonomy_file"]))
         by_id.clear()
         by_id.update({x["tsg_id"]: x for x in subs})
         core.clear()
@@ -221,7 +222,7 @@ def run_gkp_scope(instrument, scope_key="ALL", version_id=None, fake_llm: Option
         by_tg_name.update({g["tg_id"]: g["name"] for g in data["groups"]})
         tv = f"{tax_id}:{tax.taxonomy_hash(subs)}"
         tvm = f"{tv}|{GKP_METHOD}"
-        finder = CandidateFinder(store, by_id, s, f"{s['table_prefix']}_taxonomy")
+        finder = CandidateFinder(store, by_id, s, s["taxonomy_table"])
         version = version_id or _version(conn, instrument, s["mkp_table"], scope_key or "ALL")
         mkps = {k: v for k, v in store.mkps(instrument, version).items()
                 if _in_scope(provision_prefix(k), instrument, scope_key or "ALL")
@@ -339,7 +340,7 @@ def run_gkp_scope(instrument, scope_key="ALL", version_id=None, fake_llm: Option
                 except Exception as exc:
                     log(f"GKP CREATE             : embedding failed ({type(exc).__name__}) - no reuse check")
                 if vec:
-                    near = store.nearest_subgroup(f"{s['table_prefix']}_taxonomy",
+                    near = store.nearest_subgroup(s["taxonomy_table"],
                                                   "[" + ",".join(str(float(x)) for x in vec) + "]")
                     if near and near[1] >= s["create_reuse_similarity"] and near[0] in by_id:
                         log(f"GKP CREATE             : '{d['name']}' is the same as {near[0]} ({near[1]:.2f}) - reused")
@@ -349,12 +350,12 @@ def run_gkp_scope(instrument, scope_key="ALL", version_id=None, fake_llm: Option
                 sid = tax.add_subgroup(_path(s["taxonomy_file"]), tg, d["name"], d["definition"], d["include"],
                                        d["exclude"], d.get("tg_name", ""), d.get("tg_description", ""), mkp)
                 _, file_subs = tax.load(_path(s["taxonomy_file"]))
-                tax.sync(conn, get_db_schema(), file_subs, embed_fn, emb_model, f"{s['table_prefix']}_taxonomy")
-                _, subs = tax.current(conn, get_db_schema(), f"{s['table_prefix']}_taxonomy", _path(s["taxonomy_file"]))
+                tax.sync(conn, get_db_schema(), file_subs, embed_fn, emb_model, s["taxonomy_table"])
+                _, subs = tax.current(conn, get_db_schema(), s["taxonomy_table"], _path(s["taxonomy_file"]))
                 by_id.clear()
                 by_id.update({x["tsg_id"]: x for x in subs})
                 core.update(x["tg_id"] for x in subs)
-                finder = CandidateFinder(store, by_id, s, f"{s['table_prefix']}_taxonomy")   # its words too
+                finder = CandidateFinder(store, by_id, s, s["taxonomy_table"])   # its words too
                 counts["groups_created"] += 1
                 created.append(f"{sid} {d['name']} ({by_id[sid]['tg_id']} {by_id[sid]['tg_name']})")
                 log(f"GKP CREATE             : new sub-group {sid} '{d['name']}' under {by_id[sid]['tg_id']}")
@@ -427,7 +428,7 @@ def run_gkp_scope(instrument, scope_key="ALL", version_id=None, fake_llm: Option
                         canonical = f"{parts[-2]}::{parts[-1]}" if len(parts) >= 2 else ""
                     got = store.approved_for_akp(canonical) if canonical else []
                     if got:
-                        for m in got:
+                        for m in {x["tsg_id"]: x for x in got}.values():     # each TSG once
                             if m["tsg_id"] in by_id:
                                 rows.append(_row(base, by_id[m["tsg_id"]], "APPROVED", "SAME_INHERITED",
                                                  f"same meaning as {canonical}"))
@@ -597,7 +598,7 @@ def sync_taxonomy(embed: Optional[Callable] = None) -> int:
     embed_fn, model = _embedder(embed)
     conn = get_connection()
     try:
-        return tax.sync(conn, get_db_schema(), subs, embed_fn, model, f"{s['table_prefix']}_taxonomy")
+        return tax.sync(conn, get_db_schema(), subs, embed_fn, model, s["taxonomy_table"])
     finally:
         conn.close()
 
@@ -609,7 +610,7 @@ def ensure_tables(settings_override: Optional[dict] = None) -> None:
     from db_insert import get_connection, get_db_schema
     conn = get_connection()
     try:
-        GkpStore(conn, get_db_schema(), s["akp_table"], s["table_prefix"]).ensure()
+        GkpStore.from_settings(conn, get_db_schema(), s).ensure()
     finally:
         conn.close()
 
@@ -624,7 +625,7 @@ def export_excel(instruments: Optional[List[str]] = None, settings_override: Opt
     from db_insert import get_connection, get_db_schema
     conn = get_connection()
     try:
-        store = GkpStore(conn, get_db_schema(), s["akp_table"], s["table_prefix"])
+        store = GkpStore.from_settings(conn, get_db_schema(), s)
         store.ensure()
         for inst in instruments or []:
             try:
@@ -664,7 +665,7 @@ def calibration_report() -> List[dict]:
     from db_insert import get_connection, get_db_schema
     conn = get_connection()
     try:
-        store = GkpStore(conn, get_db_schema(), s["akp_table"], s["table_prefix"])
+        store = GkpStore.from_settings(conn, get_db_schema(), s)
         store.ensure()
         pairs = store.calibration_rows()
     finally:

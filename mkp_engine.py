@@ -254,7 +254,9 @@ class MkpRun:
         # (notes section 9), read again when GKP created a group - the next law of the same run is offered it
         from kp_settings import resolve
         self._tax_conn, self._tax_schema = conn, settings["schema"]
-        self._tax_table = f"{(permission.get('gkp') or {}).get('table_prefix', 'gkp')}_taxonomy"
+        # Config/settings.json mkp.taxonomy_table: the taxonomy is part of the MKP input hash, so MKP keeps reading the
+        # table its saved MKPs were made with (2026-11-19: the steps after MKP moved to the _new tables)
+        self._tax_table = permission["mkp"]["taxonomy_table"]
         self._tax_file = resolve((permission.get("gkp") or {}).get("taxonomy_file", "Config/gst_taxonomy.json"))
         _ = self.taxonomy_text
         # references: what each MKP refers to (Python), saved with a status

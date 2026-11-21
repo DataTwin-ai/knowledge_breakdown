@@ -66,9 +66,14 @@ def plan_jobs(cfg: dict, paths: dict, mkp_settings: dict, retry_failed: bool = F
                 flow(f"PLAN      : {doc['code']} skipped - {str(exc)[:160]}")
                 continue
             if retry_failed:
-                units = [u for u in kp_errors.failed_units(paths["output_dir"], doc["code"]) if u in run.idx.nodes]
+                failed = kp_errors.failed_units(paths["output_dir"], doc["code"])
+                # a row for the whole document (IKP / MKP_LOAD could not reach the database) is not a law: running it
+                # again would run the WHOLE document (bug list D16). Run IKP again instead: python main.py
+                whole = [u for u in failed if u in (doc["code"], run.idx.doc)]
+                units = [u for u in failed if u in run.idx.nodes and u not in whole]
                 mine = [Job(doc, Batch(u, label_of(run.idx, u), u, True, False)) for u in units]
-                flow(f"PLAN      : {doc['name']} ({doc['code']}) - {len(mine)} failed unit(s) again")
+                flow(f"PLAN      : {doc['name']} ({doc['code']}) - {len(mine)} failed unit(s) again"
+                     + (f" (a failed row for the whole document is skipped - it is not a law)" if whole else ""))
                 jobs += mine
                 continue
             if mkp_settings["ask_user_input"]:
@@ -181,6 +186,8 @@ def main(argv=None) -> None:
     import kp_usage
     started, run_id = _time.time(), kp_usage.run_id()
     totals = pool.start()
+    if run.get("akp"):                    # bug list C: references of the run's laws, automatically, with the workers
+        _references_waiting(cfg, paths, run, mkp_settings, totals)
     gm_started = _time.time()
     after_pool(cfg, run, totals, paths)
     _usage(cfg, paths, pool, totals, jobs, run_id, started, gm_started)
@@ -212,6 +219,165 @@ def _usage(cfg, paths, pool, totals, jobs, run_id, started, gm_started) -> None:
         flow(f"USAGE     : not saved ({str(exc)[:120]})")
 
 
+def _references_waiting(cfg: dict, paths: dict, run: dict, mkp_settings: dict, totals: dict) -> None:
+    """The references step, with the same wait as the workers (2026-11-20): when the database cannot be reached it
+    waits (database.unreachable_wait_seconds, trying every unreachable_retry_seconds) and runs the step once more.
+    Any other error, or still unreachable: the laws are saved and the references stay PENDING / QUEUED for the next
+    run (a QUEUED row is picked again)."""
+    import db_insert
+    for attempt in (1, 2):
+        try:
+            _references(cfg, paths, run, mkp_settings, totals)
+            return
+        except Exception as exc:
+            down = db_insert.is_db_unreachable(exc) or db_insert.is_connection_lost(exc)
+            if attempt == 1 and down:
+                total, every = db_insert.unreachable_wait()
+                flow(f"REFERENCES : database not reachable ({str(exc)[:100]}) - waiting, then once more")
+                if db_insert.wait_for_db(total, every, flow):
+                    continue
+            flow(f"REFERENCES : not done ({type(exc).__name__}: {str(exc)[:160]}) - they stay PENDING / QUEUED "
+                 "for the next run")
+            return
+
+
+def _references(cfg: dict, paths: dict, run: dict, mkp_settings: dict, totals: dict) -> None:
+    """Bug list C (agreed 2026-11-18), after the workers, before the SAME checks and the governance master:
+    SELF  - the direct targets of the run's laws with no MKP yet (7(1)(a) -> Schedule III) run MKP -> AKP -> GKP;
+    CROSS - outside documents (refs.auto_fetch, features.web_scraping, access.internet): download + check, IKP, the
+            EXACT part each citing law needs runs MKP -> AKP with no GKP; a part already inserted (approved AKP) only
+            gets the citing law's link (mkp_ref.source_key). The governance master writes the part in full in the
+            citing law's yaml (reference design 2026-11-19 - no TSG copy).
+    Status: PENDING -> QUEUED -> INSERTED / FAILED. Never uses permission.json scope.default."""
+    import ikp_engine
+    from db_insert import get_db_schema
+    from kp_pool import Job, Pool
+    from mkp_engine import MkpRun
+    from mkp_ss.scope import Batch, label_of
+    from ref_ss import auto
+    rc = cfg.get("refs") or {}
+    for k in ("auto_fetch", "auto_fetch_limit", "self_depth", "self_limit", "whole_document_max_parts", "parts_view"):
+        if k not in rc:
+            raise KeyError(f"Config/settings.json refs.{k} is missing")
+    schema = get_db_schema()
+    link_t, doc_t = rc.get("link_table", "mkp_ref"), rc.get("document_table", "ref_document")
+    mkps = [m for t in totals.values() for m in t.source_mkps]
+    conn = ikp_engine.get_connection(paths)
+    jobs: List = []
+    queued: List[dict] = []
+    akp_t = cfg["akp"]["table"]
+    try:
+        rows = auto.pending_refs(conn, schema, link_t, doc_t, mkps)
+        # ---- SELF: the target is a law of its own (own MKP, own TSG); depth 1 = only what these laws name
+        targets = auto.self_targets(rows, rc["self_limit"] if int(rc["self_depth"]) >= 1 else 0)
+        idx_of: Dict[str, object] = {}
+        for code, key in targets:
+            doc = cfg["documents"].get(code)
+            if not doc:
+                continue
+            if code not in idx_of:
+                idx_of[code] = MkpRun(dict(doc, document_key=code), cfg, paths, mkp_settings, conn).idx
+            idx = idx_of[code]
+            if key in idx.nodes:
+                jobs.append(Job(dict(doc, document_key=code), Batch(key, label_of(idx, key), key, True, False)))
+                queued += [r for r in rows if r["scope"] == "SELF" and r["target_key"] == key]
+        if targets:
+            flow(f"REFERENCES : {len(jobs)} self reference target(s) of this run's laws - "
+                 + ", ".join(k for _c, k in targets[:8]) + (" ..." if len(targets) > 8 else ""))
+        # ---- CROSS: outside documents, only the exact part each law needs
+        cross = [r for r in rows if r["scope"] == "CROSS"]
+        if cross and rc["auto_fetch"] and cfg["features"].get("web_scraping") and kp_settings.allowed(cfg, "INTERNET"):
+            ids = list(dict.fromkeys(r["ref_id"] for r in cross))[:int(rc["auto_fetch_limit"])]
+            need = [i for i in ids if not any(r["ref_id"] == i and r["doc_code"] and r["doc_status"] in
+                                              ("VERIFIED", "INSERTED") for r in cross)]
+            if need:
+                import ref_engine
+                ref_engine.run(limit=len(need), then_run=False, ref_ids=need)     # download + check (manual tool too)
+            fresh = kp_settings.load(fresh=True)
+            got = auto.pending_refs(conn, schema, link_t, doc_t, mkps)
+            from ikp_engine import run_ikp_pipeline, validate_ikp_settings
+            ikp_settings = validate_ikp_settings(fresh["ikp"])
+            prompt = (kp_settings.resolve(fresh["paths"]["prompt_dir"]) / fresh["files"]["ref_part_prompt"]).read_text(
+                encoding="utf-8-sig")
+            ask = _ref_model(fresh)
+            for ref_id in ids:
+                mine = [r for r in got if r["scope"] == "CROSS" and r["ref_id"] == ref_id]
+                code = next((r["doc_code"] for r in mine if r["doc_code"]), "")
+                doc = fresh["documents"].get(code) if code else None
+                if not doc:
+                    flow(f"REFERENCES : {ref_id} - no verified PDF yet (see ref_document) - stays PENDING")
+                    continue
+                doc = dict(doc, document_key=code)
+                pdf = paths["law_dir"] / doc["file"]
+                run_ikp_pipeline(pdf, ikp_settings, doc, paths)        # reused when this PDF was IKP'd before
+                idx = MkpRun(doc, fresh, paths, mkp_settings, conn).idx
+                for r in mine:
+                    citing_key = auto.unit(r["mkp_element"])
+                    saved = [k for k in str(r.get("source_key") or "").split(",") if k in idx.nodes]
+                    if saved:                                    # found before (a run that stopped / failed)
+                        keys, how = saved, "found before (mkp_ref.source_key)"
+                    else:
+                        keys, how = auto.find_part(idx, {"key": citing_key, "text": "", "mention": r["mention"],
+                                                         "relation": r["relation"]},
+                                                   int(rc["whole_document_max_parts"]), ask, prompt)
+                    if not keys:
+                        flow(f"REFERENCES : {ref_id} for {citing_key} - {how} - stays PENDING")
+                        continue
+                    auto.set_source_key(conn, schema, link_t, r, keys)
+                    if auto.part_done(conn, schema, akp_t, code, keys):   # inserted before: link only, no run
+                        auto.set_status(conn, schema, link_t, [r], "INSERTED")
+                        flow(f"REFERENCES : {ref_id} for {citing_key} -> {', '.join(keys)} already inserted - linked")
+                        continue
+                    flow(f"REFERENCES : {ref_id} for {citing_key} -> {', '.join(keys)} ({how})")
+                    for k in keys:
+                        if not any(j.doc["code"] == code and j.batch.root == k for j in jobs):
+                            jobs.append(Job(doc, Batch(k, label_of(idx, k), k, True, False), no_gkp=True,
+                                            attach_to=r["mkp_element"]))
+                    queued.append(r)
+        elif cross:
+            flow(f"REFERENCES : {len({r['ref_id'] for r in cross})} outside document(s) waiting - automatic download "
+                 "is off (refs.auto_fetch / features.web_scraping / access.internet); python ref_engine.py --run")
+        if not jobs:
+            return
+        auto.set_status(conn, schema, link_t, queued, "QUEUED")
+    finally:
+        conn.close()
+    flow(f"REFERENCES : {len(jobs)} reference job(s) go to the workers")
+    pool = Pool(cfg, paths, run, cfg["workers"]["count"], mkp_settings)
+    pool.add(jobs)
+    more = pool.start()
+    for code, t in more.items():          # the references count in this run (SAME checks, governance master)
+        mine = totals.setdefault(code, t)
+        if mine is not t:
+            for m in t.source_mkps:
+                if m not in mine.source_mkps:
+                    mine.source_mkps.append(m)
+    conn = ikp_engine.get_connection(paths)
+    try:
+        from ref_ss.store import RefStore
+        rs = RefStore(conn, schema, doc_t, link_t)
+        rs.update_target_status(akp_t, rc["parts_view"])          # INSERTED per clause (approved AKP)
+        still = [r for r in auto.pending_refs(conn, schema, link_t, doc_t, mkps)
+                 if any(q["mkp_element"] == r["mkp_element"] and q["ref_id"] == r["ref_id"]
+                        and q["target_key"] == r["target_key"] for q in queued)]
+        auto.set_status(conn, schema, link_t, still, "FAILED")
+        flow(f"REFERENCES : {len(queued) - len(still)} reference(s) INSERTED, {len(still)} FAILED "
+             "(FAILED ones: python main.py --retry-failed)")
+    finally:
+        conn.close()
+
+
+def _ref_model(cfg: dict):
+    """The model that picks a part of an outside document (refs.link_finder, used only when Python finds none)."""
+    role = (cfg.get("refs") or {}).get("link_finder")
+    if not role:
+        return None
+    from llm_runtime import call_llm, create_llm_runtime
+    rt = dict(create_llm_runtime(role["llm"], kp_settings.build_paths(cfg)))
+    rt["model"] = role["model"]
+    return lambda prompt: call_llm(rt, prompt)[0]
+
+
 def after_pool(cfg: dict, run: dict, totals: dict, paths: dict) -> List[dict]:
     """Once, when every job is done: Excel, governance masters, fact catalog, reference status, summary."""
     if run.get("akp"):
@@ -227,6 +393,14 @@ def after_pool(cfg: dict, run: dict, totals: dict, paths: dict) -> List[dict]:
         except Exception as exc:
             log(f"GKP EXCEL : not written ({exc})")
     mkps = [m for t in totals.values() for m in t.source_mkps]
+    if run.get("akp") and mkps:           # bug list A4: SAME atoms of laws that ran at the same time, before the yaml
+        try:
+            from akp_engine import fact_sweep, same_sweep
+            flow("SAME CHECK : facts and atoms of this run against every saved one")
+            fact_sweep(mkps)              # bug list B8: facts first, so the atom check sees the merged fact ids
+            same_sweep(mkps)
+        except Exception as exc:          # the laws are saved; only the mapping is missing (python akp_engine.py --same-review)
+            flow(f"SAME CHECK : not done ({type(exc).__name__}: {str(exc)[:160]}) - run  python akp_engine.py --same-review")
     gm: List[dict] = []
     if run.get("governance_master") and mkps:
         flow("GOVERNANCE MASTER : building the TSGs that got laws in this run")
@@ -274,7 +448,7 @@ def _mark_documents_inserted(cfg: dict, totals: dict) -> None:
                 if totals[code].done:
                     store.mark_inserted(d.get("ref_id") or code, code, d.get("name", ""), d.get("type", ""))
             # each reference: is the exact law it points to made yet? (mkp_ref.target_status)
-            n = store.update_target_status((cfg.get("mkp") or {}).get("table", "mkp"))
+            n = store.update_target_status(cfg["akp"]["table"], rc["parts_view"])
             log(f"REFERENCES : target status of {n} reference(s) updated")
         finally:
             conn.close()

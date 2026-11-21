@@ -32,6 +32,9 @@ from kp_console import board_print, board_start, board_stop, board_tick, flow, l
 from llm_runtime_errors import is_fatal, is_rate_limited
 
 
+_DB_WAIT = threading.Lock()          # one worker at a time tries the database while it is down
+
+
 @dataclass
 class Job:
     doc: dict                         # selected document (code, name, type, file)
@@ -41,6 +44,8 @@ class Job:
     no: int = 0
     wave: int = 0                     # run wave (mkp_ss/waves.py): a wave starts when the waves before it are done
     requeued: bool = False            # this attempt was put back in the queue (not counted as finished)
+    no_gkp: bool = False              # a part of an outside document (bug list C1): MKP -> AKP only, no grouping
+    attach_to: str = ""               # ... the citing law it belongs to (its TSGs are copied after the run)
 
     @property
     def code(self) -> str:
@@ -319,13 +324,22 @@ class Pool:
             pass
 
     def _lost(self, name: str, job: Job, tot: DocTotals, exc, runs: dict, conns: list) -> bool:
-        """A dropped database connection: new connection next time, the unit goes back in the queue."""
-        from db_insert import is_connection_lost
-        if not is_connection_lost(exc) or job.requeues >= self.requeue_limit:
+        """A dropped database connection: new connection next time, the unit goes back in the queue.
+        The database cannot be reached at all (network down - bug list D17): this worker waits until it answers
+        again (one worker tries, the others wait for it), so the queue is not failed in two minutes."""
+        from db_insert import is_connection_lost, is_db_unreachable, unreachable_wait, wait_for_db
+        down = is_db_unreachable(exc)
+        if not (down or is_connection_lost(exc)) or job.requeues >= self.requeue_limit:
             return False
+        if down:
+            with _DB_WAIT:
+                total, every = unreachable_wait()
+                if not wait_for_db(total, every, note=flow):
+                    return False
         job.requeues += 1               # the next try checks the MKP connection first (_mkp_run)
         job.requeued = True
-        flow(f"[{name}] retry  {job.code} {job.name} - database connection lost, back in the queue "
+        flow(f"[{name}] retry  {job.code} {job.name} - database "
+             f"{'could not be reached' if down else 'connection lost'}, back in the queue "
              f"({job.requeues}/{self.requeue_limit})")
         with self.cv:
             self.total_jobs -= 1
@@ -417,7 +431,9 @@ class Pool:
                 tot.llm_akp += c.get("llm_calls", 0)
         # ---- GKP
         groups = ""
-        if self.run_steps.get("gkp", True):
+        if job.no_gkp:                    # bug list C1: grouped by the law that needs it, not by the GKP model
+            groups = f"under {job.attach_to}" if job.attach_to else ""
+        elif self.run_steps.get("gkp", True):
             stage("GKP")
             kp_usage.set_step("GKP")
             from gkp_engine import run_gkp_scope

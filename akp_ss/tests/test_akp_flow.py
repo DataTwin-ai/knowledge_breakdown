@@ -19,6 +19,8 @@ from transport import get_field  # noqa: E402
 
 MKP_T, AKP_T = "mkp_p2test", "pass_2t_akp"
 OVR = {"enabled": True, "mkp_table": MKP_T, "table": AKP_T, "cache_table": AKP_T + "_cache", "ask_user_input": False,
+       "llm_cache_table": AKP_T + "_llm_cache", "fact_table": "pass_2t_fact", "atom_fact_table": "pass_2t_atom_fact",
+       "time_fact_table": "pass_2t_time_fact", "reuse_old_cache_table": "",
        "excel_file": "akp_test.xlsx", "use_cache": True}
 
 
@@ -291,12 +293,14 @@ def test_same_meaning_atom_stores_existing_akp_id(env):
     fake = Fake(same="FIRST")
     go("CGSTA17_S9", fake, embed=const, use_cache=False, only_mkp="CGSTA17_S9_SS2#TEXT")
     assert fake.calls.get("SAME") == 1
-    row = q(conn, f"SELECT type, results, akp_id, same_akp_id FROM {AKP_T} WHERE source_mkp='CGSTA17_S9_SS2#TEXT' "
-                  "AND element='A_MAIN' AND is_latest")[0]
-    assert row[0] == "A_REF" and row[1] == "" and row[2] == "CGSTA17_S9_SS2#TEXT::A_MAIN"
-    assert row[3].endswith("::A_MAIN") and not row[3].startswith("CGSTA17_S9_SS2#TEXT")   # points to another MKP's atom
-    exists = q(conn, f"SELECT count(*) FROM {AKP_T} WHERE akp_id=%s AND type='A' AND is_latest", row[3])[0][0]
-    assert exists == 1
+    # 2026-11-19: no same_akp_id column - an A_REF row's akp_id IS the saved atom's id (of another law)
+    row = q(conn, f"SELECT type, akp_id FROM {AKP_T} WHERE source_mkp='CGSTA17_S9_SS2#TEXT' "
+                  "AND type IN ('A', 'A_REF') AND is_latest")[0]
+    assert row[0] == "A_REF"
+    owner = q(conn, f"SELECT source_mkp FROM {AKP_T} WHERE akp_id=%s AND type='A' AND is_latest", row[1])
+    assert len(owner) == 1 and owner[0][0] != "CGSTA17_S9_SS2#TEXT"
+    cols = {c for (c,) in q(conn, "SELECT column_name FROM information_schema.columns WHERE table_name=%s", AKP_T)}
+    assert "same_akp_id" not in cols
     # the fact link stays, so the network still reaches this provision
     assert q(conn, "SELECT count(*) FROM pass_2t_atom_fact WHERE source_mkp='CGSTA17_S9_SS2#TEXT' AND is_latest")[0][0] == 1
 
@@ -309,9 +313,9 @@ def test_near_identical_but_not_same_is_kept_as_new(env):
     fake = Fake(same="NONE")
     go("CGSTA17_S7", fake, use_cache=False, only_mkp="CGSTA17_S7_SS3_Ca#TEXT")
     assert fake.calls.get("SAME") == 1
-    row = q(conn, f"SELECT type, same_akp_id, results <> '' FROM {AKP_T} WHERE source_mkp='CGSTA17_S7_SS3_Ca#TEXT' "
-                  "AND element='A_MAIN' AND is_latest")[0]
-    assert row == ("A", None, True)
+    row = q(conn, f"SELECT type, results <> '' FROM {AKP_T} WHERE source_mkp='CGSTA17_S7_SS3_Ca#TEXT' "
+                  "AND type IN ('A', 'A_REF') AND is_latest")[0]
+    assert row == ("A", True)
 
 
 def test_invented_reference_is_sent_back(env):
@@ -350,3 +354,46 @@ def test_comparison_referees_python_findings():
     assert v["verdict"] == "FALSE" and v["added_or_changed"] == [found[1]]       # id 2 not answered = real
     text = retry_text(v, 1, "MKP|TYPE|ELEMENT|CONCEPT|RESULTS")
     assert "ERRORS FROM LAST TIME (attempt 1)" in text and "shall not" in text and "YOUR TABLE LAST TIME" in text
+
+
+def test_atom_saved_by_another_worker_after_the_same_check_is_found_at_save(env, monkeypatch):
+    """Bug list A5 (2026-11-19): 37(1) and 39(1) ran at the same time; both SAME checks ran before either law saved,
+    so the same atom was saved twice. Now the save (inside the lock) checks the atoms saved after the SAME check."""
+    conn, _ = env
+    const = lambda text: [1.0, 0, 0, 0, 0, 0, 0, 0] if text else None
+    go("CGSTA17_S9", Fake(), embed=const, use_cache=False)                  # 'worker 1' saved its atoms
+    q(conn, f"DELETE FROM {AKP_T}_llm_cache RETURNING 1")
+    real = p2.AkpStore.same_candidates
+    calls = []
+
+    def first_sees_nothing(self, *a, **k):                                  # the SAME check ran before worker 1 saved
+        calls.append(1)
+        return [dict(i, candidates=[]) for i in real(self, *a, **k)] if len(calls) == 1 else real(self, *a, **k)
+    monkeypatch.setattr(p2.AkpStore, "same_candidates", first_sees_nothing)
+    monkeypatch.setattr(p2.AkpStore, "atom_ids", lambda self: set())       # ... and saw none of its atoms
+    fake = Fake(same="FIRST")
+    go("CGSTA17_S9", fake, embed=const, use_cache=False, only_mkp="CGSTA17_S9_SS2#TEXT")
+    assert len(calls) == 2 and fake.calls.get("SAME") == 1                  # the check at save asked the SAME model
+    row = q(conn, f"SELECT type FROM {AKP_T} WHERE source_mkp='CGSTA17_S9_SS2#TEXT' AND is_latest "
+                  "AND type IN ('A', 'A_REF')")
+    assert row and row[0][0] == "A_REF"
+
+
+def test_old_akp_cache_is_reused_with_only_the_fact_and_same_check(env):
+    """2026-11-19: MKP in the cache, its AKP only in the OLD cache table -> its atoms are used (no generator / judge /
+    comparison call), the fact + SAME checks run again and the result goes into the NEW akp + akp cache tables."""
+    conn, _ = env
+    go("CGSTA17_S9", Fake(), use_cache=False, only_mkp="CGSTA17_S9_SS2#TEXT")      # the 'old' tables
+    NEW = "pass_2n_akp"
+    for t in (NEW, NEW + "_cache", NEW + "_llm_cache", "pass_2n_fact", "pass_2n_atom_fact", "pass_2n_time_fact"):
+        q(conn, f"DROP TABLE IF EXISTS public.{t}; SELECT 1")
+    new = {"table": NEW, "cache_table": NEW + "_cache", "llm_cache_table": NEW + "_llm_cache",
+           "fact_table": "pass_2n_fact", "atom_fact_table": "pass_2n_atom_fact", "time_fact_table": "pass_2n_time_fact",
+           "reuse_old_cache_table": AKP_T + "_cache", "reuse_old_fact_table": "pass_2t_fact"}
+    fake = Fake()
+    go("CGSTA17_S9", fake, use_cache=True, only_mkp="CGSTA17_S9_SS2#TEXT", **new)
+    assert fake.calls["GEMINI"] == fake.calls["CLAUDE"] == fake.calls["JUDGE"] == fake.calls["COMPARE"] == 0
+    assert q(conn, f"SELECT count(*) FROM {NEW} WHERE source_mkp='CGSTA17_S9_SS2#TEXT' AND is_latest "
+                   "AND type IN ('A', 'A_REF')")[0][0] >= 1
+    cached = q(conn, f"SELECT results_json->>'reused_from' FROM {NEW}_cache WHERE source_mkp='CGSTA17_S9_SS2#TEXT'")
+    assert cached and cached[0][0] == AKP_T + "_cache"

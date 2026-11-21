@@ -192,6 +192,18 @@ def select(snap: Snapshot, bundles: "OrderedDict[str, Bundle]", tsg: str, cfg: d
                         report["unresolved"].append(f"{key}: reference {ref} is not loaded yet")
                     for h in hits:
                         add(h, f"REFERENCE {ref}", queue, level + 1)
+            # reference design 2026-11-19: the exact part of an outside document the law needs (mkp_ref.source_key)
+            # comes in full, like a self reference - the part has no TSG of its own
+            for r in snap.references:
+                if str(r.get("source_mkp") or "").split("#")[0] != key.split("#")[0]:
+                    continue
+                for part in [p for p in str(r.get("source_key") or "").split(",") if p]:
+                    hits = [k for k, x in bundles.items() if k != key and (_starts(x.citation_key, part)
+                                                                           or _starts(k.split("#")[0], part))]
+                    if not hits:
+                        report["unresolved"].append(f"{key}: outside part {part} ({r.get('ref_id')}) is not loaded yet")
+                    for h in hits:
+                        add(h, f"REFERENCE {r.get('ref_id')} {part}", queue, level + 1)
         if "overrides" in follow:
             for lk in b.of("LK"):
                 rel, target = rf(lk, "relation").upper(), rf(lk, "target")
@@ -282,7 +294,8 @@ def build(snap: Snapshot, tsg: str, tsg_name: str, tg: str, tg_name: str, cfg: d
     for section in ("facts", "predicates", "groups", "outcomes", "overrides", "triggers", "products"):
         taken |= set(spine.get(section, {}))
     taken |= {c["id"] for c in spine.get("compounds", [])} | {p["id"] for p in spine.get("precedents", [])}
-    by_akp = {r.get("akp_id"): r for r in snap.akp if r.get("akp_id")}
+    # the saved atom of every akp_id (an A_REF row of another law carries the same id - never the source)
+    by_akp = {r.get("akp_id"): r for r in snap.akp if r.get("akp_id") and r.get("type") == "A"}
 
     # ---- fact specs (registry first, then the FACTS rows written with the MKPs)
     fact_rows: Dict[str, dict] = {}
@@ -354,6 +367,18 @@ def build(snap: Snapshot, tsg: str, tsg_name: str, tg: str, tg_name: str, cfg: d
     drafts: "OrderedDict[str, dict]" = OrderedDict()
     id_map: List[dict] = []
 
+    shared: Dict[str, str] = {}           # akp atom id -> its rulebook id (bug list A6: a SAME atom is written once)
+
+    def atom_id(a: dict, b: Bundle) -> str:
+        """An atom used by several laws (A and its A_REF rows share one akp_id) gets ONE rulebook id."""
+        aid = a.get("akp_id") or a["element"]
+        if aid in shared:
+            id_map.append({"rulebook_id": shared[aid], "akp_element": a["element"], "kind": a["type"],
+                           "source_mkp": b.key, "mkp_id": b.mkp_id, "akp_id": aid})
+            return shared[aid]
+        shared[aid] = new_id(a["element"], b, a["type"], aid)
+        return shared[aid]
+
     def new_id(old: str, b: Bundle, kind: str, akp_id: str = "") -> str:
         nid = old if re.fullmatch(r"[A-Z][A-Z0-9_]*", old or "") else re.sub(r"[^A-Z0-9_]", "_", (old or "X").upper())
         if nid in R.KEYWORDS:
@@ -382,7 +407,7 @@ def build(snap: Snapshot, tsg: str, tsg_name: str, tg: str, tg_name: str, cfg: d
         if part is not None:              # only these atoms: one outcome + product per atom
             for a in b.of("A") + b.of("A_REF"):
                 if a["element"] in part:
-                    local[a["element"]] = new_id(a["element"], b, a["type"], a.get("akp_id") or "")
+                    local[a["element"]] = atom_id(a, b)
                     le_src, pd_src = R.as_kind(a["element"], "LE"), R.as_kind(a["element"], "PD")
                     lid = new_id(le_src, b, "LE")
                     pid = new_id(pd_src, b, "PD")
@@ -393,7 +418,9 @@ def build(snap: Snapshot, tsg: str, tsg_name: str, tg: str, tg_name: str, cfg: d
             continue
         # ids first, so expressions can be renamed in any order
         for r in b.rows:
-            if r["type"] in ("A", "A_REF", "G", "LE", "CT"):
+            if r["type"] in ("A", "A_REF"):
+                local[r["element"]] = atom_id(r, b)
+            elif r["type"] in ("G", "LE", "CT"):
                 local[r["element"]] = new_id(r["element"], b, r["type"], r.get("akp_id") or "")
         for le in b.of("LE"):
             feeds = [p for p in rlist(le, "feeds") if R.is_kind(p, "PD")]
@@ -426,10 +453,29 @@ def build(snap: Snapshot, tsg: str, tsg_name: str, tg: str, tg_name: str, cfg: d
                       if owner != me and _starts(bundles[owner].citation_key, ref)
                       and not (mine and _clause_parent(bundles[owner].citation_key) == mine))
 
+    def _outside_parts(a: dict, src: dict, me: str) -> List[str]:
+        """Bug list C1: an atom that names an outside document ("Notification No. 13/2017", "as notified") is
+        answered by the part of it the law needs (mkp_ref.source_key, found after the download)."""
+        mine = [r for r in snap.references if str(r.get("source_mkp") or "").split("#")[0] == bundles[me].key.split("#")[0]
+                and r.get("source_key")]
+        if not mine:
+            return []
+        held = set(rlist(a, "outside_refs") + rlist(src, "outside_refs"))   # reference design item 7: set at AKP save
+        if held or any("outside_refs:" in str(x.get("results") or "") for x in bundles[me].of("A")):
+            return [k for r in mine if r.get("ref_id") in held for k in str(r["source_key"]).split(",") if k]
+        said = " ".join([rf(src, "statement"), " ".join(rlist(src, "reference")), " ".join(rlist(a, "reference"))]).lower()
+        out = []
+        for r in mine:
+            nums = re.findall(r"\d+\s*/\s*\d{4}", str(r.get("mention") or ""))
+            if (nums and any(re.sub(r"\s", "", n) in re.sub(r"\s", "", said) for n in nums)) \
+                    or (not nums and ("notif" in said or "circular" in said) and len(mine) == 1):
+                out += [k for k in str(r["source_key"]).split(",") if k]
+        return out
+
     def _wire_reference(a: dict, src: dict, me: str) -> bool:
         """'specified in Schedule I' and Schedule I's paragraphs are steps here: the check becomes ANY of their
         results, so the engine uses those steps instead of asking again."""
-        refs = [r for r in rlist(src, "reference_keys") + rlist(a, "reference_keys") if r]
+        refs = [r for r in rlist(src, "reference_keys") + rlist(a, "reference_keys") if r] + _outside_parts(a, src, me)
         pds = sorted({p for r in dict.fromkeys(refs) for p in _products_of(r, me)})
         if not pds:
             return False

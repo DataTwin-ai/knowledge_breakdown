@@ -177,6 +177,88 @@
      "anchors": [],
      "created_by": "GKP",
      "created_for": "CGSTA17_S7_SS3_Cb#TEXT"
+    },
+    {
+     "tsg_id": "TSG01_08",
+     "name": "Schedule II Building Lease Deeming",
+     "definition": "Schedule II paragraph 2 provisions that deem a lease or letting out of land or buildings to be a supply of goods or services, and the conditions that decide whether that deeming applies.",
+     "include": [
+      "Schedule II Building Lease Deeming",
+      "Schedule II deeming of lease or letting of a building for business or commerce as a supply of services",
+      "Conditions on the building subject of a Schedule II land and building lease deeming"
+     ],
+     "exclude": [
+      "Goods or services characterisation by Government notification (TSG01_07)",
+      "Ordinary supply with consideration, including lease or rental as a supply (TSG01_01)",
+      "Neither supply under Schedule III (TSG01_03)"
+     ],
+     "key_provisions": [],
+     "anchors": [],
+     "created_by": "GKP",
+     "created_for": "CGSTA17_SCHII_EN2_Cb#TEXT"
+    },
+    {
+     "tsg_id": "TSG01_09",
+     "name": "Statutory Deeming of Land Interests as Services",
+     "definition": "Transactions in an interest in land (lease, tenancy, easement or licence to occupy land) that the law deems a supply of services, without testing consideration, value or rate.",
+     "include": [
+      "Statutory Deeming of Land Interests as Services",
+      "lease of land deemed supply of services",
+      "tenancy of land deemed supply of services",
+      "easement over land deemed supply of services",
+      "licence to occupy land deemed supply of services"
+     ],
+     "exclude": [
+      "supply with consideration, not deeming (TSG01_01)",
+      "characterisation of goods or services by Government notification (TSG01_07)",
+      "rate of the land-interest supply (TSG02_02)"
+     ],
+     "key_provisions": [],
+     "anchors": [],
+     "created_by": "GKP",
+     "created_for": "CGSTA17_SCHII_EN2_Ca#TEXT"
+    },
+    {
+     "tsg_id": "TSG01_10",
+     "name": "IT Software Service Deeming (Sch II para 5(d))",
+     "definition": "Whether a listed software activity performed on information technology software is deemed a supply of services under Schedule II paragraph 5(d).",
+     "include": [
+      "IT Software Service Deeming (Sch II para 5(d))",
+      "development, design, programming, customisation, adaptation, upgradation, enhancement or implementation of IT software",
+      "closed-list software activity test for the deeming"
+     ],
+     "exclude": [
+      "lease or letting of land or buildings deeming (TSG01_08)",
+      "ordinary supply with consideration (TSG01_01)",
+      "goods or services characterisation by notification (TSG01_07)",
+      "SAC classification of software services (TSG02_01)"
+     ],
+     "key_provisions": [],
+     "anchors": [],
+     "created_by": "GKP",
+     "created_for": "CGSTA17_SCHII_EN5_Cd#TEXT"
+    },
+    {
+     "tsg_id": "TSG01_11",
+     "name": "Definition of Telecommunication Service",
+     "definition": "Statutory provisions defining 'telecommunication service' for GST, encompassing its general character as a service of any description and the requirement for delivery via electromagnetic transmission.",
+     "include": [
+      "Definition of Telecommunication Service",
+      "telecommunication service definition",
+      "scope of telecommunication service",
+      "electromagnetic transmission of service",
+      "means of transmission for telecommunication"
+     ],
+     "exclude": [
+      "General definitions (TSG14_01)",
+      "HSN / SAC classification (TSG02_01)",
+      "Goods or Services Characterisation by Notification (TSG01_07)",
+      "IT Software Service Deeming (TSG01_10)"
+     ],
+     "key_provisions": [],
+     "anchors": [],
+     "created_by": "GKP",
+     "created_for": "CGSTA17_S2_C110#TEXT"
     }
    ]
   },
@@ -741,6 +823,25 @@
      "anchors": [
       "CGSTA17_S25_SS4"
      ]
+    },
+    {
+     "tsg_id": "TSG06_05",
+     "name": "Taxable Person Cessation Status",
+     "definition": "Whether a person has ceased to be a taxable person, as the trigger for deemed supply of business goods on cessation.",
+     "include": [
+      "Taxable Person Cessation Status",
+      "person ceases to be a taxable person",
+      "cessation of taxable status when a business is closed or stops"
+     ],
+     "exclude": [
+      "GSTIN validity and status on the document date (TSG06_01)",
+      "registration cancellation procedure (TSG15_09)",
+      "supply without consideration under Schedule I (TSG01_02)"
+     ],
+     "key_provisions": [],
+     "anchors": [],
+     "created_by": "GKP",
+     "created_for": "CGSTA17_SCHII_EN4_Cc_SCi#TEXT"
     }
    ]
   },
@@ -1372,6 +1473,25 @@
       "CGSTA17_S38",
       "CGSTA17_S39"
      ]
+    },
+    {
+     "tsg_id": "TSG11_07",
+     "name": "Notified Quarterly Return Filer Class",
+     "definition": "Whether a registered person falls within a class that a Government notification has placed under the quarterly return filing obligation.",
+     "include": [
+      "Notified Quarterly Return Filer Class",
+      "registered person in a class notified for quarterly returns",
+      "class description in notification matched to person's profile"
+     ],
+     "exclude": [
+      "which period a document belongs to (TSG05_05)",
+      "composition, casual and other special taxpayers (TSG06_03)",
+      "content of GSTR-3B summary return (TSG11_02)"
+     ],
+     "key_provisions": [],
+     "anchors": [],
+     "created_by": "GKP",
+     "created_for": "CGSTA17_S39_SS1_P1#TEXT"
     }
    ]
   },
@@ -1636,6 +1756,25 @@
       "CGSTA17_S141",
       "CGSTA17_S142"
      ]
+    },
+    {
+     "tsg_id": "TSG14_06",
+     "name": "Statutory Interpretation of Definitions",
+     "definition": "Principles and conditions governing the interpretation and application of statutory definitions, particularly regarding contextual overrides.",
+     "include": [
+      "Statutory Interpretation of Definitions",
+      "unless the context otherwise requires",
+      "contextual interpretation of terms",
+      "applicability of definitions"
+     ],
+     "exclude": [
+      "General definitions (TSG14_01)",
+      "Specific definitions (e.g., s.2(52) goods → TSG01_01)"
+     ],
+     "key_provisions": [],
+     "anchors": [],
+     "created_by": "GKP",
+     "created_for": "CGSTA17_S2_C106#TEXT"
     }
    ]
   },

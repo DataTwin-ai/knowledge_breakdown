@@ -1,0 +1,70 @@
+# GOVERNANCE MASTER TSG01_10 IT Software Service Deeming (Sch II para 5(d)) (TG01 Supply & Taxability)
+# LAW ARC - 1 laws - status APPROVED
+name: TSG01_10 IT Software Service Deeming (Sch II para 5(d)) - GOVERNANCE MASTER rulebook
+version: TSG01_10
+facts:
+  F_SAK2:
+    name: Software Activity Kind
+    type: CODE
+    options:
+    - DEVELOPMENT
+    - DESIGN
+    - PROGRAMMING
+    - CUSTOMISATION
+    - ADAPTATION
+    - UPGRADATION
+    - ENHANCEMENT
+    - IMPLEMENTATION
+    - OTHER
+    - UNKNOWN
+    tier: T1
+  F_AOTD:
+    name: Activity Or Transaction Description
+    type: TEXT
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_ISDS_A_LSAK:
+    statement: The activity is development, design, programming, customisation, adaptation, upgradation, enhancement or implementation
+    order: LOW
+    rule: F_SAK2 IN ['DEVELOPMENT', 'DESIGN', 'PROGRAMMING', 'CUSTOMISATION', 'ADAPTATION', 'UPGRADATION', 'ENHANCEMENT',
+      'IMPLEMENTATION']
+    handler: python
+  M_ISDS_A_ACITS:
+    statement: The activity is of information technology software
+    order: HIGH
+    interpretation: Does the described activity relate to information technology software?
+    grounding:
+    - F_AOTD
+    handler: heavy
+groups:
+  M_ISDS_G_SST:
+    name: Software Service Test
+    logic: ALL
+    members:
+    - M_ISDS_A_LSAK
+    - M_ISDS_A_ACITS
+    description: The activity is one of the eight listed activities and is of information technology software
+outcomes:
+  M_ISDS_LE_DSSO:
+    outcome: DEEMED_SUPPLY_OF_SERVICES
+    expr: M_ISDS_G_SST
+    module: M_ISDS
+    description: Deemed supply of services where a listed software activity is performed on information technology software
+products:
+  M_ISDS_PD_DSSO:
+    statement: Deemed supply of services where a listed software activity is performed on information technology software
+compounds:
+- id: C_ISDS
+  question: 'Schedule II, paragraph 5(d): IT Software Development Services?'
+  includes:
+  - M_ISDS_LE_DSSO
+  produces:
+  - product: M_ISDS_PD_DSSO
+    from:
+    - M_ISDS_LE_DSSO
+time:
+  law_date: F_DOI

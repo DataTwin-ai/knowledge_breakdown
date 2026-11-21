@@ -112,16 +112,14 @@ _cascade_done = set()
 
 
 def _names(cfg: dict) -> dict:
-    akp = cfg["akp"].get("table", "akp")
-    base = akp.rsplit("_akp", 1)[0]
-    gkp = cfg["gkp"].get("table_prefix", "gkp")
+    a, g = cfg["akp"], cfg["gkp"]                 # every name from Config/settings.json (kp_settings.check_tables)
     refs = cfg.get("refs") or {}
-    return {"mkp": cfg["mkp"].get("table", "mkp"), "akp": akp, "akp_cache": cfg["akp"].get("cache_table", "akp_cache"),
-            "akp_llm": f"{akp}_llm_cache", "fact_edge": f"{base}_atom_fact", "time_fact": f"{base}_time_fact",
-            "gkp": gkp, "gkp_cache": f"{gkp}_cache", "gkp_llm": f"{gkp}_llm_cache",
-            "gm": cfg["governance_master"].get("table", "governance_master"),
+    return {"mkp": cfg["mkp"]["table"], "akp": a["table"], "akp_cache": a["cache_table"],
+            "akp_llm": a["llm_cache_table"], "fact_edge": a["atom_fact_table"], "time_fact": a["time_fact_table"],
+            "gkp": g["table"], "gkp_cache": g["cache_table"], "gkp_llm": g["llm_cache_table"],
+            "gm": cfg["governance_master"]["table"],
             "ref_link": refs.get("link_table", "mkp_ref"), "ikp_nodes": f"{cfg['ikp'].get('table_prefix', 'ikp')}_nodes",
-            "relation": (cfg.get("relationship") or {}).get("table", "kp_relation")}
+            "relation": cfg["relationship"]["table"]}
 
 
 def cascade_sql(schema: str, n: dict) -> str:

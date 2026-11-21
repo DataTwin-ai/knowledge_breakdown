@@ -1,0 +1,852 @@
+# GOVERNANCE MASTER TSG01_05 Exempt, nil-rated & non-GST (TG01 Supply & Taxability)
+# LAW ARC - 14 laws - status NEEDS_REVIEW
+name: TSG01_05 Exempt, nil-rated & non-GST - GOVERNANCE MASTER rulebook
+version: TSG01_05
+facts:
+  F_PPT:
+    name: Petroleum Product Type
+    type: CODE
+    options:
+    - AVIATION_TURBINE_FUEL
+    - HIGH_SPEED_DIESEL
+    - MOTOR_SPIRIT
+    - NATURAL_GAS
+    - OTHER
+    - PETROLEUM_CRUDE
+    tier: T1
+  F_NOCR2:
+    name: Notification On Council Recommendation
+    type: BOOLEAN
+    tier: T1
+  F_NLED:
+    name: Notified Levy Effective Date
+    type: DATE
+    tier: T1
+  F_SLTS:
+    name: Supply Levy Timing Status
+    type: CODE
+    options:
+    - BEFORE_LEVY_DATE
+    - ON_OR_AFTER_LEVY_DATE
+    - UNKNOWN
+    tier: T1
+  F_SIK:
+    name: Supply Item Kind
+    type: CODE
+    options:
+    - BOTH
+    - CAPITAL_GOODS
+    - GOODS
+    - OTHER
+    - SERVICES
+    - UNKNOWN
+    tier: T1
+  F_SIALFHC:
+    name: Supply Is Alcoholic Liquor For Human Consumption
+    type: BOOLEAN
+    tier: T1
+  F_SLSUCA:
+    name: Supply Leviability Status Under CGST Act
+    type: CODE
+    options:
+    - LEVIABLE
+    - NOT_LEVIABLE
+    - UNKNOWN
+    tier: T1
+  F_SLSUIA:
+    name: Supply Leviability Status Under IGST Act
+    type: CODE
+    options:
+    - LEVIABLE
+    - NOT_LEVIABLE
+    - UNKNOWN
+    tier: T1
+  F_DOS:
+    name: Description Of Supply
+    type: TEXT
+    tier: T1
+  F_HOSCOS:
+    name: HSN or SAC Code of Supply
+    type: TEXT
+    tier: T0
+  F_STS:
+    name: Supply Taxability Status
+    type: CODE
+    options:
+    - TAXABLE
+    - EXEMPT
+    - OTHER
+    tier: T0
+  F_DCS:
+    name: Definition Context Status
+    type: CODE
+    options:
+    - CONTEXT_REQUIRES_OTHER_MEANING
+    - NO_CONTRARY_CONTEXT
+    - UNKNOWN
+    tier: T1
+  F_AI:
+    name: Authority Identity
+    type: CODE
+    options:
+    - GST_COUNCIL
+    - OTHER_BODY
+    - UNKNOWN
+    tier: T1
+  F_AUT:
+    name: Activity Undertaker Type
+    type: CODE
+    options:
+    - CENTRAL_GOVERNMENT
+    - LOCAL_AUTHORITY
+    - OTHER
+    - STATE_GOVERNMENT
+    tier: T1
+  F_FOS:
+    name: Form Of Supply
+    type: CODE
+    options:
+    - BARTER
+    - DISPOSAL
+    - EXCHANGE
+    - LEASE
+    - LICENCE
+    - OTHER
+    - RENTAL
+    - SALE
+    - TRANSFER
+    tier: T1
+  F_SES:
+    name: Supply Execution Status
+    type: CODE
+    options:
+    - AGREED_TO_BE_MADE
+    - BOTH
+    - MADE
+    - NEITHER
+    - UNKNOWN
+    tier: T1
+  F_SCT:
+    name: Supply Consideration Type
+    type: CODE
+    options:
+    - BOTH
+    - MONEY
+    - NONE
+    - NON_MONEY
+    tier: T1
+  F_SLS:
+    name: Supplier Legal Status
+    type: TEXT
+    tier: T0
+  F_AOTD:
+    name: Activity Or Transaction Description
+    type: TEXT
+    tier: T1
+  F_SIS:
+    name: Service Import Status
+    type: CODE
+    options:
+    - IMPORTED
+    - NOT_IMPORTED
+    - UNKNOWN
+    tier: T1
+  F_SCS:
+    name: Supply Consideration Status
+    type: CODE
+    options:
+    - AGREED
+    - NONE
+    - PAID
+    tier: T1
+  F_ASC:
+    name: Activity Status Code
+    type: CODE
+    options:
+    - MADE
+    - AGREED
+    tier: T1
+  F_IMS:
+    name: Item Mobility Status
+    type: CODE
+    options:
+    - IMMOVABLE
+    - MOVABLE
+    - UNKNOWN
+    tier: T1
+  F_IC:
+    name: Item Classification
+    type: CODE
+    options:
+    - MONEY
+    - SECURITIES
+    - ACTIONABLE_CLAIM
+    - GROWING_CROPS
+    - GRASS
+    - ATTACHED_TO_LAND
+    - OTHER
+    - UNKNOWN
+    tier: T1
+  F_AST:
+    name: Agreement Severance Type
+    type: CODE
+    options:
+    - BEFORE_SUPPLY
+    - UNDER_CONTRACT_OF_SUPPLY
+    - NO_AGREEMENT
+    - UNKNOWN
+    tier: T1
+  F_TBD:
+    name: Term Being Defined
+    type: TEXT
+    tier: T1
+  F_IIM:
+    name: Item Is Money
+    type: BOOLEAN
+    tier: T1
+  F_IIS:
+    name: Item Is Securities
+    type: BOOLEAN
+    tier: T1
+  F_PAD:
+    name: Person Activity Description
+    type: TEXT
+    tier: T1
+  F_SCICFA:
+    name: Separate Consideration Is Charged For Activity
+    type: BOOLEAN
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_DONS_A_TIAS:
+    statement: The transaction is a supply of goods or services or both
+    order: LOW
+    rule: F_SIK IN ['GOODS', 'SERVICES', 'BOTH']
+    handler: python
+  M_DONS_A_SNLUCA:
+    statement: The supply is not leviable to tax under this Act (the CGST Act)
+    order: HIGH
+    interpretation: Is this supply not leviable to tax under the Central Goods and Services Tax Act?
+    grounding:
+    - F_SLSUCA
+    handler: heavy
+  M_DONS_A_SNLUIA:
+    statement: The supply is not leviable to tax under the Integrated Goods and Services Tax Act
+    order: HIGH
+    interpretation: Is this supply not leviable to tax under the Integrated Goods and Services Tax Act?
+    grounding:
+    - F_SLSUIA
+    handler: heavy
+  M_TSD_A_SILTT:
+    statement: The supply is leviable to tax under this Act
+    order: HIGH
+    interpretation: Considering the nature, description, and classification (HSN/SAC) of the supply, is it subject to tax
+      under this Act, or is it exempt, nil-rated, or non-GST?
+    grounding:
+    - F_SIK
+    - F_DOS
+    - F_HOSCOS
+    handler: heavy
+  M_ATD_A_SIE:
+    statement: The supply is an exempt supply whose aggregate value is counted
+    order: LOW
+    rule: F_STS = 'EXEMPT'
+    handler: python
+  M_DOC3_A_CDNROM:
+    statement: In this Act the context does not otherwise require the term Council to have a different meaning from the defined
+      meaning
+    order: HIGH
+    interpretation: Considering the phrase 'In this Act, unless the context otherwise requires,' does the context of the provision
+      in which Council is used require a meaning different from the statutory definition?
+    grounding:
+    - F_DCS
+    handler: heavy
+  M_DOC3_A_BIGC:
+    statement: The body is the Goods and Services Tax Council established under article 279A of the Constitution
+    order: HIGH
+    interpretation: Does the constitutional order or official record show that the body is the Goods and Services Tax Council
+      established under article 279A of the Constitution?
+    grounding:
+    - F_AI
+    handler: light
+  M_DOG_A_ITCG:
+    statement: '"Government" means the Central Government.'
+    order: LOW
+    rule: F_AUT = 'CENTRAL_GOVERNMENT'
+    handler: python
+  M_DOG_A_CDNROM:
+    statement: The context does not otherwise require a different meaning for 'Government'.
+    order: LOW
+    rule: F_DCS = 'NO_CONTRARY_CONTEXT'
+    handler: python
+  M_SIAFOS_A_SIAS:
+    statement: The supply of goods or services or both is a sale
+    order: LOW
+    rule: F_FOS = 'SALE'
+    handler: python
+  M_SIAFOS_A_SIAT:
+    statement: The supply of goods or services or both is a transfer
+    order: LOW
+    rule: F_FOS = 'TRANSFER'
+    handler: python
+  M_SIAFOS_A_SIAB:
+    statement: The supply of goods or services or both is a barter
+    order: LOW
+    rule: F_FOS = 'BARTER'
+    handler: python
+  M_SIAFOS_A_SIAE:
+    statement: The supply of goods or services or both is an exchange
+    order: LOW
+    rule: F_FOS = 'EXCHANGE'
+    handler: python
+  M_SIAFOS_A_SIALG:
+    statement: The supply of goods or services or both is a licence
+    order: LOW
+    rule: F_FOS = 'LICENCE'
+    handler: python
+  M_SIAFOS_A_SIAR:
+    statement: The supply of goods or services or both is a rental
+    order: LOW
+    rule: F_FOS = 'RENTAL'
+    handler: python
+  M_SIAFOS_A_SIAL:
+    statement: The supply of goods or services or both is a lease
+    order: LOW
+    rule: F_FOS = 'LEASE'
+    handler: python
+  M_SIAFOS_A_SIAD:
+    statement: The supply of goods or services or both is a disposal
+    order: LOW
+    rule: F_FOS = 'DISPOSAL'
+    handler: python
+  M_SIAFOS_A_SIAF:
+    statement: The supply of goods or services or both takes another form of supply that is not one of the listed examples
+      of sale, transfer, barter, exchange, licence, rental, lease or disposal
+    order: HIGH
+    interpretation: Does the described transaction amount to a form of supply of goods or services or both other than the
+      listed examples, since the list is illustrative only?
+    grounding:
+    - F_FOS
+    - F_DOS
+    handler: light
+  M_SIAFOS_A_SMFC:
+    statement: The supply was made for a consideration
+    order: LOW
+    rule: F_SES = 'MADE' AND F_SCT IN ['MONEY','NON_MONEY','BOTH']
+    handler: python
+  M_SIAFOS_A_SAFC:
+    statement: The supply was agreed to be made for a consideration
+    order: LOW
+    rule: F_SES = 'AGREED_TO_BE_MADE' AND F_SCT IN ['MONEY','NON_MONEY','BOTH']
+    handler: python
+  M_SIAFOS_A_SBPIB:
+    statement: The supply is made or agreed to be made by a person in the course or furtherance of business
+    order: HIGH
+    interpretation: Given the supplier and the activity described, is the supply made or agreed to be made by a person in
+      the course or furtherance of business?
+    grounding:
+    - F_SLS
+    - F_AOTD
+    handler: heavy
+  M_IOSFC_A_SIIOS:
+    statement: The transaction is an import of services within the meaning of the Act
+    order: HIGH
+    interpretation: Is the service an import of services in its statutory sense, given the service import status evidence
+    grounding:
+    - F_SIS
+    handler: heavy
+  M_IOSFC_A_IIFC:
+    statement: The import of services is for a consideration
+    order: LOW
+    rule: F_SCS IN ['PAID', 'AGREED']
+    handler: python
+  M_SIAWC_A_ASISI:
+    statement: The activity is one of the activities specified in Schedule I
+    order: HIGH
+    interpretation: Does the described activity fall within an activity specified in Schedule I of the Act?
+    grounding:
+    - F_AOTD
+    handler: heavy
+  M_SIAWC_A_AMOA:
+    statement: The activity is made or agreed to be made
+    order: LOW
+    rule: F_ASC IN ['MADE', 'AGREED']
+    handler: python
+  M_SIAWC_A_MWAC:
+    statement: The activity is made or agreed to be made without a consideration
+    order: LOW
+    rule: F_SCS = 'NONE'
+    handler: python
+  M_DOGO_A_CDNROM:
+    statement: The context in which the term 'goods' is used does not require a different meaning.
+    order: LOW
+    rule: F_DCS = 'NO_CONTRARY_CONTEXT'
+    handler: python
+  M_DOGO_A_TIIMP:
+    statement: The item is a kind of movable property.
+    order: HIGH
+    interpretation: Based on the item's description and nature, is it considered movable property?
+    grounding:
+    - F_IMS
+    - F_AOTD
+    handler: heavy
+  M_DOGO_A_TIINM:
+    statement: The item is other than money.
+    order: LOW
+    rule: F_IC != 'MONEY'
+    handler: python
+  M_DOGO_A_TIINS:
+    statement: The item is other than securities.
+    order: LOW
+    rule: F_IC != 'SECURITIES'
+    handler: python
+  M_DOGO_A_TIIAAC:
+    statement: The item is an actionable claim.
+    order: LOW
+    rule: F_IC = 'ACTIONABLE_CLAIM'
+    handler: python
+  M_DOGO_A_TIIGC:
+    statement: The item is growing crops.
+    order: LOW
+    rule: F_IC = 'GROWING_CROPS'
+    handler: python
+  M_DOGO_A_TIIG:
+    statement: The item is grass.
+    order: LOW
+    rule: F_IC = 'GRASS'
+    handler: python
+  M_DOGO_A_IIATL:
+    statement: The item is a thing attached to or forming part of the land.
+    order: LOW
+    rule: F_IC = 'ATTACHED_TO_LAND'
+    handler: python
+  M_DOGO_A_IIATBS:
+    statement: The thing is agreed to be severed before supply or under a contract of supply.
+    order: LOW
+    rule: F_AST IN ['BEFORE_SUPPLY', 'UNDER_CONTRACT_OF_SUPPLY']
+    handler: python
+  M_DOIA_A_DOIGASTA:
+    statement: '"Integrated Goods and Services Tax Act" means the Integrated Goods and Services Tax Act, 2017.'
+    order: LOW
+    rule: F_TBD = 'Integrated Goods AND Services Tax Act'
+    handler: python
+  M_DOIA_A_CDNRO:
+    statement: The context in which the term 'Integrated Goods and Services Tax Act' is used does not require a meaning other
+      than the one provided in this definition.
+    order: HIGH
+    interpretation: Does the specific context in which 'Integrated Goods and Services Tax Act' is used imply a meaning different
+      from its statutory definition? If the context does NOT require a different meaning, this condition is met.
+    grounding:
+    - F_DCS
+    handler: heavy
+  M_SITIS_A_SIST:
+    statement: The expression 'services' includes facilitating or arranging transactions in securities.
+    order: HIGH
+    interpretation: Does the activity constitute facilitating or arranging transactions in securities?
+    grounding:
+    - F_AOTD
+    handler: heavy
+    valid_from: '2019-02-01'
+  M_DOS2_A_DAUCRO:
+    statement: The definition of 'services' in Section 2(102) applies, as the context does not require a different meaning.
+    order: HIGH
+    interpretation: Does the context in which the term 'services' is used in the Act require a different meaning than the
+      one given in Section 2(102)?
+    grounding:
+    - F_DCS
+    handler: heavy
+  M_DOS2_A_TSING:
+    statement: The subject of the transaction is not 'goods'.
+    order: HIGH
+    interpretation: Based on the item's nature and the definition in Section 2(52), is the item classified as 'goods'?
+    grounding:
+    - F_SIK
+    handler: light
+  M_DOS2_A_TSINM:
+    statement: The subject of the transaction is not 'money'.
+    order: HIGH
+    interpretation: Based on the item's nature and the definition in Section 2(75), is the item classified as 'money'?
+    grounding:
+    - F_IIM
+    handler: light
+  M_DOS2_A_TSINS:
+    statement: The subject of the transaction is not 'securities'.
+    order: HIGH
+    interpretation: Based on the item's nature and the definition in Section 2(101), is the item classified as 'securities'?
+    grounding:
+    - F_IIS
+    handler: light
+  M_DOS2_A_ARTUOCOM:
+    statement: The activity relates to the use of money or its conversion by cash or by any other mode, from one form, currency
+      or denomination, to another.
+    order: HIGH
+    interpretation: Does the described activity relate to the use of money or its conversion (e.g., currency exchange, forex
+      services, arranging loans)?
+    grounding:
+    - F_PAD
+    handler: heavy
+  M_DOS2_A_SCICFTA:
+    statement: A separate consideration is charged for the activity.
+    order: LOW
+    rule: F_SCICFA = TRUE
+    handler: python
+  M_LOCTOPP_A_SILPP:
+    statement: The central tax applies to a supply of petroleum crude, high speed diesel, motor spirit (commonly known as
+      petrol), natural gas or aviation turbine fuel
+    order: LOW
+    rule: F_PPT IN ['PETROLEUM_CRUDE', 'HIGH_SPEED_DIESEL', 'MOTOR_SPIRIT', 'NATURAL_GAS', 'AVIATION_TURBINE_FUEL']
+    handler: python
+  M_LOCTOPP_A_NOCR:
+    statement: The levy date is notified by the Government on the recommendations of the Council
+    order: LOW
+    rule: F_NOCR2 = TRUE
+    handler: python
+  M_LOCTOPP_A_LEDN:
+    statement: A levy effective date has been notified by the Government as the date from which central tax is levied
+    order: LOW
+    rule: F_NLED IS_SET
+    handler: python
+  M_LOCTOPP_A_SOOALD:
+    statement: The supply is made on or after the notified levy effective date, so central tax is levied with effect from
+      that date
+    order: LOW
+    rule: F_SLTS = 'ON_OR_AFTER_LEVY_DATE'
+    handler: python
+  M_LOCGAST_A_SIGOS:
+    statement: The supply is of goods or services or both
+    order: LOW
+    rule: F_SIK IN ['GOODS', 'SERVICES', 'BOTH']
+    handler: python
+  M_LOCGAST_A_SINAL:
+    statement: The supply is not a supply of alcoholic liquor for human consumption
+    order: LOW
+    rule: F_SIALFHC = FALSE
+    handler: python
+groups:
+  M_DONS_G_SINLTT:
+    name: Supply Is Not Leviable To Tax
+    logic: ANY
+    members:
+    - M_DONS_A_SNLUCA
+    - M_DONS_A_SNLUIA
+  M_DOC3_G_CTT:
+    name: Council Term Test
+    logic: ALL
+    members:
+    - M_DOC3_A_CDNROM
+    - M_DOC3_A_BIGC
+    description: Both the context test and the body identity test must hold for the defined meaning to apply.
+  M_SIAFOS_G_LOOF:
+    name: Listed Or Other Form
+    logic: ANY
+    members:
+    - M_SIAFOS_A_SIAS
+    - M_SIAFOS_A_SIAT
+    - M_SIAFOS_A_SIAB
+    - M_SIAFOS_A_SIAE
+    - M_SIAFOS_A_SIALG
+    - M_SIAFOS_A_SIAR
+    - M_SIAFOS_A_SIAL
+    - M_SIAFOS_A_SIAD
+    - M_SIAFOS_A_SIAF
+    description: Any one of the listed forms, or any other qualifying form of supply, is enough. The list is illustrative.
+  M_SIAFOS_G_MOAS:
+    name: Made Or Agreed Supply
+    logic: ANY
+    members:
+    - M_SIAFOS_A_SMFC
+    - M_SIAFOS_A_SAFC
+    description: The supply is either made for a consideration or agreed to be made for a consideration. Both events are not
+      required.
+  M_IOSFC_G_ISS:
+    name: Import Services Scope
+    logic: ALL
+    members:
+    - M_IOSFC_A_SIIOS
+    - M_IOSFC_A_IIFC
+    description: Both the import of services limb and the for a consideration limb are needed for this inclusion.
+  M_SIAWC_G_ASCM:
+    name: All Schedule Conditions Met
+    logic: ALL
+    members:
+    - M_SIAWC_A_ASISI
+    - M_SIAWC_A_AMOA
+    - M_SIAWC_A_MWAC
+    description: Each atom is tested independently and all three are required.
+  M_DOGO_G_GBCD:
+    name: Goods By Core Definition
+    logic: ALL
+    members:
+    - M_DOGO_A_TIIMP
+    - M_DOGO_A_TIINM
+    - M_DOGO_A_TIINS
+  M_DOGO_G_GBSI:
+    name: Goods By Specific Inclusion
+    logic: ANY
+    members:
+    - M_DOGO_A_TIIAAC
+    - M_DOGO_A_TIIGC
+    - M_DOGO_A_TIIG
+    - M_DOGO_G_ATLAATBS
+  M_DOGO_G_ATLAATBS:
+    name: Attached To Land And Agreed To Be Severed
+    logic: ALL
+    members:
+    - M_DOGO_A_IIATL
+    - M_DOGO_A_IIATBS
+  M_DOS2_G_SC:
+    name: Service Criteria
+    logic: ANY
+    members:
+    - M_DOS2_G_BDOS
+    - M_DOS2_G_IFMA
+  M_DOS2_G_BDOS:
+    name: Base Definition Of Service
+    logic: ALL
+    members:
+    - M_DOS2_A_TSING
+    - M_DOS2_A_TSINM
+    - M_DOS2_A_TSINS
+  M_DOS2_G_IFMA:
+    name: Inclusion For Money-Related Activities
+    logic: ALL
+    members:
+    - M_DOS2_A_ARTUOCOM
+    - M_DOS2_A_SCICFTA
+  M_LOCTOPP_G_LDNC:
+    name: Levy Date Notification Conditions
+    logic: ALL
+    members:
+    - M_LOCTOPP_A_LEDN
+    - M_LOCTOPP_A_NOCR
+    description: The levy date must be notified by the Government, and that notification must be on the recommendations of
+      the Council.
+outcomes:
+  M_DONS_LE_DONS:
+    outcome: IS_NON_TAXABLE_SUPPLY
+    expr: M_DONS_A_TIAS AND M_DONS_G_SINLTT
+    module: M_DONS
+  M_TSD_LE_SILTT:
+    outcome: SUPPLY_IS_LEVIABLE_TO_TAX
+    expr: M_TSD_A_SILTT
+    module: M_TSD
+    description: The supply is leviable to tax under this Act (Section 2(108), part of the law)
+  M_ATD_LE_SIE:
+    outcome: SUPPLY_IS_EXEMPT
+    expr: M_ATD_A_SIE
+    module: M_ATD
+    description: The supply is an exempt supply whose aggregate value is counted (Section 2(6), part of the law)
+  M_DOC3_LE_CDO:
+    outcome: COUNCIL_MEANING_APPLIES
+    expr: M_DOC3_G_CTT
+    module: M_DOC3
+    description: The term Council carries the defined meaning only where the body is the GST Council and the context does
+      not require another meaning.
+  M_DOG_LE_GDM:
+    outcome: IS_GOVERNMENT_AS_DEFINED
+    expr: M_DOG_A_ITCG AND M_DOG_A_CDNROM
+    module: M_DOG
+    description: Determines if an entity qualifies as 'Government' according to Section 2(53).
+  M_SIAFOS_LE_ISO:
+    outcome: INCLUDED_IN_SUPPLY
+    expr: M_SIAFOS_G_LOOF AND M_SIAFOS_G_MOAS AND M_SIAFOS_A_SBPIB
+    module: M_SIAFOS
+    description: The transaction falls within the inclusive meaning of supply when it takes a listed or other form of supply,
+      is made or agreed to be made for a consideration, and is by a person in the course or furtherance of business.
+  M_IOSFC_LE_ISIO:
+    outcome: SUPPLY_INCLUDED
+    expr: M_IOSFC_G_ISS
+    module: M_IOSFC
+    description: Import of services for a consideration is included in supply whether or not in the course or furtherance
+      of business. Inclusion is not exhaustive and no business-context condition is applied.
+  M_SIAWC_LE_SAIS:
+    outcome: SUPPLY_INCLUDED
+    expr: M_SIAWC_G_ASCM
+    module: M_SIAWC
+    description: The activity is included in supply when all three schedule conditions are met.
+  M_DOGO_LE_DOIAG:
+    outcome: IS_GOODS
+    expr: M_DOGO_A_CDNROM AND (M_DOGO_G_GBCD OR M_DOGO_G_GBSI)
+    module: M_DOGO
+  M_DOIA_LE_DOIAE:
+    outcome: DEFINITION_ESTABLISHED
+    expr: M_DOIA_A_CDNRO AND M_DOIA_A_DOIGASTA
+    module: M_DOIA
+    description: The definition of 'Integrated Goods and Services Tax Act' is established if the context does not require
+      otherwise and the definition itself is considered.
+  M_SITIS_LE_SIS:
+    outcome: IS_SERVICE
+    expr: M_SITIS_A_SIST
+    module: M_SITIS
+    description: Determines if the activity is considered a service based on this clarification.
+  M_DOS2_LE_TTIAS:
+    outcome: IS_SERVICE
+    expr: M_DOS2_A_DAUCRO AND M_DOS2_G_SC
+    module: M_DOS2
+  M_LOCTOPP_LE_CTLOP:
+    outcome: CENTRAL_TAX_LEVIED_ON_PETROLEUM
+    expr: M_LOCTOPP_A_SILPP AND M_LOCTOPP_G_LDNC AND M_LOCTOPP_A_SOOALD
+    module: M_LOCTOPP
+    description: Central tax is levied on a listed petroleum product supplied on or after the notified levy date, where the
+      levy date is notified on the recommendations of the Council.
+  M_LOCGAST_LE_SIGOS:
+    outcome: SUPPLY_IS_GOODS_OR_SERVICES
+    expr: M_LOCGAST_A_SIGOS
+    module: M_LOCGAST
+    description: The supply is of goods or services or both (Section 9(1), part of the law)
+  M_LOCGAST_LE_SINAL:
+    outcome: SUPPLY_IS_NOT_ALCOHOLIC_LIQUOR
+    expr: M_LOCGAST_A_SINAL
+    module: M_LOCGAST
+    description: The supply is not a supply of alcoholic liquor for human consumption (Section 9(1), part of the law)
+products:
+  M_DONS_PD_DONS:
+    statement: IS_NON_TAXABLE_SUPPLY
+  M_TSD_PD_SILTT:
+    statement: The supply is leviable to tax under this Act
+  M_ATD_PD_SIE:
+    statement: The supply is an exempt supply whose aggregate value is counted
+  M_DOC3_PD_CDO:
+    statement: The term Council carries the defined meaning only where the body is the GST Council and the context does not
+      require another meaning.
+  M_DOG_PD_GDM:
+    statement: Determines if an entity qualifies as 'Government' according to Section 2(53).
+  M_SIAFOS_PD_ISO:
+    statement: The transaction falls within the inclusive meaning of supply when it takes a listed or other form of supply,
+      is made or agreed to be made for a consideration, and is by a person in the course or furtherance of business.
+  M_IOSFC_PD_ISIO:
+    statement: Import of services for a consideration is included in supply whether or not in the course or furtherance of
+      business. Inclusion is not exhaustive and no business-context condition is applied.
+  M_SIAWC_PD_SAIS:
+    statement: The activity is included in supply when all three schedule conditions are met.
+  M_DOGO_PD_DOIAG:
+    statement: IS_GOODS
+  M_DOIA_PD_DOIAE:
+    statement: The definition of 'Integrated Goods and Services Tax Act' is established if the context does not require otherwise
+      and the definition itself is considered.
+  M_SITIS_PD_SIS:
+    statement: Determines if the activity is considered a service based on this clarification.
+  M_DOS2_PD_TTIAS:
+    statement: IS_SERVICE
+  M_LOCTOPP_PD_CTLOP:
+    statement: Central tax is levied on a listed petroleum product supplied on or after the notified levy date, where the
+      levy date is notified on the recommendations of the Council.
+  M_LOCGAST_PD_SIGOS:
+    statement: The supply is of goods or services or both
+  M_LOCGAST_PD_SINAL:
+    statement: The supply is not a supply of alcoholic liquor for human consumption
+compounds:
+- id: C_DONS
+  question: 'Section 2(78): Definition Of Non-Taxable Supply?'
+  includes:
+  - M_DONS_LE_DONS
+  produces:
+  - product: M_DONS_PD_DONS
+    from:
+    - M_DONS_LE_DONS
+- id: C_TSD
+  question: The supply is leviable to tax under this Act? (Section 2(108))
+  includes:
+  - M_TSD_LE_SILTT
+  produces:
+  - product: M_TSD_PD_SILTT
+    from:
+    - M_TSD_LE_SILTT
+- id: C_ATD
+  question: The supply is an exempt supply whose aggregate value is counted? (Section 2(6))
+  includes:
+  - M_ATD_LE_SIE
+  produces:
+  - product: M_ATD_PD_SIE
+    from:
+    - M_ATD_LE_SIE
+- id: C_DOC3
+  question: 'Section 2(36): Definition Of Council?'
+  includes:
+  - M_DOC3_LE_CDO
+  produces:
+  - product: M_DOC3_PD_CDO
+    from:
+    - M_DOC3_LE_CDO
+- id: C_DOG
+  question: 'Section 2(53): Definition Of Government?'
+  includes:
+  - M_DOG_LE_GDM
+  produces:
+  - product: M_DOG_PD_GDM
+    from:
+    - M_DOG_LE_GDM
+- id: C_S7_SS1
+  question: 'Section 7(1): which clause applies?'
+  includes:
+  - M_SIAFOS_LE_ISO
+  - M_IOSFC_LE_ISIO
+  - M_SIAWC_LE_SAIS
+  produces:
+  - product: M_SIAFOS_PD_ISO
+    from:
+    - M_SIAFOS_LE_ISO
+  - product: M_IOSFC_PD_ISIO
+    from:
+    - M_IOSFC_LE_ISIO
+  - product: M_SIAWC_PD_SAIS
+    from:
+    - M_SIAWC_LE_SAIS
+- id: C_DOGO
+  question: 'Section 2(52): Definition Of Goods?'
+  includes:
+  - M_DOGO_LE_DOIAG
+  produces:
+  - product: M_DOGO_PD_DOIAG
+    from:
+    - M_DOGO_LE_DOIAG
+- id: C_DOIA
+  question: 'Section 2(57): Definition Of IGST Act?'
+  includes:
+  - M_DOIA_LE_DOIAE
+  produces:
+  - product: M_DOIA_PD_DOIAE
+    from:
+    - M_DOIA_LE_DOIAE
+- id: C_SITIS
+  question: 'Explanation to clause (102) of section 2: Services Includes Transactions In Securities?'
+  includes:
+  - M_SITIS_LE_SIS
+  produces:
+  - product: M_SITIS_PD_SIS
+    from:
+    - M_SITIS_LE_SIS
+- id: C_DOS2
+  question: 'Section 2(102): Definition Of Services?'
+  includes:
+  - M_DOS2_LE_TTIAS
+  produces:
+  - product: M_DOS2_PD_TTIAS
+    from:
+    - M_DOS2_LE_TTIAS
+- id: C_LOCTOPP
+  question: 'Section 9(2): Levy Of Central Tax On Petroleum Products?'
+  includes:
+  - M_LOCTOPP_LE_CTLOP
+  produces:
+  - product: M_LOCTOPP_PD_CTLOP
+    from:
+    - M_LOCTOPP_LE_CTLOP
+- id: C_LOCGAST
+  question: The supply is of goods or services or both; The supply is not a supply of alcoholic liquor for human consumption?
+    (Section 9(1))
+  includes:
+  - M_LOCGAST_LE_SIGOS
+  - M_LOCGAST_LE_SINAL
+  produces:
+  - product: M_LOCGAST_PD_SIGOS
+    from:
+    - M_LOCGAST_LE_SIGOS
+  - product: M_LOCGAST_PD_SINAL
+    from:
+    - M_LOCGAST_LE_SINAL
+time:
+  law_date: F_DOI

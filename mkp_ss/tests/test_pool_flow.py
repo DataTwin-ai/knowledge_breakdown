@@ -21,6 +21,10 @@ from mkp_ss.scope import jobs_for  # noqa: E402
 from mkp_ss.source import unit_context  # noqa: E402
 
 MKP_T, AKP_T, PFX = "mkp_pool", "pool_akp", "pool_gkp"
+AKP_NAMES = {"llm_cache_table": AKP_T + "_llm_cache", "fact_table": "pool_fact", "atom_fact_table": "pool_atom_fact",
+             "time_fact_table": "pool_time_fact", "gkp_table": PFX, "reuse_old_cache_table": ""}
+GKP_NAMES = {"table": PFX, "cache_table": PFX + "_cache", "llm_cache_table": PFX + "_llm_cache",
+             "coverage_table": PFX + "_coverage", "taxonomy_table": PFX + "_taxonomy", "atom_fact_table": "pool_atom_fact"}
 
 
 class Limited(Exception):
@@ -100,9 +104,9 @@ def env(tmp_path_factory):
     fake = MkpFake(P1Fake(run.drafter), limited, broken)
     pool = Pool(cfg, paths, {"mkp": True, "akp": True, "gkp": True}, 3, s1, fake_llm=fake, embed=emb,
                 akp_fake=P2Fake(), gkp_fake=P3Fake(),
-                akp_override={"enabled": True, "mkp_table": MKP_T, "table": AKP_T, "cache_table": AKP_T + "_cache",
+                akp_override={"enabled": True, "mkp_table": MKP_T, "table": AKP_T, "cache_table": AKP_T + "_cache", **AKP_NAMES,
                               "ask_user_input": False},
-                gkp_override={"enabled": True, "akp_table": AKP_T, "mkp_table": MKP_T, "table_prefix": PFX,
+                gkp_override={"enabled": True, "akp_table": AKP_T, "mkp_table": MKP_T, **GKP_NAMES,
                               "taxonomy_file": str(tax_tmp), "use_cache": True})
     pool.add([Job(doc, j) for j in jobs])
     totals = pool.start()

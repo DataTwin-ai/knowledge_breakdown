@@ -17,6 +17,11 @@ import akp_engine as p2  # noqa: E402
 import gkp_engine as p3  # noqa: E402
 
 MKP_T, AKP_T, PFX = "mkp_p3t", "pass_2p3_akp", "pass_3t"
+# every table name is given (Config/settings.json names are the real _new tables)
+AKP_NAMES = {"llm_cache_table": AKP_T + "_llm_cache", "fact_table": "pass_2p3_fact", "atom_fact_table": "pass_2p3_atom_fact",
+             "time_fact_table": "pass_2p3_time_fact", "gkp_table": PFX, "reuse_old_cache_table": ""}
+GKP_NAMES = {"table": PFX, "cache_table": PFX + "_cache", "llm_cache_table": PFX + "_llm_cache",
+             "coverage_table": PFX + "_coverage", "taxonomy_table": PFX + "_taxonomy", "atom_fact_table": "pass_2p3_atom_fact"}
 TAX_TMP = ROOT / "Output" / "taxonomy_p3test.json"
 
 
@@ -94,6 +99,7 @@ def env():
     p1.run_mkp_document(doc, permission, paths, s1, conn, scope_roots=["CGSTA17_S7", "CGSTA17_S9"],
                           fake_llm=P1Fake(run.drafter), embed=p1_embed)
     o2 = {"enabled": True, "mkp_table": MKP_T, "table": AKP_T, "cache_table": AKP_T + "_cache", "ask_user_input": False,
+          **AKP_NAMES,
           "export_excel": False}
     for scope in ("CGSTA17_S7", "CGSTA17_S9"):
         p2.run_akp_scope(ROOT / "Law" / "Acts" / "CGST-Act.pdf", "CGSTA17", scope_key=scope, fake_llm=P2Fake(), embed=emb,
@@ -104,7 +110,7 @@ def env():
     TAX_TMP.unlink(missing_ok=True)
 
 
-O3 = {"enabled": True, "akp_table": AKP_T, "mkp_table": MKP_T, "table_prefix": PFX, "taxonomy_file": str(TAX_TMP),
+O3 = {"enabled": True, "akp_table": AKP_T, "mkp_table": MKP_T, **GKP_NAMES, "taxonomy_file": str(TAX_TMP),
       "excel_file": "gkp_test.xlsx", "use_cache": True, "calibrate": False, "audit_share": 0.0}
 
 
@@ -167,7 +173,7 @@ def test_fact_network_and_section_sources(env):
     from gkp_ss.store import GkpStore
     from gkp_ss import taxonomy as tax
     _, subs = tax.load(TAX_TMP)
-    store = GkpStore(conn, "public", AKP_T, PFX)
+    store = GkpStore(conn, "public", AKP_T, PFX, PFX + "_cache", PFX + "_llm_cache", PFX + "_coverage", "pass_2p3_atom_fact")
     rows = store.mkps("CGSTA17", q(conn, f"SELECT DISTINCT version_id FROM {AKP_T}")[0][0])["CGSTA17_S9_SS1#TEXT"]
     a = next(r for r in rows if r["type"] == "A")
     atom = dict(a, source_mkp="CGSTA17_S9_SS1#TEXT", family="", facts=store.atom_facts("CGSTA17", a.get("akp_id", "").split("::")[0] and
@@ -182,7 +188,7 @@ def test_same_atom_inherits_groups(env):
     conn, _ = env
     canon = q(conn, f"""SELECT akp_id FROM {PFX} WHERE is_latest AND status='APPROVED' AND akp_type='A'
                         AND source_mkp='CGSTA17_S7_SS1_Ca#TEXT' LIMIT 1""")[0][0]
-    q(conn, f"""UPDATE {AKP_T} SET type='A_REF', results='', same_akp_id=%s
+    q(conn, f"""UPDATE {AKP_T} SET type='A_REF', results='', akp_id=%s
                WHERE source_mkp='CGSTA17_S9_SS2#TEXT' AND type='A' AND is_latest""", canon)
     fake = Fake()
     go("CGSTA17_S9_SS2", fake)
@@ -265,8 +271,9 @@ def test_governance_master_built_from_the_database(env, tmp_path):
     g = perm["governance_master"]
     g.update({"table": "gm_p3t", "history_table": "gm_p3t_history", "output_dir": str(tmp_path / "Governance_Master"),
               "tsgs": "TOUCHED", "use_cache": True, "save_to_db": True, "enabled": True})
-    g["tables"] = {"akp": AKP_T, "fact": "pass_2p3_fact", "gkp": PFX, "time_fact": "pass_2p3_time_fact", "mkp": MKP_T,
-                   "ikp": g["tables"]["ikp"]}
+    g["tables"] = {"akp": AKP_T, "fact": "pass_2p3_fact", "atom_fact": "pass_2p3_atom_fact", "gkp": PFX,
+                   "time_fact": "pass_2p3_time_fact", "mkp": MKP_T, "ikp": g["tables"]["ikp"],
+                   "ref_link": g["tables"]["ref_link"]}
     with conn.cursor() as cur:
         cur.execute("DROP TABLE IF EXISTS public.gm_p3t")
         cur.execute("DROP TABLE IF EXISTS public.gm_p3t_history")
@@ -290,7 +297,7 @@ def test_notification_atom_reaches_the_tsg_of_similar_act_atoms(env):
     from gkp_ss import taxonomy as tax
     _, subs = tax.load(TAX_TMP)
     s = p3.validate_gkp_settings({**__import__("kp_settings").load()["gkp"], **O3}, __import__("kp_settings").load())
-    store = GkpStore(conn, "public", AKP_T, PFX)
+    store = GkpStore(conn, "public", AKP_T, PFX, PFX + "_cache", PFX + "_llm_cache", PFX + "_coverage", "pass_2p3_atom_fact")
     vec = q(conn, f"SELECT atom_embedding FROM {AKP_T} WHERE source_mkp='CGSTA17_S7_SS1_Ca#TEXT' AND type='A' AND is_latest")[0][0]
     finder = CandidateFinder(store, {x["tsg_id"]: x for x in subs}, s, f"{PFX}_taxonomy")
     atom = {"element": "A_X", "source_mkp": "N04_2018_PA1_Ca#TEXT", "concept": "Zzz", "results": 'statement: "zzz"',
@@ -300,3 +307,16 @@ def test_notification_atom_reaches_the_tsg_of_similar_act_atoms(env):
                                       "AND is_latest AND status='APPROVED'")}
     assert approved and approved & set(got)
     assert any(x.startswith("similar CGSTA17_S7_SS1_Ca#TEXT::") for t in approved & set(got) for x in got[t])
+
+
+def test_one_row_per_atom_and_tsg():
+    """2026-11-20: 37(1) reused M_ROFOSD_A_PIRP; the lookup also read 39(1) proviso's inherited copy -> TSG09_01 twice
+    -> duplicate key on gkp_new. The save keeps one row per atom + TSG."""
+    from gkp_ss.store import unique_rows
+    rows = [{"akp_element": "M_ROFOSD_A_PIRP", "tsg_id": "TSG09_01", "method": "SAME_INHERITED"},
+            {"akp_element": "M_ROFOSD_A_PIRP", "tsg_id": "TSG09_01", "method": "SAME_INHERITED"},
+            {"akp_element": "M_ROFOSD_A_PIRP", "tsg_id": "TSG11_01", "method": "SAME_INHERITED"},
+            {"akp_element": "M_FOSD_A_DCTR", "tsg_id": "TSG09_01", "method": "AGREE"}]
+    out = unique_rows(rows)
+    assert [(r["akp_element"], r["tsg_id"]) for r in out] == [
+        ("M_ROFOSD_A_PIRP", "TSG09_01"), ("M_ROFOSD_A_PIRP", "TSG11_01"), ("M_FOSD_A_DCTR", "TSG09_01")]

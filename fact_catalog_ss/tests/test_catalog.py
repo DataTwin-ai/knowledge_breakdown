@@ -59,7 +59,7 @@ def test_catalog_from_the_fact_tables(tmp_path):
                               ('CGSTA17_S7_SS1_Ca#TEXT','A_COB','TSG01_06','APPROVED',true);""")
     conn.commit()
     cfg = kp_settings.load(fresh=True)
-    cfg["governance_master"]["tables"].update({"fact": "fc_fact", "akp": "fc_akp", "gkp": "fc_gkp"})
+    cfg["governance_master"]["tables"].update({"fact": "fc_fact", "atom_fact": "fc_atom_fact", "akp": "fc_akp", "gkp": "fc_gkp"})
     cfg["governance_master"]["output_dir"] = str(ROOT / "Output" / "fc_test")
     cfg["fact_catalog"].update({"table": "fc_catalog", "index_table": "fc_index"})
     r = build_catalog(cfg, conn)

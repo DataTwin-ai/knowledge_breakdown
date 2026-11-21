@@ -81,7 +81,7 @@ class RelationStore:
             if not self._has(cur, self.n["akp"]):
                 return {}
             cur.execute(sql.SQL("""SELECT source_mkp, max(version_id), max(akp_version), count(*),
-                                          md5(string_agg(type || ':' || akp_id || ':' || COALESCE(same_akp_id, ''), ','
+                                          md5(string_agg(type || ':' || akp_id, ','
                                                          ORDER BY type, akp_id))
                                    FROM {} WHERE is_latest AND source_mkp LIKE %s GROUP BY source_mkp""").format(
                 self.t(self.n["akp"])), (like,))
@@ -117,7 +117,7 @@ class RelationStore:
         facts, same_ids = set(), set()
         with self.conn.cursor() as cur:
             mid_col = sql.SQL("mkp_id") if "mkp_id" in self._cols(cur, self.n["akp"]) else sql.SQL("NULL")
-            cur.execute(sql.SQL("SELECT source_mkp, type, akp_id, concept, results, same_akp_id, {} FROM {} "
+            cur.execute(sql.SQL("SELECT source_mkp, type, akp_id, concept, results, CASE WHEN type = 'A_REF' THEN akp_id END, {} FROM {} "
                                 "WHERE is_latest AND source_mkp = ANY(%s) ORDER BY source_mkp, ordinal")
                         .format(mid_col, self.t(self.n["akp"])), (molecules,))
             for m, t, el, c, res, same, mid in cur.fetchall():

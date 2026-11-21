@@ -250,6 +250,8 @@ def structure(rows: List[dict], sp_source: List[dict], operative: bool, registry
         if not rfield(f, "type"):
             errors.append(f"{f_id}: fact needs a type")
 
+    errors += flag_facts(atoms, groups, les, facts)
+
     # SP coverage: every source phrase copied and mapped
     std_sp = by_type.get("SP", {})
     for sp in sp_source:
@@ -266,6 +268,34 @@ def structure(rows: List[dict], sp_source: List[dict], operative: bool, registry
             if el.startswith(("A_", "G_", "LE_", "PD_", "CT_")) and el not in known | set(les) | set(by_type.get("CT", {})):
                 errors.append(f"{sid}: elements lists {el}, which is not defined")
     return errors
+
+
+def flag_facts(atoms: Dict[str, dict], groups: Dict[str, dict], les: Dict[str, dict], facts: Dict[str, dict]) -> List[str]:
+    """2026-11-19: a fact is an attribute with values (gender: male / female), not one yes/no question per value.
+    Alternatives of one choice - the members of an ANY group, or atoms joined by OR in an LE - that each test their
+    own new BOOL fact of the same entity ("is ISD", "is non-resident", "pays under section 10") must be ONE fact with
+    options. Facts from the registry (already saved) are not judged here."""
+    sets = [field_list(g, "members") for g in groups.values() if get_field(g, "logic").upper() == "ANY"]
+    for le in les.values():
+        for run in re.findall(r"(?:[A-Z][A-Z0-9_]*\s+OR\s+)+[A-Z][A-Z0-9_]*", get_field(le, "expr")):
+            sets.append(re.split(r"\s+OR\s+", run))
+    out = []
+    for members in sets:
+        flags = {}
+        for m in members:
+            used = field_list(atoms[m], "facts") if m in atoms else []
+            if len(used) != 1 or used[0] not in facts:
+                continue
+            f = facts[used[0]]
+            if str(rfield(f, "type") or "").upper() in ("BOOL", "BOOLEAN"):
+                flags.setdefault((get_field(f, "entity") or "").upper(), []).append(used[0])
+        for entity, ids in flags.items():
+            ids = list(dict.fromkeys(ids))
+            if len(ids) >= 2:
+                out.append(f"FACT SHAPE: {', '.join(ids)} are yes/no facts for the values of ONE attribute of "
+                           f"{entity or 'the same entity'} - make ONE fact with options (e.g. F_PERSON_TAX_CATEGORY: "
+                           f"options [ISD, NON_RESIDENT, ...]) and test each value in its atom's rule")
+    return out
 
 
 # ---------------------------------------------------------------- engine-ready atoms (less hallucination)

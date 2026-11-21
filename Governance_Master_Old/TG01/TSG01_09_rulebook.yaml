@@ -1,0 +1,354 @@
+# GOVERNANCE MASTER TSG01_09 Statutory Deeming of Land Interests as Services (TG01 Supply & Taxability)
+# LAW ARC - 6 laws - status APPROVED
+name: TSG01_09 Statutory Deeming of Land Interests as Services - GOVERNANCE MASTER rulebook
+version: TSG01_09
+facts:
+  F_CIT:
+    name: Certificate Issuer Type
+    type: CODE
+    options:
+    - AUTHORISED_UNDER_LAW
+    - GOVERNMENT
+    - OTHER
+    - UNKNOWN
+    tier: T0
+  F_CCR:
+    name: Completion Certificate Requirement
+    type: CODE
+    options:
+    - NOT_REQUIRED
+    - REQUIRED
+    - UNKNOWN
+    tier: T1
+  F_CERS:
+    name: Chartered Engineer Registration Status
+    type: CODE
+    options:
+    - REGISTERED_IEI
+    - NOT_REGISTERED_IEI
+    - UNKNOWN
+    tier: T0
+  F_SLIT:
+    name: Supply Land Interest Type
+    type: CODE
+    options:
+    - LEASE
+    - TENANCY
+    - EASEMENT
+    - LICENCE_TO_OCCUPY
+    - OTHER
+    - UNKNOWN
+    tier: T1
+  F_FOS:
+    name: Form Of Supply
+    type: CODE
+    options:
+    - BARTER
+    - DISPOSAL
+    - EXCHANGE
+    - LEASE
+    - LICENCE
+    - OTHER
+    - RENTAL
+    - SALE
+    - TRANSFER
+    tier: T1
+  F_PK:
+    name: Property Kind
+    type: CODE
+    options:
+    - IMMOVABLE
+    - MOVABLE
+    - UNKNOWN
+    tier: T1
+  F_AOTD:
+    name: Activity Or Transaction Description
+    type: TEXT
+    tier: T1
+  F_IPRK:
+    name: Intellectual Property Right Kind
+    type: CODE
+    options:
+    - INTELLECTUAL_PROPERTY_RIGHT
+    - OTHER_RIGHT
+    - UNKNOWN
+    tier: T1
+  F_IAUL:
+    name: Issuer Authorisation Under Law
+    type: CODE
+    options:
+    - AUTHORISED_UNDER_LAW
+    - NOT_AUTHORISED
+    - UNKNOWN
+    tier: T1
+  F_SLS2:
+    name: Surveyor Licence Status
+    type: CODE
+    options:
+    - LICENSED_LOCAL_BODY_SURVEYOR
+    - LICENSED_DEVELOPMENT_OR_PLANNING_SURVEYOR
+    - LICENSED_OTHER
+    - NOT_LICENSED
+    - UNKNOWN
+    tier: T1
+  F_ACR:
+    name: Architect Council Registration
+    type: BOOLEAN
+    tier: T0
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_DOCACE_A_CAIG:
+    statement: The competent authority is the Government
+    order: LOW
+    rule: F_CIT = 'GOVERNMENT'
+    handler: python
+  M_DOCACE_A_AULA:
+    statement: The competent authority is any authority authorised to issue completion certificate under any law for the time
+      being in force
+    order: HIGH
+    interpretation: Is the issuing authority authorised to issue completion certificates under a law for the time being in
+      force?
+    grounding:
+    - F_CIT
+    handler: heavy
+  M_DOCACE_A_CNRFA:
+    statement: In case of non-requirement of such completion certificate from such authority, the certificate is not required
+      from that authority
+    order: LOW
+    rule: F_CCR = 'NOT_REQUIRED'
+    handler: python
+  M_DOCACE_A_CERWI:
+    statement: The competent authority is a chartered engineer registered with the Institution of Engineers (India)
+    order: LOW
+    rule: F_CERS = 'REGISTERED_IEI'
+    handler: python
+  M_CALS_A_AITG:
+    statement: The competent authority is the Government
+    order: LOW
+    rule: F_CIT = 'GOVERNMENT'
+    handler: python
+  M_CALS_A_AIAI:
+    statement: The competent authority is an authority authorised to issue completion certificate under any law for the time
+      being in force
+    order: HIGH
+    interpretation: Is the authority authorised under any law for the time being in force to issue a completion certificate?
+    grounding:
+    - F_IAUL
+    handler: heavy
+  M_CALS_A_CNRFA:
+    statement: A completion certificate is not required from the Government or the authority authorised to issue it (non-requirement
+      of such certificate from such authority)
+    order: HIGH
+    interpretation: Is there a non-requirement of a completion certificate from such authority for the property or work concerned?
+    grounding:
+    - F_CCR
+    handler: light
+  M_CALS_A_AILS:
+    statement: The competent authority is a licensed surveyor of the respective local body of the city or town or village
+      or development or planning authority
+    order: HIGH
+    interpretation: Is the person a licensed surveyor of the respective local body of the city or town or village or of the
+      development or planning authority? The source wording is ambiguous on how the list attaches and is retained as written.
+    grounding:
+    - F_SLS2
+    handler: heavy
+  M_CAA_A_AITG:
+    statement: The competent authority is the Government
+    order: LOW
+    rule: F_CIT = 'GOVERNMENT'
+    handler: python
+  M_CAA_A_AAUL:
+    statement: The competent authority is any authority authorised to issue completion certificate under any law for the time
+      being in force
+    order: HIGH
+    interpretation: Is the issuing authority authorised to issue a completion certificate under any law for the time being
+      in force?
+    grounding:
+    - F_IAUL
+    handler: light
+  M_CAA_A_CNRFA:
+    statement: A completion certificate is not required from the Government or authority authorised under any law to issue
+      it
+    order: LOW
+    rule: F_CCR = 'NOT_REQUIRED'
+    handler: python
+  M_CAA_A_ARWC:
+    statement: The competent authority is an architect registered with the Council of Architecture constituted under the Architects
+      Act, 1972
+    order: LOW
+    rule: F_ACR = TRUE
+    handler: python
+  M_LOLIS_A_TIEOL:
+    statement: The transaction is an easement over land
+    order: LOW
+    rule: F_SLIT = 'EASEMENT'
+    handler: python
+  M_ROIPS_A_TIR:
+    statement: The transaction takes the form of renting
+    order: LOW
+    if_false: F_FOS is any value other than RENTAL
+    rule: F_FOS = 'RENTAL'
+    handler: python
+  M_ROIPS_A_RPII:
+    statement: The property rented is immovable property
+    order: HIGH
+    if_false: the rented property is movable
+    interpretation: Is the rented property immovable property as described in the contract, registration details or property
+      records
+    grounding:
+    - F_PK
+    - F_AOTD
+    handler: heavy
+  M_TTOIPS_A_RIIP:
+    statement: The right transferred or permitted for use is an intellectual property right of any kind
+    order: HIGH
+    interpretation: Is the right concerned an intellectual property right of any kind
+    grounding:
+    - F_IPRK
+    handler: heavy
+groups:
+  M_DOCACE_G_GOAIR:
+    name: Government Or Authorised Issuer Route
+    logic: ANY
+    members:
+    - M_DOCACE_A_CAIG
+    - M_DOCACE_A_AULA
+    description: The competent authority is the Government or an authority authorised to issue the completion certificate
+  M_DOCACE_G_ERCNR:
+    name: Engineer Route Certificate Not Required
+    logic: ALL
+    members:
+    - M_DOCACE_A_CNRFA
+    - M_DOCACE_A_CERWI
+    description: Where the certificate is not required from such authority, a chartered engineer registered with the Institution
+      of Engineers (India) is the competent authority
+  M_CALS_G_PAA:
+    name: Primary Authority Alternatives
+    logic: ANY
+    members:
+    - M_CALS_A_AITG
+    - M_CALS_A_AIAI
+    description: The Government or any authority authorised to issue completion certificate under any law for the time being
+      in force.
+  M_CALS_G_SRC:
+    name: Surveyor Route Conditions
+    logic: ALL
+    members:
+    - M_CALS_A_CNRFA
+    - M_CALS_A_AILS
+    description: Where a completion certificate is not required from such authority - the licensed surveyor listed in the
+      clause.
+  M_CAA_G_GOAA:
+    name: Government Or Authorised Authority
+    logic: ANY
+    members:
+    - M_CAA_A_AITG
+    - M_CAA_A_AAUL
+    description: The Government or any authority authorised under any law in force to issue a completion certificate
+  M_CAA_G_RAR:
+    name: Registered Architect Route
+    logic: ALL
+    members:
+    - M_CAA_A_CNRFA
+    - M_CAA_A_ARWC
+    description: No certificate is required from such authority and the certifier is a registered architect
+  M_ROIPS_G_ROIP:
+    name: Renting Of Immovable Property
+    logic: ALL
+    members:
+    - M_ROIPS_A_TIR
+    - M_ROIPS_A_RPII
+    description: Both the renting form and the immovable property subject must hold
+outcomes:
+  M_DOCACE_LE_CADO:
+    outcome: COMPETENT_AUTHORITY_DEFINED
+    expr: M_DOCACE_G_GOAIR OR M_DOCACE_G_ERCNR
+    module: M_DOCACE
+    description: The entity is a competent authority for paragraph 5(b) under the exhaustive definition
+  M_CALS_LE_CADM:
+    outcome: IS_COMPETENT_AUTHORITY
+    expr: M_CALS_G_PAA OR M_CALS_G_SRC
+    module: M_CALS
+    description: The expression competent authority is satisfied by either the primary authority route or the licensed surveyor
+      route.
+  M_CAA_LE_CAO:
+    outcome: IS_COMPETENT_AUTHORITY
+    expr: M_CAA_G_GOAA OR M_CAA_G_RAR
+    module: M_CAA
+    description: The certifying body is a competent authority if it is the Government or an authority authorised under law,
+      or if no certificate is required from such authority and it is a registered architect
+  M_LOLIS_LE_TIEOL:
+    outcome: TRANSACTION_IS_EASEMENT_OVER_LAND
+    expr: M_LOLIS_A_TIEOL
+    module: M_LOLIS
+    description: The transaction is an easement over land (Schedule II, paragraph 2, part of the law)
+  M_ROIPS_LE_RTASS:
+    outcome: SUPPLY_OF_SERVICES_DEEMED
+    expr: M_ROIPS_G_ROIP
+    module: M_ROIPS
+    description: Renting of immovable property is treated as supply of services when the renting of immovable property group
+      holds
+  M_TTOIPS_LE_RIIP:
+    outcome: RIGHT_IS_INTELLECTUAL_PROPERTY
+    expr: M_TTOIPS_A_RIIP
+    module: M_TTOIPS
+    description: The right transferred or permitted for use is an intellectual property right of any kind (Schedule II, paragraph
+      5, part of the law)
+products:
+  M_DOCACE_PD_CADO:
+    statement: The entity is a competent authority for paragraph 5(b) under the exhaustive definition
+  M_CALS_PD_CADM:
+    statement: The expression competent authority is satisfied by either the primary authority route or the licensed surveyor
+      route.
+  M_CAA_PD_CAO:
+    statement: The certifying body is a competent authority if it is the Government or an authority authorised under law,
+      or if no certificate is required from such authority and it is a registered architect
+  M_LOLIS_PD_TIEOL:
+    statement: The transaction is an easement over land
+  M_ROIPS_PD_RTASS:
+    statement: Renting of immovable property is treated as supply of services when the renting of immovable property group
+      holds
+  M_TTOIPS_PD_RIIP:
+    statement: The right transferred or permitted for use is an intellectual property right of any kind
+compounds:
+- id: C_SCHII_EN5_CB_E1_N1
+  question: 'Schedule II, paragraph 5(b), Explanation, sub-item (1): which clause applies?'
+  includes:
+  - M_DOCACE_LE_CADO
+  - M_CALS_LE_CADM
+  - M_CAA_LE_CAO
+  produces:
+  - product: M_DOCACE_PD_CADO
+    from:
+    - M_DOCACE_LE_CADO
+  - product: M_CALS_PD_CADM
+    from:
+    - M_CALS_LE_CADM
+  - product: M_CAA_PD_CAO
+    from:
+    - M_CAA_LE_CAO
+- id: C_LOLIS
+  question: The transaction is an easement over land? (Schedule II, paragraph 2)
+  includes:
+  - M_LOLIS_LE_TIEOL
+  produces:
+  - product: M_LOLIS_PD_TIEOL
+    from:
+    - M_LOLIS_LE_TIEOL
+- id: C_SCHII_EN5
+  question: 'Schedule II, paragraph 5: which clause applies?'
+  includes:
+  - M_ROIPS_LE_RTASS
+  - M_TTOIPS_LE_RIIP
+  produces:
+  - product: M_ROIPS_PD_RTASS
+    from:
+    - M_ROIPS_LE_RTASS
+  - product: M_TTOIPS_PD_RIIP
+    from:
+    - M_TTOIPS_LE_RIIP
+time:
+  law_date: F_DOI

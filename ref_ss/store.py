@@ -6,8 +6,11 @@ ref_document  one row per outside document (fixed ID from ref_ss/ids.py): kind, 
               link_status (set while splitting by ref_ss/link.py, or by ref_engine.py): OK / BAD / NOT_FOUND
               The document status says only whether we have the document's file - not whether a law of it is made.
 mkp_ref       which MKP refers to which document (and to which provision of it): one row per reference.
-              target_status: INSERTED when the exact law it points to has a saved MKP, else PENDING
-              (update_target_status, at the end of every run).
+              target_status: INSERTED when the exact clause it points to has an approved, latest AKP (the AKP
+              table of Config/settings.json, 2026-11-19 - per clause, not per document), else PENDING
+              (update_target_status, at the end of every run); QUEUED while the automatic step after the
+              workers runs it, FAILED when that run failed (bug list C3). source_key: the exact part of an outside
+              document the law needs (its IKP key), found after the download.
               Deleting an MKP deletes its mkp_ref rows (db_migrate.py trigger); the ref_document row stays.
 """
 from __future__ import annotations
@@ -17,6 +20,13 @@ from typing import Dict, Iterable, List, Optional
 from psycopg2 import sql
 
 FINAL = ("INSERTED",)
+# "Inserted by" / "Substituted vide" ... in front of a document's name (bug list C14)
+TITLE_VERB = r"^\s*(?:inserted|substituted|omitted|added|amended|renumbered)\s+(?:by|vide)\s+"
+
+
+def clean_title(title: str) -> str:
+    import re
+    return re.sub(TITLE_VERB, "", str(title or ""), flags=re.I).strip()
 RANK = {"PENDING": 0, "SKIPPED": 0, "LINK_BAD": 1, "NOT_FOUND": 1, "FAILED": 1, "LINK_FOUND": 2, "DOWNLOADED": 3,
         "VERIFIED": 4, "QUEUED": 5, "INSERTED": 6}
 
@@ -51,6 +61,12 @@ class RefStore:
             # the status of the exact law each reference points to (INSERTED = it has a saved MKP; else PENDING)
             cur.execute(sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS target_status text NOT NULL DEFAULT 'PENDING'")
                         .format(self.t(self.link_t)))
+            # bug list C: the exact part of an outside document a law needs (its IKP key), set after the workers
+            cur.execute(sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS source_key text NOT NULL DEFAULT ''")
+                        .format(self.t(self.link_t)))
+            # bug list C14: a title saved with the footnote's verb in front ("Inserted by The Central ...")
+            cur.execute(sql.SQL(r"""UPDATE {} SET title = regexp_replace(title, %s, '', 'i'), updated_at = now()
+                WHERE title ~* %s""").format(self.t(self.doc_t)), (TITLE_VERB, TITLE_VERB))
             cur.execute(sql.SQL("CREATE INDEX IF NOT EXISTS {} ON {} (ref_id)").format(
                 sql.Identifier(f"{self.link_t}_ref_idx"), self.t(self.link_t)))
             cur.execute(sql.SQL("CREATE INDEX IF NOT EXISTS {} ON {} (status)").format(
@@ -89,8 +105,8 @@ class RefStore:
                 status = CASE WHEN EXCLUDED.status = 'INSERTED' THEN 'INSERTED'
                               WHEN {}.status = 'SKIPPED' AND EXCLUDED.status = 'PENDING' THEN 'PENDING'
                               ELSE {}.status END""").format(self.t(self.doc_t), *[sql.Identifier(self.doc_t)] * 6),
-                        (r["ref_id"], r["kind"], r["mention"], r.get("number"), r.get("year"), r.get("series"),
-                         status, code, element))
+                        (r["ref_id"], r["kind"], clean_title(r["mention"]), r.get("number"), r.get("year"),
+                         r.get("series"), status, code, element))
         return n
 
     def mark_inserted(self, ref_id: str, doc_code: str, title: str = "", kind: str = "") -> None:
@@ -144,24 +160,35 @@ class RefStore:
         from transport import get_field
         return [{"mkp": e, "mention": m, "text": get_field({"RESULTS": r or ""}, "text")[:1500]} for e, m, r in rows]
 
-    def update_target_status(self, mkp_table: str) -> int:
-        """mkp_ref.target_status for every reference, at the end of every run: INSERTED when the exact law it points
-        to has a saved (latest) MKP - target_key CGSTA17_SCHI needs an MKP of CGSTA17_SCHI or of a part of it; a
-        reference to a whole outside document (no target_key) needs an MKP of that document. Else PENDING."""
-        m = self.t(mkp_table)
+    def update_target_status(self, akp_table: str, view: str = "") -> int:
+        """mkp_ref.target_status for every reference, at the end of every run (reference design 2026-11-19):
+        INSERTED when the exact clause it needs has an approved, latest AKP - target_key CGSTA17_SCHI needs an AKP of
+        CGSTA17_SCHI or of a part of it; an outside document needs an AKP of every part in source_key (no source_key
+        yet = PENDING). FAILED stays FAILED until inserted; else PENDING. view: the document -> inserted clauses view."""
+        a = self.t(akp_table)
+        done = sql.SQL(r"""EXISTS (SELECT 1 FROM {a} x WHERE x.is_latest AND x.validation_status = 'APPROVED'
+            AND (split_part(x.source_mkp, '#', 1) = {k}
+                 OR split_part(x.source_mkp, '#', 1) LIKE replace({k}, '_', '\_') || '\_%'))""")
         with self.conn.cursor() as cur:
-            cur.execute(sql.SQL(r"""UPDATE {} l SET target_status = CASE WHEN EXISTS (
-                    SELECT 1 FROM {} m WHERE m.type = 'MKP' AND COALESCE(m.is_latest, true)
-                    AND (split_part(m.element, '#', 1) = l.target_key
-                         OR split_part(m.element, '#', 1) LIKE replace(l.target_key, '_', '\_') || '\_%'))
-                THEN 'INSERTED' ELSE 'PENDING' END WHERE l.target_key <> ''""").format(self.t(self.link_t), m))
+            cur.execute(sql.SQL("""UPDATE {l} SET target_status = CASE WHEN {done} THEN 'INSERTED'
+                WHEN target_status = 'FAILED' THEN 'FAILED' ELSE 'PENDING' END WHERE target_key <> ''""").format(
+                l=self.t(self.link_t), done=done.format(a=a, k=sql.SQL("target_key"))))
             n = cur.rowcount
-            cur.execute(sql.SQL("""UPDATE {} l SET target_status = CASE WHEN EXISTS (
-                    SELECT 1 FROM {} d JOIN {} m ON m.instrument_code = d.doc_code AND m.type = 'MKP'
-                    AND COALESCE(m.is_latest, true) WHERE d.ref_id = l.ref_id AND d.doc_code <> '')
-                THEN 'INSERTED' ELSE 'PENDING' END WHERE l.target_key = ''""").format(
-                self.t(self.link_t), self.t(self.doc_t), m))
+            cur.execute(sql.SQL("""UPDATE {l} SET target_status = CASE WHEN COALESCE(source_key, '') <> ''
+                AND NOT EXISTS (SELECT 1 FROM unnest(string_to_array(source_key, ',')) p WHERE NOT {done})
+                THEN 'INSERTED' WHEN target_status = 'FAILED' THEN 'FAILED' ELSE 'PENDING' END
+                WHERE target_key = ''""").format(l=self.t(self.link_t), done=done.format(a=a, k=sql.SQL("p"))))
             n += cur.rowcount
+            if view:
+                cur.execute(sql.SQL("""CREATE OR REPLACE VIEW {v} AS
+                    SELECT d.ref_id, d.kind, d.title, d.doc_code, d.status AS document_status,
+                           count(DISTINCT split_part(x.source_mkp, '#', 1)) AS inserted_clauses,
+                           COALESCE(string_agg(DISTINCT split_part(x.source_mkp, '#', 1), ', '), '') AS clauses
+                    FROM {d} d LEFT JOIN {a} x ON x.instrument = d.doc_code AND x.is_latest
+                         AND x.validation_status = 'APPROVED'
+                    WHERE d.doc_code <> ''
+                    GROUP BY d.ref_id, d.kind, d.title, d.doc_code, d.status""").format(
+                    v=self.t(view), d=self.t(self.doc_t), a=a))
         self.conn.commit()
         return n
 

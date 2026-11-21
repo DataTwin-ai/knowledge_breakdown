@@ -1,0 +1,86 @@
+# GOVERNANCE MASTER TSG06_05 Taxable Person Cessation Status (TG06 Parties & Registration)
+# LAW ARC - 1 laws - status APPROVED
+name: TSG06_05 Taxable Person Cessation Status - GOVERNANCE MASTER rulebook
+version: TSG06_05
+facts:
+  F_PTSC:
+    name: Person Taxable Status Change
+    type: CODE
+    options:
+    - CEASED
+    - NOT_CEASED
+    - UNKNOWN
+    tier: T0
+  F_GBAS:
+    name: Goods Business Asset Status
+    type: CODE
+    options:
+    - ASSET_OF_BUSINESS
+    - NOT_ASSET_OF_BUSINESS
+    - UNKNOWN
+    tier: T0
+  F_BTS:
+    name: Business Transfer Status
+    type: CODE
+    options:
+    - TO_ANOTHER_PERSON_AS_GOING_CONCERN
+    - NOT_TRANSFERRED_AS_GOING_CONCERN
+    - UNKNOWN
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_BTAGC_A_PCTS:
+    statement: Where any person ceases to be a taxable person
+    order: LOW
+    rule: F_PTSC = 'CEASED'
+    handler: python
+  M_BTAGC_A_GABA:
+    statement: Goods form part of the assets of any business carried on by the person
+    order: HIGH
+    interpretation: Do the goods form part of the assets of a business carried on by the person, as shown by the asset register
+      and books of account?
+    grounding:
+    - F_GBAS
+    handler: light
+  M_BTAGC_A_BTAGC:
+    statement: The business is transferred as a going concern to another person
+    order: HIGH
+    interpretation: Has the business been transferred to another person as a going concern, rather than only individual goods
+      being sold or the business being discontinued?
+    grounding:
+    - F_BTS
+    handler: heavy
+groups:
+  M_BTAGC_G_DCM:
+    name: Deeming Conditions Met
+    logic: ALL
+    members:
+    - M_BTAGC_A_PCTS
+    - M_BTAGC_A_GABA
+    description: Both the cessation of taxable person status and the goods being business assets must hold for the deeming
+      to arise.
+outcomes:
+  M_BTAGC_LE_GDS:
+    outcome: DEEMED_SUPPLY_OF_GOODS
+    expr: M_BTAGC_G_DCM AND NOT M_BTAGC_A_BTAGC
+    module: M_BTAGC
+    description: The goods are deemed supplied when the deeming conditions hold and the business is not transferred as a going
+      concern to another person.
+products:
+  M_BTAGC_PD_GDS:
+    statement: The goods are deemed supplied when the deeming conditions hold and the business is not transferred as a going
+      concern to another person.
+compounds:
+- id: C_BTAGC
+  question: 'Schedule II, paragraph 4(c)(i): Business Transferred As Going Concern?'
+  includes:
+  - M_BTAGC_LE_GDS
+  produces:
+  - product: M_BTAGC_PD_GDS
+    from:
+    - M_BTAGC_LE_GDS
+time:
+  law_date: F_DOI

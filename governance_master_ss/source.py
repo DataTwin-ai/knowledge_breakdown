@@ -35,6 +35,8 @@ class Snapshot:
     time_facts: List[dict] = field(default_factory=list)
     questions: Dict[str, str] = field(default_factory=dict)
     definitions: List[dict] = field(default_factory=list)
+    # bug list C1: outside-document parts a law needs (mkp_ref.source_key) - the citing atom is wired to them
+    references: List[dict] = field(default_factory=list)
 
     def digest(self) -> str:
         return hashlib.sha256(json.dumps(asdict(self), sort_keys=True, default=str).encode("utf-8")).hexdigest()
@@ -76,7 +78,8 @@ def from_db(conn, schema: str, tables: Dict[str, str], instruments: List[str]) -
     """Read the latest IKP-GKP rows of the given instruments (all MKPs: links may point anywhere in them)."""
     s = Snapshot()
     # the akp table has no element column: the abbreviated akp_id is the element id (notes section 3)
-    cols = ", ".join("akp_id AS element" if c == "element" else c for c in AKP_COLS)
+    cols = ", ".join("akp_id AS element" if c == "element" else "CASE WHEN type = 'A_REF' THEN akp_id END AS same_akp_id" if c == "same_akp_id"
+                     else c for c in AKP_COLS)          # an A_REF row's akp_id is the saved atom's id
     akp = _rows(conn, sql.SQL("SELECT " + cols + " FROM {} WHERE is_latest AND instrument = ANY(%s) "
                               "AND COALESCE(validation_status, 'APPROVED') <> 'SUPERSEDED' "
                               "ORDER BY instrument, source_mkp, ordinal").format(_t(schema, tables["akp"])),
@@ -114,5 +117,11 @@ def from_db(conn, schema: str, tables: Dict[str, str], instruments: List[str]) -
                                    (list(instruments),)):
             s.definitions.append({"term": term, "defined_in": parse_results(results or "").get("defined_in", "")})
     except Exception:
+        conn.rollback()
+    try:                                                 # the parts of outside documents each law needs (bug list C1)
+        s.references = [dict(zip(("source_mkp", "ref_id", "mention", "relation", "source_key"), r)) for r in _rows(
+            conn, sql.SQL("SELECT mkp_element, ref_id, mention, relation, source_key FROM {} WHERE scope='CROSS' "
+                          "AND COALESCE(source_key, '') <> ''").format(_t(schema, tables["ref_link"])))]
+    except Exception:                                    # no reference table yet
         conn.rollback()
     return s

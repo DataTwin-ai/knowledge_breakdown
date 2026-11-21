@@ -1,0 +1,355 @@
+# GOVERNANCE MASTER TSG02_04 Compensation cess (TG02 Classification & Rate)
+# LAW ARC - 5 laws - status APPROVED
+name: TSG02_04 Compensation cess - GOVERNANCE MASTER rulebook
+version: TSG02_04
+facts:
+  F_LICC:
+    name: Levy Is Compensation Cess
+    type: BOOLEAN
+    tier: T1
+  F_SCW:
+    name: Statutory Context Wording
+    type: TEXT
+    tier: T1
+  F_DCS:
+    name: Definition Context Status
+    type: CODE
+    options:
+    - CONTEXT_REQUIRES_OTHER_MEANING
+    - NO_CONTRARY_CONTEXT
+    - UNKNOWN
+    tier: T1
+  F_IMS:
+    name: Item Mobility Status
+    type: CODE
+    options:
+    - IMMOVABLE
+    - MOVABLE
+    - UNKNOWN
+    tier: T1
+  F_AOTD:
+    name: Activity Or Transaction Description
+    type: TEXT
+    tier: T1
+  F_IC:
+    name: Item Classification
+    type: CODE
+    options:
+    - MONEY
+    - SECURITIES
+    - ACTIONABLE_CLAIM
+    - GROWING_CROPS
+    - GRASS
+    - ATTACHED_TO_LAND
+    - OTHER
+    - UNKNOWN
+    tier: T1
+  F_AST:
+    name: Agreement Severance Type
+    type: CODE
+    options:
+    - BEFORE_SUPPLY
+    - UNDER_CONTRACT_OF_SUPPLY
+    - NO_AGREEMENT
+    - UNKNOWN
+    tier: T1
+  F_TBD:
+    name: Term Being Defined
+    type: TEXT
+    tier: T1
+  F_DTFM:
+    name: Defined Term Full Meaning
+    type: TEXT
+    tier: T0
+  F_SIK:
+    name: Supply Item Kind
+    type: CODE
+    options:
+    - BOTH
+    - CAPITAL_GOODS
+    - GOODS
+    - OTHER
+    - SERVICES
+    - UNKNOWN
+    tier: T1
+  F_IIM:
+    name: Item Is Money
+    type: BOOLEAN
+    tier: T1
+  F_IIS:
+    name: Item Is Securities
+    type: BOOLEAN
+    tier: T1
+  F_PAD:
+    name: Person Activity Description
+    type: TEXT
+    tier: T1
+  F_SCICFA:
+    name: Separate Consideration Is Charged For Activity
+    type: BOOLEAN
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_DOC_A_LCCCM:
+    statement: The term cess applies to the levy with the meaning assigned to it in the Goods and Services Tax (Compensation
+      to States) Act
+    order: HIGH
+    interpretation: Does the Compensation to States Act assign the cess meaning to this levy?
+    grounding:
+    - F_LICC
+    handler: light
+  M_DOC_A_CDNROM:
+    statement: The statutory context of this Act does not otherwise require a meaning of cess different from the Compensation
+      to States Act meaning
+    order: HIGH
+    if_false: the context requires a different meaning of cess
+    interpretation: Does the statutory context of the provision wording require a meaning of cess different from the Compensation
+      to States Act meaning?
+    grounding:
+    - F_SCW
+    handler: heavy
+  M_DOGO_A_CDNROM:
+    statement: The context in which the term 'goods' is used does not require a different meaning.
+    order: LOW
+    rule: F_DCS = 'NO_CONTRARY_CONTEXT'
+    handler: python
+  M_DOGO_A_TIIMP:
+    statement: The item is a kind of movable property.
+    order: HIGH
+    interpretation: Based on the item's description and nature, is it considered movable property?
+    grounding:
+    - F_IMS
+    - F_AOTD
+    handler: heavy
+  M_DOGO_A_TIINM:
+    statement: The item is other than money.
+    order: LOW
+    rule: F_IC != 'MONEY'
+    handler: python
+  M_DOGO_A_TIINS:
+    statement: The item is other than securities.
+    order: LOW
+    rule: F_IC != 'SECURITIES'
+    handler: python
+  M_DOGO_A_TIIAAC:
+    statement: The item is an actionable claim.
+    order: LOW
+    rule: F_IC = 'ACTIONABLE_CLAIM'
+    handler: python
+  M_DOGO_A_TIIGC:
+    statement: The item is growing crops.
+    order: LOW
+    rule: F_IC = 'GROWING_CROPS'
+    handler: python
+  M_DOGO_A_TIIG:
+    statement: The item is grass.
+    order: LOW
+    rule: F_IC = 'GRASS'
+    handler: python
+  M_DOGO_A_IIATL:
+    statement: The item is a thing attached to or forming part of the land.
+    order: LOW
+    rule: F_IC = 'ATTACHED_TO_LAND'
+    handler: python
+  M_DOGO_A_IIATBS:
+    statement: The thing is agreed to be severed before supply or under a contract of supply.
+    order: LOW
+    rule: F_AST IN ['BEFORE_SUPPLY', 'UNDER_CONTRACT_OF_SUPPLY']
+    handler: python
+  M_DOGCTSA_A_GCAD:
+    statement: The term "Goods and Services Tax (Compensation to States) Act" means the Goods and Services Tax (Compensation
+      to States) Act, 2017.
+    order: LOW
+    rule: F_TBD = 'Goods AND Services Tax (Compensation to States) Act' AND F_DTFM = 'the Goods AND Services Tax (Compensation
+      to States) Act, 2017'
+    handler: python
+  M_DOGCTSA_A_CROM:
+    statement: The context otherwise requires a different meaning for the term "Goods and Services Tax (Compensation to States)
+      Act".
+    order: HIGH
+    interpretation: Does the context in which the term "Goods and Services Tax (Compensation to States) Act" is used require
+      a meaning other than that provided in Section 2(54)?
+    grounding:
+    - F_DCS
+    handler: heavy
+  M_SITIS_A_SIST:
+    statement: The expression 'services' includes facilitating or arranging transactions in securities.
+    order: HIGH
+    interpretation: Does the activity constitute facilitating or arranging transactions in securities?
+    grounding:
+    - F_AOTD
+    handler: heavy
+    valid_from: '2019-02-01'
+  M_DOS2_A_DAUCRO:
+    statement: The definition of 'services' in Section 2(102) applies, as the context does not require a different meaning.
+    order: HIGH
+    interpretation: Does the context in which the term 'services' is used in the Act require a different meaning than the
+      one given in Section 2(102)?
+    grounding:
+    - F_DCS
+    handler: heavy
+  M_DOS2_A_TSING:
+    statement: The subject of the transaction is not 'goods'.
+    order: HIGH
+    interpretation: Based on the item's nature and the definition in Section 2(52), is the item classified as 'goods'?
+    grounding:
+    - F_SIK
+    handler: light
+  M_DOS2_A_TSINM:
+    statement: The subject of the transaction is not 'money'.
+    order: HIGH
+    interpretation: Based on the item's nature and the definition in Section 2(75), is the item classified as 'money'?
+    grounding:
+    - F_IIM
+    handler: light
+  M_DOS2_A_TSINS:
+    statement: The subject of the transaction is not 'securities'.
+    order: HIGH
+    interpretation: Based on the item's nature and the definition in Section 2(101), is the item classified as 'securities'?
+    grounding:
+    - F_IIS
+    handler: light
+  M_DOS2_A_ARTUOCOM:
+    statement: The activity relates to the use of money or its conversion by cash or by any other mode, from one form, currency
+      or denomination, to another.
+    order: HIGH
+    interpretation: Does the described activity relate to the use of money or its conversion (e.g., currency exchange, forex
+      services, arranging loans)?
+    grounding:
+    - F_PAD
+    handler: heavy
+  M_DOS2_A_SCICFTA:
+    statement: A separate consideration is charged for the activity.
+    order: LOW
+    rule: F_SCICFA = TRUE
+    handler: python
+groups:
+  M_DOC_G_CCMA:
+    name: Compensation Cess Meaning Applies
+    logic: ALL
+    members:
+    - M_DOC_A_LCCCM
+    - M_DOC_A_CDNROM
+    description: Both the levy meaning test and the no context override test must hold
+  M_DOGO_G_GBCD:
+    name: Goods By Core Definition
+    logic: ALL
+    members:
+    - M_DOGO_A_TIIMP
+    - M_DOGO_A_TIINM
+    - M_DOGO_A_TIINS
+  M_DOGO_G_GBSI:
+    name: Goods By Specific Inclusion
+    logic: ANY
+    members:
+    - M_DOGO_A_TIIAAC
+    - M_DOGO_A_TIIGC
+    - M_DOGO_A_TIIG
+    - M_DOGO_G_ATLAATBS
+  M_DOGO_G_ATLAATBS:
+    name: Attached To Land And Agreed To Be Severed
+    logic: ALL
+    members:
+    - M_DOGO_A_IIATL
+    - M_DOGO_A_IIATBS
+  M_DOS2_G_SC:
+    name: Service Criteria
+    logic: ANY
+    members:
+    - M_DOS2_G_BDOS
+    - M_DOS2_G_IFMA
+  M_DOS2_G_BDOS:
+    name: Base Definition Of Service
+    logic: ALL
+    members:
+    - M_DOS2_A_TSING
+    - M_DOS2_A_TSINM
+    - M_DOS2_A_TSINS
+  M_DOS2_G_IFMA:
+    name: Inclusion For Money-Related Activities
+    logic: ALL
+    members:
+    - M_DOS2_A_ARTUOCOM
+    - M_DOS2_A_SCICFTA
+outcomes:
+  M_DOC_LE_C:
+    outcome: CESS_COMPENSATION_MEANING_APPLIES
+    expr: M_DOC_G_CCMA
+    module: M_DOC
+    description: Cess takes the Compensation to States Act meaning only when both the levy test and the no context override
+      test hold
+  M_DOGO_LE_DOIAG:
+    outcome: IS_GOODS
+    expr: M_DOGO_A_CDNROM AND (M_DOGO_G_GBCD OR M_DOGO_G_GBSI)
+    module: M_DOGO
+  M_DOGCTSA_LE_DOGCTSAA:
+    outcome: TERM_DEFINED_AS_PER_ACT
+    expr: M_DOGCTSA_A_GCAD AND NOT M_DOGCTSA_A_CROM
+    module: M_DOGCTSA
+  M_SITIS_LE_SIS:
+    outcome: IS_SERVICE
+    expr: M_SITIS_A_SIST
+    module: M_SITIS
+    description: Determines if the activity is considered a service based on this clarification.
+  M_DOS2_LE_TTIAS:
+    outcome: IS_SERVICE
+    expr: M_DOS2_A_DAUCRO AND M_DOS2_G_SC
+    module: M_DOS2
+products:
+  M_DOC_PD_C:
+    statement: Cess takes the Compensation to States Act meaning only when both the levy test and the no context override
+      test hold
+  M_DOGO_PD_DOIAG:
+    statement: IS_GOODS
+  M_DOGCTSA_PD_DOGCTSAA:
+    statement: TERM_DEFINED_AS_PER_ACT
+  M_SITIS_PD_SIS:
+    statement: Determines if the activity is considered a service based on this clarification.
+  M_DOS2_PD_TTIAS:
+    statement: IS_SERVICE
+compounds:
+- id: C_DOC
+  question: 'Section 2(22): Definition Of Cess?'
+  includes:
+  - M_DOC_LE_C
+  produces:
+  - product: M_DOC_PD_C
+    from:
+    - M_DOC_LE_C
+- id: C_DOGO
+  question: 'Section 2(52): Definition Of Goods?'
+  includes:
+  - M_DOGO_LE_DOIAG
+  produces:
+  - product: M_DOGO_PD_DOIAG
+    from:
+    - M_DOGO_LE_DOIAG
+- id: C_DOGCTSA
+  question: 'Section 2(54): Definition Of GST Compensation To States Act?'
+  includes:
+  - M_DOGCTSA_LE_DOGCTSAA
+  produces:
+  - product: M_DOGCTSA_PD_DOGCTSAA
+    from:
+    - M_DOGCTSA_LE_DOGCTSAA
+- id: C_SITIS
+  question: 'Explanation to clause (102) of section 2: Services Includes Transactions In Securities?'
+  includes:
+  - M_SITIS_LE_SIS
+  produces:
+  - product: M_SITIS_PD_SIS
+    from:
+    - M_SITIS_LE_SIS
+- id: C_DOS2
+  question: 'Section 2(102): Definition Of Services?'
+  includes:
+  - M_DOS2_LE_TTIAS
+  produces:
+  - product: M_DOS2_PD_TTIAS
+    from:
+    - M_DOS2_LE_TTIAS
+time:
+  law_date: F_DOI

@@ -1,0 +1,746 @@
+# GOVERNANCE MASTER TSG03_01 Intra / inter-State (TG03 Location & Tax Type)
+# LAW ARC - 12 laws - status NEEDS_REVIEW
+name: TSG03_01 Intra / inter-State - GOVERNANCE MASTER rulebook
+version: TSG03_01
+facts:
+  F_SISS:
+    name: Supply Intra State Status
+    type: CODE
+    options:
+    - INTER_STATE
+    - INTRA_STATE
+    - UNKNOWN
+    tier: T1
+  F_SIK:
+    name: Supply Item Kind
+    type: CODE
+    options:
+    - BOTH
+    - CAPITAL_GOODS
+    - GOODS
+    - OTHER
+    - SERVICES
+    - UNKNOWN
+    tier: T1
+  F_SCSST:
+    name: Supply Cites Sub Section Two
+    type: CODE
+    options:
+    - CITED_SUB_SECTION_2
+    - NOT_CITED
+    - UNKNOWN
+    tier: T1
+  F_DOS:
+    name: Description Of Supply
+    type: TEXT
+    tier: T1
+  F_SIS3:
+    name: Supply Inter-State Status
+    type: BOOLEAN
+    tier: T0
+  F_SCW:
+    name: Statutory Context Wording
+    type: TEXT
+    tier: T1
+  F_DCS:
+    name: Definition Context Status
+    type: CODE
+    options:
+    - CONTEXT_REQUIRES_OTHER_MEANING
+    - NO_CONTRARY_CONTEXT
+    - UNKNOWN
+    tier: T1
+  F_IMS:
+    name: Item Mobility Status
+    type: CODE
+    options:
+    - IMMOVABLE
+    - MOVABLE
+    - UNKNOWN
+    tier: T1
+  F_AOTD:
+    name: Activity Or Transaction Description
+    type: TEXT
+    tier: T1
+  F_IC:
+    name: Item Classification
+    type: CODE
+    options:
+    - MONEY
+    - SECURITIES
+    - ACTIONABLE_CLAIM
+    - GROWING_CROPS
+    - GRASS
+    - ATTACHED_TO_LAND
+    - OTHER
+    - UNKNOWN
+    tier: T1
+  F_AST:
+    name: Agreement Severance Type
+    type: CODE
+    options:
+    - BEFORE_SUPPLY
+    - UNDER_CONTRACT_OF_SUPPLY
+    - NO_AGREEMENT
+    - UNKNOWN
+    tier: T1
+  F_TBD:
+    name: Term Being Defined
+    type: TEXT
+    tier: T1
+  F_IIM:
+    name: Item Is Money
+    type: BOOLEAN
+    tier: T1
+  F_IIS:
+    name: Item Is Securities
+    type: BOOLEAN
+    tier: T1
+  F_PAD:
+    name: Person Activity Description
+    type: TEXT
+    tier: T1
+  F_SCICFA:
+    name: Separate Consideration Is Charged For Activity
+    type: BOOLEAN
+    tier: T1
+  F_TK:
+    name: Territory Kind
+    type: CODE
+    options:
+    - OTHER
+    - STATE
+    - UNION_TERRITORY_WITH_LEGISLATURE
+    - UNION_TERRITORY_WITHOUT_LEGISLATURE
+    - UNKNOWN
+    tier: T1
+  F_FOS:
+    name: Form Of Supply
+    type: CODE
+    options:
+    - BARTER
+    - DISPOSAL
+    - EXCHANGE
+    - LEASE
+    - LICENCE
+    - OTHER
+    - RENTAL
+    - SALE
+    - TRANSFER
+    tier: T1
+  F_SES:
+    name: Supply Execution Status
+    type: CODE
+    options:
+    - AGREED_TO_BE_MADE
+    - BOTH
+    - MADE
+    - NEITHER
+    - UNKNOWN
+    tier: T1
+  F_SCT:
+    name: Supply Consideration Type
+    type: CODE
+    options:
+    - BOTH
+    - MONEY
+    - NONE
+    - NON_MONEY
+    tier: T1
+  F_SLS:
+    name: Supplier Legal Status
+    type: TEXT
+    tier: T0
+  F_SIS:
+    name: Service Import Status
+    type: CODE
+    options:
+    - IMPORTED
+    - NOT_IMPORTED
+    - UNKNOWN
+    tier: T1
+  F_SCS:
+    name: Supply Consideration Status
+    type: CODE
+    options:
+    - AGREED
+    - NONE
+    - PAID
+    tier: T1
+  F_ASC:
+    name: Activity Status Code
+    type: CODE
+    options:
+    - MADE
+    - AGREED
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_ATD_A_SII:
+    statement: The supply is an inter-State supply
+    order: LOW
+    rule: F_SIS3 = TRUE
+    handler: python
+  M_DOISOS_A_CDNRO:
+    statement: The context in which the term is used does not otherwise require a different meaning for the term, so the definition
+      in this Act applies
+    order: HIGH
+    if_false: the provision wording shows that the context otherwise requires a different meaning
+    interpretation: Does the wording of the provision where the term is used show that the context otherwise requires a different
+      meaning?
+    grounding:
+    - F_SCW
+    handler: heavy
+  M_DOISOS_A_CISM:
+    statement: The term intra-State supply of services carries the meaning assigned to it in section 8 of the Integrated Goods
+      and Services Tax Act
+    order: HIGH
+    interpretation: Is the term used in this provision governed by the meaning given in section 8 of the Integrated Goods
+      and Services Tax Act, which is not loaded in this law?
+    grounding:
+    - F_SCW
+    handler: heavy
+  M_DOGO_A_CDNROM:
+    statement: The context in which the term 'goods' is used does not require a different meaning.
+    order: LOW
+    rule: F_DCS = 'NO_CONTRARY_CONTEXT'
+    handler: python
+  M_DOGO_A_TIIMP:
+    statement: The item is a kind of movable property.
+    order: HIGH
+    interpretation: Based on the item's description and nature, is it considered movable property?
+    grounding:
+    - F_IMS
+    - F_AOTD
+    handler: heavy
+  M_DOGO_A_TIINM:
+    statement: The item is other than money.
+    order: LOW
+    rule: F_IC != 'MONEY'
+    handler: python
+  M_DOGO_A_TIINS:
+    statement: The item is other than securities.
+    order: LOW
+    rule: F_IC != 'SECURITIES'
+    handler: python
+  M_DOGO_A_TIIAAC:
+    statement: The item is an actionable claim.
+    order: LOW
+    rule: F_IC = 'ACTIONABLE_CLAIM'
+    handler: python
+  M_DOGO_A_TIIGC:
+    statement: The item is growing crops.
+    order: LOW
+    rule: F_IC = 'GROWING_CROPS'
+    handler: python
+  M_DOGO_A_TIIG:
+    statement: The item is grass.
+    order: LOW
+    rule: F_IC = 'GRASS'
+    handler: python
+  M_DOGO_A_IIATL:
+    statement: The item is a thing attached to or forming part of the land.
+    order: LOW
+    rule: F_IC = 'ATTACHED_TO_LAND'
+    handler: python
+  M_DOGO_A_IIATBS:
+    statement: The thing is agreed to be severed before supply or under a contract of supply.
+    order: LOW
+    rule: F_AST IN ['BEFORE_SUPPLY', 'UNDER_CONTRACT_OF_SUPPLY']
+    handler: python
+  M_DOIA_A_DOIGASTA:
+    statement: '"Integrated Goods and Services Tax Act" means the Integrated Goods and Services Tax Act, 2017.'
+    order: LOW
+    rule: F_TBD = 'Integrated Goods AND Services Tax Act'
+    handler: python
+  M_DOIA_A_CDNRO:
+    statement: The context in which the term 'Integrated Goods and Services Tax Act' is used does not require a meaning other
+      than the one provided in this definition.
+    order: HIGH
+    interpretation: Does the specific context in which 'Integrated Goods and Services Tax Act' is used imply a meaning different
+      from its statutory definition? If the context does NOT require a different meaning, this condition is met.
+    grounding:
+    - F_DCS
+    handler: heavy
+  M_SITIS_A_SIST:
+    statement: The expression 'services' includes facilitating or arranging transactions in securities.
+    order: HIGH
+    interpretation: Does the activity constitute facilitating or arranging transactions in securities?
+    grounding:
+    - F_AOTD
+    handler: heavy
+    valid_from: '2019-02-01'
+  M_DOS2_A_DAUCRO:
+    statement: The definition of 'services' in Section 2(102) applies, as the context does not require a different meaning.
+    order: HIGH
+    interpretation: Does the context in which the term 'services' is used in the Act require a different meaning than the
+      one given in Section 2(102)?
+    grounding:
+    - F_DCS
+    handler: heavy
+  M_DOS2_A_TSING:
+    statement: The subject of the transaction is not 'goods'.
+    order: HIGH
+    interpretation: Based on the item's nature and the definition in Section 2(52), is the item classified as 'goods'?
+    grounding:
+    - F_SIK
+    handler: light
+  M_DOS2_A_TSINM:
+    statement: The subject of the transaction is not 'money'.
+    order: HIGH
+    interpretation: Based on the item's nature and the definition in Section 2(75), is the item classified as 'money'?
+    grounding:
+    - F_IIM
+    handler: light
+  M_DOS2_A_TSINS:
+    statement: The subject of the transaction is not 'securities'.
+    order: HIGH
+    interpretation: Based on the item's nature and the definition in Section 2(101), is the item classified as 'securities'?
+    grounding:
+    - F_IIS
+    handler: light
+  M_DOS2_A_ARTUOCOM:
+    statement: The activity relates to the use of money or its conversion by cash or by any other mode, from one form, currency
+      or denomination, to another.
+    order: HIGH
+    interpretation: Does the described activity relate to the use of money or its conversion (e.g., currency exchange, forex
+      services, arranging loans)?
+    grounding:
+    - F_PAD
+    handler: heavy
+  M_DOS2_A_SCICFTA:
+    statement: A separate consideration is charged for the activity.
+    order: LOW
+    rule: F_SCICFA = TRUE
+    handler: python
+  M_DOSIUT_A_CNOM:
+    statement: In this Act, the context does not otherwise require a different meaning for 'State'
+    order: HIGH
+    interpretation: Does the specific context in which 'State' is used in this Act require a meaning other than the one provided
+      in this definition?
+    grounding:
+    - F_DCS
+    handler: heavy
+  M_DOSIUT_A_SIUTWL:
+    statement: The term 'State' includes a Union territory with Legislature
+    order: LOW
+    rule: F_TK = 'UNION_TERRITORY_WITH_LEGISLATURE'
+    handler: python
+  M_SIAFOS_A_SIAS:
+    statement: The supply of goods or services or both is a sale
+    order: LOW
+    rule: F_FOS = 'SALE'
+    handler: python
+  M_SIAFOS_A_SIAT:
+    statement: The supply of goods or services or both is a transfer
+    order: LOW
+    rule: F_FOS = 'TRANSFER'
+    handler: python
+  M_SIAFOS_A_SIAB:
+    statement: The supply of goods or services or both is a barter
+    order: LOW
+    rule: F_FOS = 'BARTER'
+    handler: python
+  M_SIAFOS_A_SIAE:
+    statement: The supply of goods or services or both is an exchange
+    order: LOW
+    rule: F_FOS = 'EXCHANGE'
+    handler: python
+  M_SIAFOS_A_SIALG:
+    statement: The supply of goods or services or both is a licence
+    order: LOW
+    rule: F_FOS = 'LICENCE'
+    handler: python
+  M_SIAFOS_A_SIAR:
+    statement: The supply of goods or services or both is a rental
+    order: LOW
+    rule: F_FOS = 'RENTAL'
+    handler: python
+  M_SIAFOS_A_SIAL:
+    statement: The supply of goods or services or both is a lease
+    order: LOW
+    rule: F_FOS = 'LEASE'
+    handler: python
+  M_SIAFOS_A_SIAD:
+    statement: The supply of goods or services or both is a disposal
+    order: LOW
+    rule: F_FOS = 'DISPOSAL'
+    handler: python
+  M_SIAFOS_A_SIAF:
+    statement: The supply of goods or services or both takes another form of supply that is not one of the listed examples
+      of sale, transfer, barter, exchange, licence, rental, lease or disposal
+    order: HIGH
+    interpretation: Does the described transaction amount to a form of supply of goods or services or both other than the
+      listed examples, since the list is illustrative only?
+    grounding:
+    - F_FOS
+    - F_DOS
+    handler: light
+  M_SIAFOS_A_SMFC:
+    statement: The supply was made for a consideration
+    order: LOW
+    rule: F_SES = 'MADE' AND F_SCT IN ['MONEY','NON_MONEY','BOTH']
+    handler: python
+  M_SIAFOS_A_SAFC:
+    statement: The supply was agreed to be made for a consideration
+    order: LOW
+    rule: F_SES = 'AGREED_TO_BE_MADE' AND F_SCT IN ['MONEY','NON_MONEY','BOTH']
+    handler: python
+  M_SIAFOS_A_SBPIB:
+    statement: The supply is made or agreed to be made by a person in the course or furtherance of business
+    order: HIGH
+    interpretation: Given the supplier and the activity described, is the supply made or agreed to be made by a person in
+      the course or furtherance of business?
+    grounding:
+    - F_SLS
+    - F_AOTD
+    handler: heavy
+  M_IOSFC_A_SIIOS:
+    statement: The transaction is an import of services within the meaning of the Act
+    order: HIGH
+    interpretation: Is the service an import of services in its statutory sense, given the service import status evidence
+    grounding:
+    - F_SIS
+    handler: heavy
+  M_IOSFC_A_IIFC:
+    statement: The import of services is for a consideration
+    order: LOW
+    rule: F_SCS IN ['PAID', 'AGREED']
+    handler: python
+  M_SIAWC_A_ASISI:
+    statement: The activity is one of the activities specified in Schedule I
+    order: HIGH
+    interpretation: Does the described activity fall within an activity specified in Schedule I of the Act?
+    grounding:
+    - F_AOTD
+    handler: heavy
+  M_SIAWC_A_AMOA:
+    statement: The activity is made or agreed to be made
+    order: LOW
+    rule: F_ASC IN ['MADE', 'AGREED']
+    handler: python
+  M_SIAWC_A_MWAC:
+    statement: The activity is made or agreed to be made without a consideration
+    order: LOW
+    rule: F_SCS = 'NONE'
+    handler: python
+  M_ECOPNST_A_SIIS:
+    statement: The supply of such services is an intra-State supply.
+    order: LOW
+    rule: F_SISS = 'INTRA_STATE'
+    handler: python
+  M_LOCGAST_A_SIIS:
+    statement: The supply is an intra-State supply
+    order: LOW
+    rule: F_SISS = 'INTRA_STATE'
+    handler: python
+  M_LOCGAST_A_SIGOS:
+    statement: The supply is of goods or services or both
+    order: LOW
+    rule: F_SIK IN ['GOODS', 'SERVICES', 'BOTH']
+    handler: python
+  M_LOCGAST_A_SSTDL:
+    statement: The supply falls within the provisions of sub-section (2), so the levy under sub-section (1) is displaced for
+      the supply
+    order: HIGH
+    interpretation: Read the text of sub-section (2) against the description of the supply and the basis cited on the document.
+      Does sub-section (2) displace the levy of central tax under sub-section (1) for this supply?
+    grounding:
+    - F_SCSST
+    - F_DOS
+    handler: heavy
+groups:
+  M_DOISOS_G_BDCM:
+    name: Both Definition Conditions Met
+    logic: ALL
+    members:
+    - M_DOISOS_A_CDNRO
+    - M_DOISOS_A_CISM
+    description: The definition applies only when the context does not otherwise require and the section 8 meaning is carried.
+  M_DOGO_G_GBCD:
+    name: Goods By Core Definition
+    logic: ALL
+    members:
+    - M_DOGO_A_TIIMP
+    - M_DOGO_A_TIINM
+    - M_DOGO_A_TIINS
+  M_DOGO_G_GBSI:
+    name: Goods By Specific Inclusion
+    logic: ANY
+    members:
+    - M_DOGO_A_TIIAAC
+    - M_DOGO_A_TIIGC
+    - M_DOGO_A_TIIG
+    - M_DOGO_G_ATLAATBS
+  M_DOGO_G_ATLAATBS:
+    name: Attached To Land And Agreed To Be Severed
+    logic: ALL
+    members:
+    - M_DOGO_A_IIATL
+    - M_DOGO_A_IIATBS
+  M_DOS2_G_SC:
+    name: Service Criteria
+    logic: ANY
+    members:
+    - M_DOS2_G_BDOS
+    - M_DOS2_G_IFMA
+  M_DOS2_G_BDOS:
+    name: Base Definition Of Service
+    logic: ALL
+    members:
+    - M_DOS2_A_TSING
+    - M_DOS2_A_TSINM
+    - M_DOS2_A_TSINS
+  M_DOS2_G_IFMA:
+    name: Inclusion For Money-Related Activities
+    logic: ALL
+    members:
+    - M_DOS2_A_ARTUOCOM
+    - M_DOS2_A_SCICFTA
+  M_SIAFOS_G_LOOF:
+    name: Listed Or Other Form
+    logic: ANY
+    members:
+    - M_SIAFOS_A_SIAS
+    - M_SIAFOS_A_SIAT
+    - M_SIAFOS_A_SIAB
+    - M_SIAFOS_A_SIAE
+    - M_SIAFOS_A_SIALG
+    - M_SIAFOS_A_SIAR
+    - M_SIAFOS_A_SIAL
+    - M_SIAFOS_A_SIAD
+    - M_SIAFOS_A_SIAF
+    description: Any one of the listed forms, or any other qualifying form of supply, is enough. The list is illustrative.
+  M_SIAFOS_G_MOAS:
+    name: Made Or Agreed Supply
+    logic: ANY
+    members:
+    - M_SIAFOS_A_SMFC
+    - M_SIAFOS_A_SAFC
+    description: The supply is either made for a consideration or agreed to be made for a consideration. Both events are not
+      required.
+  M_IOSFC_G_ISS:
+    name: Import Services Scope
+    logic: ALL
+    members:
+    - M_IOSFC_A_SIIOS
+    - M_IOSFC_A_IIFC
+    description: Both the import of services limb and the for a consideration limb are needed for this inclusion.
+  M_SIAWC_G_ASCM:
+    name: All Schedule Conditions Met
+    logic: ALL
+    members:
+    - M_SIAWC_A_ASISI
+    - M_SIAWC_A_AMOA
+    - M_SIAWC_A_MWAC
+    description: Each atom is tested independently and all three are required.
+outcomes:
+  M_ATD_LE_SII:
+    outcome: SUPPLY_IS_INTER_STATE
+    expr: M_ATD_A_SII
+    module: M_ATD
+    description: The supply is an inter-State supply (Section 2(6), part of the law)
+  M_DOISOS_LE_DMA:
+    outcome: DEFINITION_APPLIES
+    expr: M_DOISOS_G_BDCM
+    module: M_DOISOS
+    description: The section 8 IGST meaning is adopted only when the context does not otherwise require and the meaning is
+      carried.
+  M_DOGO_LE_DOIAG:
+    outcome: IS_GOODS
+    expr: M_DOGO_A_CDNROM AND (M_DOGO_G_GBCD OR M_DOGO_G_GBSI)
+    module: M_DOGO
+  M_DOIA_LE_DOIAE:
+    outcome: DEFINITION_ESTABLISHED
+    expr: M_DOIA_A_CDNRO AND M_DOIA_A_DOIGASTA
+    module: M_DOIA
+    description: The definition of 'Integrated Goods and Services Tax Act' is established if the context does not require
+      otherwise and the definition itself is considered.
+  M_SITIS_LE_SIS:
+    outcome: IS_SERVICE
+    expr: M_SITIS_A_SIST
+    module: M_SITIS
+    description: Determines if the activity is considered a service based on this clarification.
+  M_DOS2_LE_TTIAS:
+    outcome: IS_SERVICE
+    expr: M_DOS2_A_DAUCRO AND M_DOS2_G_SC
+    module: M_DOS2
+  M_DOSIUT_LE_SVS103I:
+    outcome: IS_STATE_VIA_S2_103_INCLUSION
+    expr: M_DOSIUT_A_CNOM AND M_DOSIUT_A_SIUTWL
+    module: M_DOSIUT
+    description: Determines if a territory is considered a 'State' by virtue of the inclusion specified in Section 2(103).
+  M_SIAFOS_LE_ISO:
+    outcome: INCLUDED_IN_SUPPLY
+    expr: M_SIAFOS_G_LOOF AND M_SIAFOS_G_MOAS AND M_SIAFOS_A_SBPIB
+    module: M_SIAFOS
+    description: The transaction falls within the inclusive meaning of supply when it takes a listed or other form of supply,
+      is made or agreed to be made for a consideration, and is by a person in the course or furtherance of business.
+  M_IOSFC_LE_ISIO:
+    outcome: SUPPLY_INCLUDED
+    expr: M_IOSFC_G_ISS
+    module: M_IOSFC
+    description: Import of services for a consideration is included in supply whether or not in the course or furtherance
+      of business. Inclusion is not exhaustive and no business-context condition is applied.
+  M_SIAWC_LE_SAIS:
+    outcome: SUPPLY_INCLUDED
+    expr: M_SIAWC_G_ASCM
+    module: M_SIAWC
+    description: The activity is included in supply when all three schedule conditions are met.
+  M_ECOPNST_LE_SIIS:
+    outcome: SUPPLY_IS_INTRA_STATE
+    expr: M_ECOPNST_A_SIIS
+    module: M_ECOPNST
+    description: The supply of such services is an intra-State supply. (Section 9(5), part of the law)
+  M_LOCGAST_LE_SIIS:
+    outcome: SUPPLY_IS_INTRA_STATE
+    expr: M_LOCGAST_A_SIIS
+    module: M_LOCGAST
+    description: The supply is an intra-State supply (Section 9(1), part of the law)
+  M_LOCGAST_LE_SIGOS:
+    outcome: SUPPLY_IS_GOODS_OR_SERVICES
+    expr: M_LOCGAST_A_SIGOS
+    module: M_LOCGAST
+    description: The supply is of goods or services or both (Section 9(1), part of the law)
+  M_LOCGAST_LE_SSTDL:
+    outcome: SUB_SECTION_TWO_DISPLACES_LEVY
+    expr: M_LOCGAST_A_SSTDL
+    module: M_LOCGAST
+    description: The supply falls within the provisions of sub-section (2), so the levy under sub-section (1) is displaced
+      for the supply (Section 9(1), part of the law)
+products:
+  M_ATD_PD_SII:
+    statement: The supply is an inter-State supply
+  M_DOISOS_PD_DMA:
+    statement: The section 8 IGST meaning is adopted only when the context does not otherwise require and the meaning is carried.
+  M_DOGO_PD_DOIAG:
+    statement: IS_GOODS
+  M_DOIA_PD_DOIAE:
+    statement: The definition of 'Integrated Goods and Services Tax Act' is established if the context does not require otherwise
+      and the definition itself is considered.
+  M_SITIS_PD_SIS:
+    statement: Determines if the activity is considered a service based on this clarification.
+  M_DOS2_PD_TTIAS:
+    statement: IS_SERVICE
+  M_DOSIUT_PD_SVS103I:
+    statement: Determines if a territory is considered a 'State' by virtue of the inclusion specified in Section 2(103).
+  M_SIAFOS_PD_ISO:
+    statement: The transaction falls within the inclusive meaning of supply when it takes a listed or other form of supply,
+      is made or agreed to be made for a consideration, and is by a person in the course or furtherance of business.
+  M_IOSFC_PD_ISIO:
+    statement: Import of services for a consideration is included in supply whether or not in the course or furtherance of
+      business. Inclusion is not exhaustive and no business-context condition is applied.
+  M_SIAWC_PD_SAIS:
+    statement: The activity is included in supply when all three schedule conditions are met.
+  M_ECOPNST_PD_SIIS:
+    statement: The supply of such services is an intra-State supply.
+  M_LOCGAST_PD_SIIS:
+    statement: The supply is an intra-State supply
+  M_LOCGAST_PD_SIGOS:
+    statement: The supply is of goods or services or both
+  M_LOCGAST_PD_SSTDL:
+    statement: The supply falls within the provisions of sub-section (2), so the levy under sub-section (1) is displaced for
+      the supply
+compounds:
+- id: C_ATD
+  question: The supply is an inter-State supply? (Section 2(6))
+  includes:
+  - M_ATD_LE_SII
+  produces:
+  - product: M_ATD_PD_SII
+    from:
+    - M_ATD_LE_SII
+- id: C_DOISOS
+  question: 'Section 2(65): Definition Of Intra-State Supply Of Services?'
+  includes:
+  - M_DOISOS_LE_DMA
+  produces:
+  - product: M_DOISOS_PD_DMA
+    from:
+    - M_DOISOS_LE_DMA
+- id: C_DOGO
+  question: 'Section 2(52): Definition Of Goods?'
+  includes:
+  - M_DOGO_LE_DOIAG
+  produces:
+  - product: M_DOGO_PD_DOIAG
+    from:
+    - M_DOGO_LE_DOIAG
+- id: C_DOIA
+  question: 'Section 2(57): Definition Of IGST Act?'
+  includes:
+  - M_DOIA_LE_DOIAE
+  produces:
+  - product: M_DOIA_PD_DOIAE
+    from:
+    - M_DOIA_LE_DOIAE
+- id: C_SITIS
+  question: 'Explanation to clause (102) of section 2: Services Includes Transactions In Securities?'
+  includes:
+  - M_SITIS_LE_SIS
+  produces:
+  - product: M_SITIS_PD_SIS
+    from:
+    - M_SITIS_LE_SIS
+- id: C_DOS2
+  question: 'Section 2(102): Definition Of Services?'
+  includes:
+  - M_DOS2_LE_TTIAS
+  produces:
+  - product: M_DOS2_PD_TTIAS
+    from:
+    - M_DOS2_LE_TTIAS
+- id: C_DOSIUT
+  question: 'Section 2(103): Definition Of State Including Union Territory?'
+  includes:
+  - M_DOSIUT_LE_SVS103I
+  produces:
+  - product: M_DOSIUT_PD_SVS103I
+    from:
+    - M_DOSIUT_LE_SVS103I
+- id: C_S7_SS1
+  question: 'Section 7(1): which clause applies?'
+  includes:
+  - M_SIAFOS_LE_ISO
+  - M_IOSFC_LE_ISIO
+  - M_SIAWC_LE_SAIS
+  produces:
+  - product: M_SIAFOS_PD_ISO
+    from:
+    - M_SIAFOS_LE_ISO
+  - product: M_IOSFC_PD_ISIO
+    from:
+    - M_IOSFC_LE_ISIO
+  - product: M_SIAWC_PD_SAIS
+    from:
+    - M_SIAWC_LE_SAIS
+- id: C_ECOPNST
+  question: The supply of such services is an intra-State supply? (Section 9(5))
+  includes:
+  - M_ECOPNST_LE_SIIS
+  produces:
+  - product: M_ECOPNST_PD_SIIS
+    from:
+    - M_ECOPNST_LE_SIIS
+- id: C_LOCGAST
+  question: The supply is an intra-State supply; The supply is of goods or services or both; The supply falls within the provisions
+    of sub-section (2), so the levy under sub-section (1) is displaced for the supply? (Section 9(1))
+  includes:
+  - M_LOCGAST_LE_SIIS
+  - M_LOCGAST_LE_SIGOS
+  - M_LOCGAST_LE_SSTDL
+  produces:
+  - product: M_LOCGAST_PD_SIIS
+    from:
+    - M_LOCGAST_LE_SIIS
+  - product: M_LOCGAST_PD_SIGOS
+    from:
+    - M_LOCGAST_LE_SIGOS
+  - product: M_LOCGAST_PD_SSTDL
+    from:
+    - M_LOCGAST_LE_SSTDL
+time:
+  law_date: F_DOI

@@ -1,0 +1,2606 @@
+# GOVERNANCE MASTER TSG01_03 Neither supply (Schedule III) (TG01 Supply & Taxability)
+# LAW ARC - 40 laws - status NEEDS_REVIEW
+name: TSG01_03 Neither supply (Schedule III) - GOVERNANCE MASTER rulebook
+version: TSG01_03
+facts:
+  F_AUT:
+    name: Activity Undertaker Type
+    type: CODE
+    options:
+    - CENTRAL_GOVERNMENT
+    - STATE_GOVERNMENT
+    - LOCAL_AUTHORITY
+    - OTHER
+    tier: T1
+  F_AOTD:
+    name: Activity Or Transaction Description
+    type: TEXT
+    tier: T1
+  F_NAET:
+    name: Notified Activity Entry Text
+    type: TEXT
+    tier: T1
+  F_GOS:
+    name: Goods Owner Status
+    type: CODE
+    options:
+    - ANOTHER_PERSON
+    - SAME_PERSON
+    - UNKNOWN
+    tier: T1
+  F_SPT:
+    name: Service Provider Type
+    type: CODE
+    options:
+    - COURT
+    - OTHER
+    - TRIBUNAL
+    - UNKNOWN
+    tier: T1
+  F_ELE:
+    name: Entity Legal Establishment
+    type: BOOLEAN
+    tier: T1
+  F_ELS:
+    name: Establishing Law Status
+    type: CODE
+    options:
+    - IN_FORCE
+    - NOT_IN_FORCE
+    - UNKNOWN
+    tier: T1
+  F_PCPS:
+    name: Person Constitutional Post Status
+    type: CODE
+    options:
+    - CONSTITUTIONAL_POST
+    - OTHER
+    - UNKNOWN
+    tier: T0
+  F_APC:
+    name: Activity Performance Capacity
+    type: CODE
+    options:
+    - POST_CAPACITY
+    - PRIVATE_CAPACITY
+    - OTHER
+    - UNKNOWN
+    tier: T1
+  F_PR:
+    name: Party Relationship
+    type: CODE
+    options:
+    - EMPLOYER_TO_EMPLOYEE
+    - OTHER
+    - UNKNOWN
+    tier: T1
+  F_PLR:
+    name: Person Legislative Role
+    type: CODE
+    options:
+    - MEMBER_OF_PARLIAMENT
+    - MEMBER_OF_STATE_LEGISLATURE
+    - MEMBER_OF_PANCHAYAT
+    - MEMBER_OF_MUNICIPALITY
+    - MEMBER_OF_OTHER_LOCAL_AUTHORITY
+    - NOT_A_MEMBER
+    - UNKNOWN
+    tier: T1
+  F_DOS:
+    name: Description Of Supply
+    type: TEXT
+    tier: T1
+  F_SIK:
+    name: Supply Item Kind
+    type: CODE
+    options:
+    - BOTH
+    - GOODS
+    - SERVICES
+    - UNKNOWN
+    tier: T1
+  F_SOTS:
+    name: Supply Origin Territory Status
+    type: CODE
+    options:
+    - NON_TAXABLE_TERRITORY
+    - OTHER
+    - UNKNOWN
+    tier: T0
+  F_SDTS:
+    name: Supply Destination Territory Status
+    type: CODE
+    options:
+    - NON_TAXABLE_TERRITORY
+    - OTHER
+    - UNKNOWN
+    tier: T0
+  F_GIES:
+    name: Goods India Entry Status
+    type: CODE
+    options:
+    - ENTERED
+    - NOT_ENTERED
+    - UNKNOWN
+    tier: T1
+  F_GWS:
+    name: Goods Warehouse Status
+    type: CODE
+    options:
+    - NOT_WAREHOUSED
+    - UNKNOWN
+    - WAREHOUSED
+    tier: T0
+  F_SRI:
+    name: Supply Recipient Identity
+    type: TEXT
+    tier: T1
+  F_SCT2:
+    name: Supply Clearance Timing
+    type: CODE
+    options:
+    - BEFORE_HOME_CONSUMPTION_CLEARANCE
+    - ON_OR_AFTER_HOME_CONSUMPTION_CLEARANCE
+    - UNKNOWN
+    tier: T0
+  F_CL:
+    name: Court Level
+    type: CODE
+    options:
+    - DISTRICT_COURT
+    - HIGH_COURT
+    - SUPREME_COURT
+    - OTHER_COURT
+    - UNKNOWN
+    tier: T1
+  F_PCR:
+    name: Person Consignee Role
+    type: CODE
+    options:
+    - CONSIGNEE
+    - NOT_CONSIGNEE
+    - UNKNOWN
+    tier: T1
+  F_SRS3:
+    name: Supply Recipient Status
+    type: CODE
+    options:
+    - OTHER_PERSON
+    - CONSIGNEE_ITSELF
+    - UNKNOWN
+    tier: T1
+  F_DTM:
+    name: Document Transfer Method
+    type: CODE
+    options:
+    - ENDORSEMENT_OF_TITLE
+    - OTHER_METHOD
+    - UNKNOWN
+    tier: T1
+  F_SDT:
+    name: Supply Dispatch Timing
+    type: CODE
+    options:
+    - AFTER_FOREIGN_DISPATCH
+    - BEFORE_FOREIGN_DISPATCH
+    - UNKNOWN
+    tier: T1
+  F_GCS:
+    name: Goods Clearance Status
+    type: CODE
+    options:
+    - BEFORE_HOME_CLEARANCE
+    - CLEARED_FOR_HOME_CONSUMPTION
+    - UNKNOWN
+    tier: T1
+  F_FOS:
+    name: Form Of Supply
+    type: CODE
+    options:
+    - BARTER
+    - DISPOSAL
+    - EXCHANGE
+    - LEASE
+    - LICENCE
+    - OTHER
+    - RENTAL
+    - SALE
+    - TRANSFER
+    tier: T1
+  F_SPT2:
+    name: Supply Property Type
+    type: CODE
+    options:
+    - LAND
+    - BUILDING
+    - OTHER
+    - UNKNOWN
+    tier: T1
+  F_SES:
+    name: Supply Execution Status
+    type: CODE
+    options:
+    - MADE
+    - AGREED_TO_BE_MADE
+    - NEITHER
+    tier: T1
+  F_SCT:
+    name: Supply Consideration Type
+    type: CODE
+    options:
+    - BOTH
+    - MONEY
+    - NONE
+    - NON_MONEY
+    tier: T1
+  F_SLS:
+    name: Supplier Legal Status
+    type: TEXT
+    tier: T0
+  F_SIS:
+    name: Service Import Status
+    type: CODE
+    options:
+    - IMPORTED
+    - NOT_IMPORTED
+    - UNKNOWN
+    tier: T1
+  F_SCS:
+    name: Supply Consideration Status
+    type: CODE
+    options:
+    - AGREED
+    - NONE
+    - PAID
+    tier: T1
+  F_ASC:
+    name: Activity Status Code
+    type: CODE
+    options:
+    - MADE
+    - AGREED
+    tier: T1
+  F_GTT:
+    name: Goods Title Transferred
+    type: BOOLEAN
+    tier: T1
+  F_SPSS:
+    name: Supply Passing Stipulation Status
+    type: CODE
+    options:
+    - STIPULATED
+    - NOT_STIPULATED
+    - UNKNOWN
+    tier: T1
+  F_SPTS:
+    name: Supply Passing Timing Status
+    type: CODE
+    options:
+    - FUTURE_DATE
+    - IMMEDIATE
+    - NOT_STATED
+    - UNKNOWN
+    tier: T1
+  F_SPTS2:
+    name: Supply Passing Trigger Status
+    type: CODE
+    options:
+    - FULL_PAYMENT_AS_AGREED
+    - OTHER
+    - NOT_STATED
+    - UNKNOWN
+    tier: T1
+  F_SLIT:
+    name: Supply Land Interest Type
+    type: CODE
+    options:
+    - LEASE
+    - TENANCY
+    - EASEMENT
+    - LICENCE_TO_OCCUPY
+    - OTHER
+    - UNKNOWN
+    tier: T1
+  F_GBAS:
+    name: Goods Business Asset Status
+    type: CODE
+    options:
+    - ASSET_OF_BUSINESS
+    - NOT_ASSET_OF_BUSINESS
+    - UNKNOWN
+    tier: T0
+  F_ADA:
+    name: Asset Disposal Actor
+    type: CODE
+    options:
+    - BY_CARRYING_PERSON
+    - UNDER_DIRECTIONS
+    - OTHER
+    - UNKNOWN
+    tier: T1
+  F_ARS:
+    name: Asset Removal Status
+    type: CODE
+    options:
+    - REMOVED_FROM_ASSETS
+    - STILL_ASSET
+    - UNKNOWN
+    tier: T0
+  F_PBDS:
+    name: Person Business Direction Status
+    type: CODE
+    options:
+    - CARRIES_ON_BUSINESS
+    - UNDER_DIRECTION_OF_BUSINESS_PERSON
+    - NEITHER
+    - UNKNOWN
+    tier: T1
+  F_GBH:
+    name: Goods Business Holding
+    type: CODE
+    options:
+    - BUSINESS_PURPOSE
+    - NON_BUSINESS
+    - UNKNOWN
+    tier: T0
+  F_GUK:
+    name: Goods Use Kind
+    type: CODE
+    options:
+    - PRIVATE_USE
+    - USED
+    - MADE_AVAILABLE
+    - NONE
+    - UNKNOWN
+    tier: T1
+  F_GUP:
+    name: Goods Use Purpose
+    type: CODE
+    options:
+    - BUSINESS
+    - NON_BUSINESS
+    - UNKNOWN
+    tier: T1
+  F_PTSC:
+    name: Person Taxable Status Change
+    type: CODE
+    options:
+    - CEASED
+    - NOT_CEASED
+    - UNKNOWN
+    tier: T0
+  F_BCRS:
+    name: Business Carrier Representative Status
+    type: CODE
+    options:
+    - PERSONAL_REPRESENTATIVE
+    - OTHER_PERSON
+    - UNKNOWN
+    tier: T1
+  F_RTDS:
+    name: Representative Taxable Deeming Status
+    type: CODE
+    options:
+    - DEEMED_TAXABLE
+    - NOT_DEEMED_TAXABLE
+    - UNKNOWN
+    tier: T0
+  F_BTS:
+    name: Business Transfer Status
+    type: CODE
+    options:
+    - TO_ANOTHER_PERSON_AS_GOING_CONCERN
+    - NOT_TRANSFERRED_AS_GOING_CONCERN
+    - UNKNOWN
+    tier: T1
+  F_PK:
+    name: Property Kind
+    type: CODE
+    options:
+    - IMMOVABLE
+    - MOVABLE
+    - UNKNOWN
+    tier: T1
+  F_CIT:
+    name: Certificate Issuer Type
+    type: CODE
+    options:
+    - AUTHORISED_UNDER_LAW
+    - GOVERNMENT
+    - OTHER
+    - UNKNOWN
+    tier: T0
+  F_IAUL:
+    name: Issuer Authorisation Under Law
+    type: CODE
+    options:
+    - AUTHORISED_UNDER_LAW
+    - NOT_AUTHORISED
+    - UNKNOWN
+    tier: T1
+  F_CCR:
+    name: Completion Certificate Requirement
+    type: CODE
+    options:
+    - NOT_REQUIRED
+    - REQUIRED
+    - UNKNOWN
+    tier: T1
+  F_SLS2:
+    name: Surveyor Licence Status
+    type: CODE
+    options:
+    - LICENSED_LOCAL_BODY_SURVEYOR
+    - LICENSED_DEVELOPMENT_OR_PLANNING_SURVEYOR
+    - LICENSED_OTHER
+    - NOT_LICENSED
+    - UNKNOWN
+    tier: T1
+  F_CERS:
+    name: Chartered Engineer Registration Status
+    type: CODE
+    options:
+    - REGISTERED_IEI
+    - NOT_REGISTERED_IEI
+    - UNKNOWN
+    tier: T0
+  F_ACR:
+    name: Architect Council Registration
+    type: BOOLEAN
+    tier: T0
+  F_KOWP:
+    name: Kind Of Work Performed
+    type: CODE
+    options:
+    - ADDITION
+    - ALTERATION
+    - REPLACEMENT
+    - REMODELLING
+    - OTHER
+    - UNKNOWN
+    tier: T1
+  F_SES2:
+    name: Structure Existence Status
+    type: CODE
+    options:
+    - EXISTING
+    - NOT_EXISTING
+    - UNKNOWN
+    tier: T1
+  F_SCS2:
+    name: Structure Civil Status
+    type: CODE
+    options:
+    - CIVIL
+    - NOT_CIVIL
+    - UNKNOWN
+    tier: T1
+  F_PCTS:
+    name: Payment Certificate Timing Status
+    type: CODE
+    options:
+    - AFTER_CERTIFICATE
+    - NOT_AFTER_CERTIFICATE
+    - NOT_FULLY_RECEIVED
+    - NOT_REQUIRED
+    - UNKNOWN
+    tier: T1
+  F_POTS:
+    name: Payment Occupation Timing Status
+    type: CODE
+    options:
+    - AFTER_OCCUPATION
+    - NOT_AFTER_OCCUPATION
+    - NOT_FULLY_RECEIVED
+    - UNKNOWN
+    tier: T1
+  F_IPRK:
+    name: Intellectual Property Right Kind
+    type: CODE
+    options:
+    - INTELLECTUAL_PROPERTY_RIGHT
+    - OTHER_RIGHT
+    - UNKNOWN
+    tier: T1
+  F_IPUF:
+    name: Intellectual Property Use Form
+    type: CODE
+    options:
+    - TEMPORARY_TRANSFER
+    - PERMITTING_USE_OR_ENJOYMENT
+    - BOTH_FORMS
+    - OUTRIGHT_TRANSFER
+    - NEITHER
+    - UNKNOWN
+    tier: T1
+  F_SAK2:
+    name: Software Activity Kind
+    type: CODE
+    options:
+    - DEVELOPMENT
+    - DESIGN
+    - PROGRAMMING
+    - CUSTOMISATION
+    - ADAPTATION
+    - UPGRADATION
+    - ENHANCEMENT
+    - IMPLEMENTATION
+    - OTHER
+    - UNKNOWN
+    tier: T1
+  F_OA:
+    name: Obligation Agreed
+    type: BOOLEAN
+    tier: T1
+  F_OK:
+    name: Obligation Kind
+    type: CODE
+    options:
+    - REFRAIN_FROM_ACT
+    - TOLERATE_ACT_OR_SITUATION
+    - DO_ACT
+    - OTHER
+    - UNKNOWN
+    tier: T1
+  F_GURG:
+    name: Goods Use Right Grant
+    type: CODE
+    options:
+    - GRANTED
+    - NOT_GRANTED
+    - UNKNOWN
+    tier: T1
+  F_SIALFHC:
+    name: Supply Is Alcoholic Liquor For Human Consumption
+    type: BOOLEAN
+    tier: T1
+  F_RMS:
+    name: Recipient Membership Status
+    type: CODE
+    options:
+    - MEMBER
+    - NOT_MEMBER
+    - UNKNOWN
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_MOWG_A_CAWGM:
+    statement: The expression warehoused goods used for the purposes of paragraph 8 shall have the same meaning as assigned
+      to it in the Customs Act, 1962
+    order: HIGH
+    interpretation: Is the goods or transaction in question within the meaning of warehoused goods given in the Customs Act,
+      1962, as applied for paragraph 8?
+    grounding:
+    - F_GWS
+    handler: light
+    valid_from: '2019-02-01'
+  M_DOCFP2_A_DCII:
+    statement: The body is a District Court, which the term court for paragraph 2 includes
+    order: LOW
+    rule: F_CL = 'DISTRICT_COURT'
+    handler: python
+    valid_from: '2019-02-01'
+  M_DOCFP2_A_HCII:
+    statement: The body is a High Court, which the term court for paragraph 2 includes
+    order: LOW
+    rule: F_CL = 'HIGH_COURT'
+    handler: python
+    valid_from: '2019-02-01'
+  M_DOCFP2_A_SCII:
+    statement: The body is a Supreme Court, which the term court for paragraph 2 includes
+    order: LOW
+    rule: F_CL = 'SUPREME_COURT'
+    handler: python
+    valid_from: '2019-02-01'
+  M_DOCFP2_A_OBQAC:
+    statement: The body is a court in its ordinary legal sense, other than a District Court, High Court or Supreme Court,
+      which the open term court for paragraph 2 may still include
+    order: HIGH
+    interpretation: Is the body a court in its ordinary legal sense, though not one of the three named courts, so that the
+      inclusive term court for paragraph 2 covers it? A failed listed test alone does not decide this
+    grounding:
+    - F_SPT
+    - F_CL
+    handler: heavy
+    valid_from: '2019-02-01'
+  M_SIAFOS_A_SIAS:
+    statement: The supply of goods or services or both is a sale
+    order: LOW
+    rule: F_FOS = 'SALE'
+    handler: python
+  M_SIAFOS_A_SIAT:
+    statement: The supply of goods or services or both is a transfer
+    order: LOW
+    rule: F_FOS = 'TRANSFER'
+    handler: python
+  M_SIAFOS_A_SIAB:
+    statement: The supply of goods or services or both is a barter
+    order: LOW
+    rule: F_FOS = 'BARTER'
+    handler: python
+  M_SIAFOS_A_SIAE:
+    statement: The supply of goods or services or both is an exchange
+    order: LOW
+    rule: F_FOS = 'EXCHANGE'
+    handler: python
+  M_SIAFOS_A_SIALG:
+    statement: The supply of goods or services or both is a licence
+    order: LOW
+    rule: F_FOS = 'LICENCE'
+    handler: python
+  M_SIAFOS_A_SIAR:
+    statement: The supply of goods or services or both is a rental
+    order: LOW
+    rule: F_FOS = 'RENTAL'
+    handler: python
+  M_SIAFOS_A_SIAL:
+    statement: The supply of goods or services or both is a lease
+    order: LOW
+    rule: F_FOS = 'LEASE'
+    handler: python
+  M_SIAFOS_A_SIAD:
+    statement: The supply of goods or services or both is a disposal
+    order: LOW
+    rule: F_FOS = 'DISPOSAL'
+    handler: python
+  M_SIAFOS_A_SIAF:
+    statement: The supply of goods or services or both takes another form of supply that is not one of the listed examples
+      of sale, transfer, barter, exchange, licence, rental, lease or disposal
+    order: HIGH
+    interpretation: Does the described transaction amount to a form of supply of goods or services or both other than the
+      listed examples, since the list is illustrative only?
+    grounding:
+    - F_FOS
+    - F_DOS
+    handler: light
+  M_SIAFOS_A_SMFC:
+    statement: The supply was made for a consideration
+    order: LOW
+    rule: F_SES = 'MADE' AND F_SCT IN ['MONEY','NON_MONEY','BOTH']
+    handler: python
+  M_SIAFOS_A_SAFC:
+    statement: The supply was agreed to be made for a consideration
+    order: LOW
+    rule: F_SES = 'AGREED_TO_BE_MADE' AND F_SCT IN ['MONEY','NON_MONEY','BOTH']
+    handler: python
+  M_SIAFOS_A_SBPIB:
+    statement: The supply is made or agreed to be made by a person in the course or furtherance of business
+    order: HIGH
+    interpretation: Given the supplier and the activity described, is the supply made or agreed to be made by a person in
+      the course or furtherance of business?
+    grounding:
+    - F_SLS
+    - F_AOTD
+    handler: heavy
+  M_IOSFC_A_SIIOS:
+    statement: The transaction is an import of services within the meaning of the Act
+    order: HIGH
+    interpretation: Is the service an import of services in its statutory sense, given the service import status evidence
+    grounding:
+    - F_SIS
+    handler: heavy
+  M_IOSFC_A_IIFC:
+    statement: The import of services is for a consideration
+    order: LOW
+    rule: F_SCS IN ['PAID', 'AGREED']
+    handler: python
+  M_SIAWC_A_ASISI:
+    statement: The activity is one of the activities specified in Schedule I
+    order: HIGH
+    interpretation: Does the described activity fall within an activity specified in Schedule I of the Act?
+    grounding:
+    - F_AOTD
+    handler: heavy
+  M_SIAWC_A_AMOA:
+    statement: The activity is made or agreed to be made
+    order: LOW
+    rule: F_ASC IN ['MADE', 'AGREED']
+    handler: python
+  M_SIAWC_A_MWAC:
+    statement: The activity is made or agreed to be made without a consideration
+    order: LOW
+    rule: F_SCS = 'NONE'
+    handler: python
+  M_CALS_A_AITG:
+    statement: The competent authority is the Government
+    order: LOW
+    rule: F_CIT = 'GOVERNMENT'
+    handler: python
+  M_CALS_A_AIAI:
+    statement: The competent authority is an authority authorised to issue completion certificate under any law for the time
+      being in force
+    order: HIGH
+    interpretation: Is the authority authorised under any law for the time being in force to issue a completion certificate?
+    grounding:
+    - F_IAUL
+    handler: heavy
+  M_CALS_A_CNRFA:
+    statement: A completion certificate is not required from the Government or the authority authorised to issue it (non-requirement
+      of such certificate from such authority)
+    order: HIGH
+    interpretation: Is there a non-requirement of a completion certificate from such authority for the property or work concerned?
+    grounding:
+    - F_CCR
+    handler: light
+  M_CALS_A_AILS:
+    statement: The competent authority is a licensed surveyor of the respective local body of the city or town or village
+      or development or planning authority
+    order: HIGH
+    interpretation: Is the person a licensed surveyor of the respective local body of the city or town or village or of the
+      development or planning authority? The source wording is ambiguous on how the list attaches and is retained as written.
+    grounding:
+    - F_SLS2
+    handler: heavy
+  M_DOCACE_A_CAIG:
+    statement: The competent authority is the Government
+    order: LOW
+    rule: F_CIT = 'GOVERNMENT'
+    handler: python
+  M_DOCACE_A_AULA:
+    statement: The competent authority is any authority authorised to issue completion certificate under any law for the time
+      being in force
+    order: HIGH
+    interpretation: Is the issuing authority authorised to issue completion certificates under a law for the time being in
+      force?
+    grounding:
+    - F_CIT
+    handler: heavy
+  M_DOCACE_A_CNRFA:
+    statement: In case of non-requirement of such completion certificate from such authority, the certificate is not required
+      from that authority
+    order: LOW
+    rule: F_CCR = 'NOT_REQUIRED'
+    handler: python
+  M_DOCACE_A_CERWI:
+    statement: The competent authority is a chartered engineer registered with the Institution of Engineers (India)
+    order: LOW
+    rule: F_CERS = 'REGISTERED_IEI'
+    handler: python
+  M_CAA_A_AITG:
+    statement: The competent authority is the Government
+    order: LOW
+    rule: F_CIT = 'GOVERNMENT'
+    handler: python
+  M_CAA_A_AAUL:
+    statement: The competent authority is any authority authorised to issue completion certificate under any law for the time
+      being in force
+    order: HIGH
+    interpretation: Is the issuing authority authorised to issue a completion certificate under any law for the time being
+      in force?
+    grounding:
+    - F_IAUL
+    handler: light
+  M_CAA_A_CNRFA:
+    statement: A completion certificate is not required from the Government or authority authorised under any law to issue
+      it
+    order: LOW
+    rule: F_CCR = 'NOT_REQUIRED'
+    handler: python
+  M_CAA_A_ARWC:
+    statement: The competent authority is an architect registered with the Council of Architecture constituted under the Architects
+      Act, 1972
+    order: LOW
+    rule: F_ACR = TRUE
+    handler: python
+  M_DOCFS_A_WIAA:
+    statement: The work is an addition, which the expression construction includes
+    order: LOW
+    rule: F_KOWP = 'ADDITION'
+    handler: python
+  M_DOCFS_A_WIAA2:
+    statement: The work is an alteration, which the expression construction includes
+    order: LOW
+    rule: F_KOWP = 'ALTERATION'
+    handler: python
+  M_DOCFS_A_WIAR:
+    statement: The work is a replacement, which the expression construction includes
+    order: LOW
+    rule: F_KOWP = 'REPLACEMENT'
+    handler: python
+  M_DOCFS_A_WIAR2:
+    statement: The work is a remodelling, which the expression construction includes
+    order: LOW
+    rule: F_KOWP = 'REMODELLING'
+    handler: python
+  M_DOCFS_A_SEBW:
+    statement: The civil structure worked on existed before the work, as the qualifier of any existing civil structure requires
+    order: LOW
+    rule: F_SES2 = 'EXISTING'
+    handler: python
+  M_DOCFS_A_SIC:
+    statement: The structure worked on is a civil structure, as the qualifier of any existing civil structure requires
+    order: HIGH
+    if_false: The structure is not a civil structure
+    interpretation: Is the structure worked on a civil structure, rather than another kind of structure?
+    grounding:
+    - F_SCS2
+    handler: light
+  M_DOCFS_A_OCBLW:
+    statement: The activity is construction beyond the listed works, which the open word includes
+    order: HIGH
+    if_false: The activity is not construction in its ordinary sense
+    interpretation: Is the described activity construction in a sense similar to additions, alterations, replacements or remodelling,
+      even though it is not one of the listed works? The source does not state whether the existing civil structure condition
+      also governs this route, so do not apply that condition unless the source supports it.
+    grounding:
+    - F_KOWP
+    - F_SCS2
+    handler: heavy
+  M_PAANGNS_A_UBGOA:
+    statement: The activity or transaction is undertaken by the Central Government, a State Government or any local authority
+    order: LOW
+    rule: F_AUT IN ['CENTRAL_GOVERNMENT', 'STATE_GOVERNMENT', 'LOCAL_AUTHORITY']
+    handler: python
+  M_PAANGNS_A_EAAPA:
+    statement: The Central Government, State Government or local authority is engaged in the activity or transaction as a
+      public authority
+    order: HIGH
+    interpretation: Reading the activity description, is the government body or local authority engaged in this activity or
+      transaction in its capacity as a public authority, rather than as an ordinary commercial or business activity?
+    grounding:
+    - F_AOTD
+    handler: heavy
+  M_PAANGNS_A_ANOCR:
+    statement: The activity or transaction is one that is notified by the Government on the recommendations of the Council
+      for treatment as neither a supply of goods nor a supply of services
+    order: HIGH
+    interpretation: Does the notification entry issued by the Government on the recommendations of the Council under this
+      clause cover the described activity or transaction?
+    grounding:
+    - F_AOTD
+    - F_NAET
+    handler: light
+  M_TOPOGAS_A_TOPA:
+    statement: The activity is any treatment or process applied to goods, with no limit as to the kind of treatment or process
+    order: HIGH
+    interpretation: Does the described activity constitute a treatment or process applied to goods in the legal sense, of
+      any kind?
+    grounding:
+    - F_AOTD
+    handler: heavy
+  M_TOPOGAS_A_GOAP:
+    statement: The goods to which the treatment or process is applied belong to another person, other than the person applying
+      it
+    order: LOW
+    rule: F_GOS = 'ANOTHER_PERSON'
+    handler: python
+  M_ACNGNS_A_AIAC:
+    statement: The activity or transaction is an actionable claim.
+    order: HIGH
+    interpretation: Does the described activity or transaction amount to an actionable claim in the sense used by Schedule
+      III entry 6?
+    grounding:
+    - F_AOTD
+    handler: heavy
+  M_ACNGNS_A_CILBG:
+    statement: The actionable claim is of the kind lottery, betting and gambling named in the entry.
+    order: HIGH
+    if_false: The entry excludes this kind, so M_ACNGNS_LE_ACNS is false when this atom is TRUE.
+    interpretation: Is the actionable claim of a lottery, betting or gambling kind, as the entry uses these terms?
+    grounding:
+    - F_AOTD
+    handler: heavy
+  M_SBCOT_A_SPBCOT:
+    statement: The services are provided by any court or Tribunal
+    order: HIGH
+    interpretation: Is the body providing the services a court or a Tribunal?
+    grounding:
+    - F_SPT
+    handler: light
+  M_SBCOT_A_CEUL:
+    statement: The court or Tribunal providing the services is established under any law
+    order: HIGH
+    interpretation: Is the court or Tribunal set up by or under a law, as shown by the establishment record?
+    grounding:
+    - F_ELE
+    handler: heavy
+  M_SBCOT_A_ELIF:
+    statement: The law under which the court or Tribunal is established is for the time being in force
+    order: LOW
+    rule: F_ELS = 'IN_FORCE'
+    handler: python
+  M_DBCPH_A_AIDP:
+    statement: The activity is duties performed by any person
+    order: HIGH
+    interpretation: Is the described activity the performance of duties or functions rather than another kind of activity?
+    grounding:
+    - F_AOTD
+    handler: light
+  M_DBCPH_A_PHCP:
+    statement: The person performing the duties holds any post in pursuance of the provisions of the Constitution
+    order: HIGH
+    interpretation: Does the person hold a post made or governed under the provisions of the Constitution?
+    grounding:
+    - F_PCPS
+    handler: light
+  M_DBCPH_A_DPITC:
+    statement: The duties are performed in that capacity, meaning as holder of the constitutional post
+    order: HIGH
+    interpretation: Are the duties performed as holder of the constitutional post rather than in a private or other capacity?
+    grounding:
+    - F_AOTD
+    - F_APC
+    handler: heavy
+  M_FPBM_A_AIMF:
+    statement: The activity is one of the functions performed by the Member in that Member capacity, as stated in the source
+      phrase The functions performed
+    order: HIGH
+    interpretation: Is the described activity one of the functions performed by the Member in that capacity, as distinct from
+      a separate or unrelated activity
+    grounding:
+    - F_AOTD
+    handler: heavy
+  M_FPBM_A_PILM:
+    statement: The functions are performed by a Member of Parliament, Member of State Legislature, Member of Panchayat, Member
+      of Municipality or Member of other local authority
+    order: LOW
+    rule: F_PLR IN ['MEMBER_OF_PARLIAMENT', 'MEMBER_OF_STATE_LEGISLATURE', 'MEMBER_OF_PANCHAYAT', 'MEMBER_OF_MUNICIPALITY',
+      'MEMBER_OF_OTHER_LOCAL_AUTHORITY']
+    handler: python
+  M_ESICOE_A_SBETE:
+    statement: The activity is a service provided by an employee to the employer
+    order: LOW
+    rule: F_PR = 'EMPLOYER_TO_EMPLOYEE'
+    handler: python
+  M_ESICOE_A_SICOE:
+    statement: The service is provided in the course of or in relation to his employment
+    order: HIGH
+    interpretation: Is the service performed in the course of, or in relation to, his employment with the employer, applying
+      the broad connection test
+    grounding:
+    - F_AOTD
+    handler: heavy
+  M_NSOGWEI_A_TISOG:
+    statement: The transaction is a supply of goods
+    order: LOW
+    rule: F_SIK = 'GOODS'
+    handler: python
+  M_NSOGWEI_A_OINTT:
+    statement: The goods are supplied from a place in the non-taxable territory
+    order: HIGH
+    interpretation: Is the place from which the goods are supplied within the non-taxable territory?
+    grounding:
+    - F_SOTS
+    handler: light
+  M_NSOGWEI_A_DAPINTT:
+    statement: The goods are supplied to another place in the non-taxable territory
+    order: HIGH
+    interpretation: Is the place to which the goods are supplied within the non-taxable territory and a different place from
+      the origin?
+    grounding:
+    - F_SDTS
+    - F_SOTS
+    handler: light
+  M_NSOGWEI_A_GWEI:
+    statement: The supply is made without such goods entering into India
+    order: LOW
+    rule: F_GIES = 'NOT_ENTERED'
+    handler: python
+  M_SOWGBC_A_GAWG:
+    statement: The goods supplied are warehoused goods.
+    order: LOW
+    rule: F_GWS = 'WAREHOUSED'
+    handler: python
+  M_SOWGBC_A_AIASOG:
+    statement: The described activity is a supply of the warehoused goods.
+    order: HIGH
+    interpretation: Does the described activity amount to a supply of the warehoused goods?
+    grounding:
+    - F_DOS
+    - F_GWS
+    handler: light
+  M_SOWGBC_A_SMTAP:
+    statement: The supply is made to any person, with no restriction on the recipient's identity.
+    order: LOW
+    rule: F_SRI IS_SET
+    handler: python
+  M_SOWGBC_A_SBHCC:
+    statement: The supply is made before clearance for home consumption.
+    order: LOW
+    rule: F_SCT2 = 'BEFORE_HOME_CONSUMPTION_CLEARANCE'
+    handler: python
+  M_SOGBCBC_A_SBC:
+    statement: The supply of goods is made by the consignee of the goods
+    order: LOW
+    rule: F_PCR = 'CONSIGNEE'
+    handler: python
+    valid_from: '2019-02-01'
+  M_SOGBCBC_A_STOP:
+    statement: The consignee supplies the goods to any other person
+    order: LOW
+    rule: F_SRS3 = 'OTHER_PERSON'
+    handler: python
+    valid_from: '2019-02-01'
+  M_SOGBCBC_A_TBDE:
+    statement: The supply is made by endorsement of documents of title to the goods
+    order: LOW
+    rule: F_DTM = 'ENDORSEMENT_OF_TITLE'
+    handler: python
+    valid_from: '2019-02-01'
+  M_SOGBCBC_A_DFFP:
+    statement: The supply is made after the goods have been dispatched from the port of origin located outside India
+    order: HIGH
+    interpretation: Do the documents show that the supply was made after the goods were dispatched from a port of origin located
+      outside India?
+    grounding:
+    - F_SDT
+    handler: light
+    valid_from: '2019-02-01'
+  M_SOGBCBC_A_SBHC:
+    statement: The supply is made before clearance for home consumption
+    order: LOW
+    rule: F_GCS = 'BEFORE_HOME_CLEARANCE'
+    handler: python
+    valid_from: '2019-02-01'
+  M_TOTIG_A_TOTIG:
+    statement: The activity or transaction involves a transfer of the title in goods
+    order: HIGH
+    if_false: the documents show that title does not pass
+    interpretation: Does the contract or invoice show that title in goods passes to the recipient by the activity or transaction?
+    grounding:
+    - F_AOTD
+    handler: heavy
+  M_TOTIG_A_TSIG:
+    statement: The property whose title is transferred is goods
+    order: HIGH
+    interpretation: Are the items whose title passes goods within the meaning of the Act?
+    grounding:
+    - F_DOS
+    handler: light
+  M_TORIGIS_A_TORIG:
+    statement: The transaction is a transfer of right in goods
+    order: HIGH
+    interpretation: Does the transaction transfer a right in goods, as opposed to transferring the goods themselves?
+    grounding:
+    - F_DOS
+    handler: light
+  M_TORIGIS_A_TOUS:
+    statement: The transaction is a transfer of an undivided share in goods
+    order: HIGH
+    interpretation: Does the transaction transfer an undivided share in goods, meaning a share in goods not separated out
+      as specific units?
+    grounding:
+    - F_DOS
+    handler: light
+  M_TORIGIS_A_TWT:
+    statement: The transfer is without the transfer of title in the goods
+    order: LOW
+    rule: F_GTT = FALSE
+    handler: python
+  M_TOTIG2_A_ATOTIG:
+    statement: The transaction is a transfer of title in goods in any form and is not limited to a sale
+    order: HIGH
+    interpretation: Does the described activity or transaction transfer title in goods in any form, not only by sale, such
+      as barter, exchange or sale? Unclear or missing description gives UNKNOWN
+    grounding:
+    - F_AOTD
+    handler: light
+  M_TOTIG2_A_ASPP:
+    statement: The transfer is made under an agreement which stipulates that property in goods shall pass
+    order: HIGH
+    interpretation: Does the agreement under which the transfer is made stipulate that property in goods shall pass, as distinct
+      from when it passes? NOT_STATED or UNKNOWN gives UNKNOWN
+    grounding:
+    - F_SPSS
+    handler: light
+  M_TOTIG2_A_PPAFD:
+    statement: The agreement stipulates that property in goods shall pass at a future date
+    order: LOW
+    rule: F_SPTS = 'FUTURE_DATE'
+    handler: python
+  M_TOTIG2_A_PUFC:
+    statement: Property in goods passes upon payment of full consideration as agreed
+    order: LOW
+    rule: F_SPTS2 = 'FULL_PAYMENT_AS_AGREED'
+    handler: python
+  M_LOLIS_A_TILOL:
+    statement: The transaction is a lease of land
+    order: LOW
+    rule: F_SLIT = 'LEASE'
+    handler: python
+  M_LOLIS_A_TITOL:
+    statement: The transaction is a tenancy of land
+    order: LOW
+    rule: F_SLIT = 'TENANCY'
+    handler: python
+  M_LOLIS_A_TIEOL:
+    statement: The transaction is an easement over land
+    order: LOW
+    rule: F_SLIT = 'EASEMENT'
+    handler: python
+  M_LOLIS_A_TILTOL:
+    statement: The transaction is a licence to occupy land
+    order: LOW
+    rule: F_SLIT = 'LICENCE_TO_OCCUPY'
+    handler: python
+  M_LOBIS_A_LOLO:
+    statement: The transaction is a lease or letting out of the building
+    order: HIGH
+    interpretation: Does the contract or invoice show that the supply is a lease or letting out (any form of lease or letting)
+      of the building?
+    grounding:
+    - F_FOS
+    - F_DOS
+    handler: light
+  M_LOBIS_A_PIAB:
+    statement: The property leased or let out is a building, including a commercial, industrial or residential complex
+    order: HIGH
+    interpretation: Is the property leased or let out a building, including a commercial, industrial or residential complex
+      (the listed complexes are illustrative and not a closed list)?
+    grounding:
+    - F_DOS
+    handler: light
+  M_LOBIS_A_LFBOC:
+    statement: The building is leased or let out for business or commerce, either wholly or partly
+    order: HIGH
+    interpretation: Is the building leased or let out for business or commerce, either for the whole building or for only
+      a part of it? A letting wholly for private residence does not meet this condition.
+    grounding:
+    - F_AOTD
+    - F_DOS
+    handler: heavy
+  M_TOBAG_A_GFBA:
+    statement: The goods form part of the assets of a business
+    order: HIGH
+    interpretation: Are these goods part of the assets of the business carried on by the person, judged from the asset records
+      and the activity description? Unknown status leads to review
+    grounding:
+    - F_GBAS
+    - F_AOTD
+    handler: heavy
+  M_TOBAG_A_GTODO:
+    statement: The goods are transferred or disposed of
+    order: HIGH
+    interpretation: Does the form of supply show that the goods are transferred or disposed of, rather than retained by the
+      business? Decide from the form of supply and the contract; the source wording is retained without deciding whether lease,
+      licence or rental counts
+    grounding:
+    - F_FOS
+    handler: light
+  M_TOBAG_A_ABCP:
+    statement: The transfer or disposal is made by or under the directions of the person carrying on the business
+    order: HIGH
+    interpretation: Was the transfer or disposal made by the person carrying on the business, or under that person's directions?
+      UNKNOWN leads to review
+    grounding:
+    - F_ADA
+    handler: light
+  M_TOBAG_A_GNLBA:
+    statement: The transfer or disposal is such that the goods no longer form part of those assets
+    order: HIGH
+    interpretation: After the transfer or disposal, do the goods no longer form part of the business assets? STILL_ASSET means
+      the condition is not met
+    grounding:
+    - F_ARS
+    handler: light
+  M_PUOBGIS_A_UDBBP:
+    statement: The putting to use, use or making available of the goods is by or under the direction of a person carrying
+      on a business
+    order: HIGH
+    interpretation: Is the person who puts the goods to use, uses them or makes them available a person carrying on a business,
+      or acting under the direction of such a person?
+    grounding:
+    - F_PBDS
+    handler: heavy
+  M_PUOBGIS_A_GHFBP:
+    statement: The goods are held or used for the purposes of the business
+    order: HIGH
+    interpretation: Are the goods held or used for the purposes of the business?
+    grounding:
+    - F_GBH
+    handler: light
+  M_PUOBGIS_A_GPTPU:
+    statement: The goods are put to any private use
+    order: HIGH
+    interpretation: Are the goods put to any private use?
+    grounding:
+    - F_GUK
+    handler: light
+  M_PUOBGIS_A_GUFNBP:
+    statement: The goods are used for any purpose other than a purpose of the business
+    order: HIGH
+    interpretation: Are the goods used for a purpose other than a purpose of the business?
+    grounding:
+    - F_GUK
+    - F_GUP
+    handler: light
+  M_PUOBGIS_A_GMAFNBU:
+    statement: The goods are made available to any person for use for any purpose other than a purpose of the business
+    order: HIGH
+    interpretation: Are the goods made available to any person for use for a purpose other than a purpose of the business?
+    grounding:
+    - F_GUK
+    - F_GUP
+    handler: light
+  M_PRETDS_A_PCTBTP:
+    statement: The person ceases to be a taxable person
+    order: LOW
+    rule: F_PTSC = 'CEASED'
+    handler: python
+  M_PRETDS_A_GFPOBA:
+    statement: The goods form part of the assets of a business carried on by the person who ceases to be a taxable person
+    order: LOW
+    rule: F_GBAS = 'ASSET_OF_BUSINESS'
+    handler: python
+  M_PRETDS_A_BCOBR:
+    statement: The business is carried on by a personal representative
+    order: HIGH
+    interpretation: Is the business carried on by a personal representative of the person who ceased to be a taxable person?
+    grounding:
+    - F_BCRS
+    handler: light
+  M_PRETDS_A_RDTP:
+    statement: The personal representative is deemed to be a taxable person
+    order: HIGH
+    interpretation: Is the personal representative who carries on the business deemed to be a taxable person?
+    grounding:
+    - F_RTDS
+    handler: light
+  M_BTAGC_A_PCTS:
+    statement: Where any person ceases to be a taxable person
+    order: LOW
+    rule: F_PTSC = 'CEASED'
+    handler: python
+  M_BTAGC_A_GABA:
+    statement: Goods form part of the assets of any business carried on by the person
+    order: HIGH
+    interpretation: Do the goods form part of the assets of a business carried on by the person, as shown by the asset register
+      and books of account?
+    grounding:
+    - F_GBAS
+    handler: light
+  M_BTAGC_A_BTAGC:
+    statement: The business is transferred as a going concern to another person
+    order: HIGH
+    interpretation: Has the business been transferred to another person as a going concern, rather than only individual goods
+      being sold or the business being discontinued?
+    grounding:
+    - F_BTS
+    handler: heavy
+  M_ROIPS_A_TIR:
+    statement: The transaction takes the form of renting
+    order: LOW
+    if_false: F_FOS is any value other than RENTAL
+    rule: F_FOS = 'RENTAL'
+    handler: python
+  M_ROIPS_A_RPII:
+    statement: The property rented is immovable property
+    order: HIGH
+    if_false: the rented property is movable
+    interpretation: Is the rented property immovable property as described in the contract, registration details or property
+      records
+    grounding:
+    - F_PK
+    - F_AOTD
+    handler: heavy
+  M_COCAS_A_AICOS:
+    statement: The activity is the construction of a complex, building, civil structure or a part thereof
+    order: HIGH
+    interpretation: Does the described activity amount to construction of a complex, building, civil structure or a part thereof?
+    grounding:
+    - F_AOTD
+    handler: light
+  M_COCAS_A_BIFS:
+    statement: The construction is of a complex or building intended for sale to a buyer, wholly or partly
+    order: HIGH
+    interpretation: Is the complex or building under construction intended for sale to a buyer, wholly or partly?
+    grounding:
+    - F_AOTD
+    handler: light
+  M_COCAS_A_ECACC:
+    statement: Where a completion certificate is required by the competent authority, the entire consideration has been received
+      after issuance of that completion certificate
+    order: LOW
+    rule: F_PCTS = 'AFTER_CERTIFICATE'
+    handler: python
+  M_COCAS_A_ECAFO:
+    statement: The entire consideration has been received after the first occupation of the complex or building
+    order: LOW
+    rule: F_POTS = 'AFTER_OCCUPATION'
+    handler: python
+  M_NSSOLAB_A_SIAS:
+    statement: The transaction takes the form of a sale
+    order: LOW
+    rule: F_FOS = 'SALE'
+    handler: python
+  M_NSSOLAB_A_SIOL:
+    statement: The property sold is land
+    order: LOW
+    rule: F_SPT2 = 'LAND'
+    handler: python
+  M_NSSOLAB_A_SIOB:
+    statement: The property sold is a building
+    order: LOW
+    rule: F_SPT2 = 'BUILDING'
+    handler: python
+  M_SOFBCOM_A_DTPOS:
+    statement: The transportation of the deceased is included as part of a service of funeral, burial, crematorium or mortuary
+    order: HIGH
+    interpretation: Is the transportation of the deceased part of a funeral, burial, crematorium or mortuary service
+    grounding:
+    - F_DOS
+    handler: light
+  M_TTOIPS_A_RIIP:
+    statement: The right transferred or permitted for use is an intellectual property right of any kind
+    order: HIGH
+    interpretation: Is the right concerned an intellectual property right of any kind
+    grounding:
+    - F_IPRK
+    handler: heavy
+  M_TTOIPS_A_TITT:
+    statement: The transaction is a temporary transfer of an intellectual property right
+    order: LOW
+    rule: F_IPUF IN ['TEMPORARY_TRANSFER', 'BOTH_FORMS']
+    handler: python
+  M_TTOIPS_A_TPIU:
+    statement: The transaction permits the use or enjoyment of an intellectual property right
+    order: LOW
+    rule: F_IPUF IN ['PERMITTING_USE_OR_ENJOYMENT', 'BOTH_FORMS']
+    handler: python
+  M_ISDS_A_LSAK:
+    statement: The activity is development, design, programming, customisation, adaptation, upgradation, enhancement or implementation
+    order: LOW
+    rule: F_SAK2 IN ['DEVELOPMENT', 'DESIGN', 'PROGRAMMING', 'CUSTOMISATION', 'ADAPTATION', 'UPGRADATION', 'ENHANCEMENT',
+      'IMPLEMENTATION']
+    handler: python
+  M_ISDS_A_ACITS:
+    statement: The activity is of information technology software
+    order: HIGH
+    interpretation: Does the described activity relate to information technology software?
+    grounding:
+    - F_AOTD
+    handler: heavy
+  M_RTODAS_A_PATO:
+    statement: A person has agreed to the obligation that the listed activity describes, and this agreement carries over to
+      each listed alternative
+    order: LOW
+    rule: F_OA = TRUE
+    handler: python
+  M_RTODAS_A_OTRFA:
+    statement: The agreed obligation is to refrain from an act
+    order: LOW
+    rule: F_OK = 'REFRAIN_FROM_ACT'
+    handler: python
+  M_RTODAS_A_OTTS:
+    statement: The agreed obligation is to tolerate an act or a situation
+    order: HIGH
+    interpretation: Does the agreed obligation require the person to tolerate an act or a situation, as described in the activity
+      description?
+    grounding:
+    - F_OK
+    - F_AOTD
+    handler: heavy
+  M_RTODAS_A_OTDA:
+    statement: The agreed obligation is to do an act
+    order: LOW
+    rule: F_OK = 'DO_ACT'
+    handler: python
+  M_TORTUGS_A_TORTUG:
+    statement: The transaction is a transfer of the right to use any goods for any purpose, whether or not for a specified
+      period
+    order: HIGH
+    interpretation: Does the contract or invoice transfer a right to use the described goods for any purpose, whether or not
+      for a specified period?
+    grounding:
+    - F_GURG
+    - F_DOS
+    handler: heavy
+  M_TORTUGS_A_CDOVC:
+    statement: The transfer of the right to use goods is made for cash, deferred payment or other valuable consideration
+    order: LOW
+    rule: F_SCT IN ['MONEY','NON_MONEY','BOTH']
+    handler: python
+  M_FODCSAS_A_SIACS:
+    statement: The supply is a composite supply
+    order: HIGH
+    interpretation: Is the supply, as described in the contract or invoice, a composite supply?
+    grounding:
+    - F_DOS
+    handler: heavy
+  M_FODCSAS_A_GSIAM:
+    statement: The composite supply is a supply of goods made by way of or as part of any service or in any other manner whatsoever
+    order: HIGH
+    interpretation: Is goods supplied by way of or as part of a service, or in any other manner whatsoever?
+    grounding:
+    - F_DOS
+    handler: light
+  M_FODCSAS_A_GAFOC:
+    statement: The goods supplied are food or any other article for human consumption
+    order: HIGH
+    interpretation: Do the goods supplied consist of food or any other article for human consumption?
+    grounding:
+    - F_DOS
+    handler: light
+  M_FODCSAS_A_GSAAD:
+    statement: The goods supplied are any drink
+    order: HIGH
+    interpretation: Do the goods supplied consist of a drink?
+    grounding:
+    - F_DOS
+    handler: light
+  M_FODCSAS_A_DINAL:
+    statement: The drink is other than alcoholic liquor for human consumption
+    order: LOW
+    rule: F_SIALFHC = FALSE
+    handler: python
+  M_FODCSAS_A_SFVC:
+    statement: The supply or service is for cash, deferred payment or other valuable consideration
+    order: LOW
+    rule: F_SCT IN ['MONEY','NON_MONEY','BOTH']
+    handler: python
+  M_SOGBUA_A_SIUA:
+    statement: The supply is made by any unincorporated association or body of persons
+    order: HIGH
+    interpretation: Is the supplier an unincorporated association or a body of persons
+    grounding:
+    - F_SLS
+    handler: light
+  M_SOGBUA_A_RIMT:
+    statement: The supply is made to a member thereof, that is a member of that same unincorporated association or body of
+      persons
+    order: LOW
+    rule: F_RMS = 'MEMBER'
+    handler: python
+  M_SOGBUA_A_SIIG:
+    statement: The thing supplied under the transaction is goods
+    order: HIGH
+    interpretation: Is the item supplied goods, as distinct from services, on the description of the supply
+    grounding:
+    - F_DOS
+    handler: heavy
+  M_SOGBUA_A_CPIC:
+    statement: The supply is made for cash consideration that has been paid in money
+    order: LOW
+    rule: F_SCT IN ['MONEY', 'BOTH'] AND F_SCS = 'PAID'
+    handler: python
+  M_SOGBUA_A_CIDP:
+    statement: The supply is made for deferred payment, with money agreed to be paid later
+    order: LOW
+    rule: F_SCT IN ['MONEY', 'BOTH'] AND F_SCS = 'AGREED'
+    handler: python
+  M_SOGBUA_A_CIOV:
+    statement: The supply is made for other valuable consideration, that is consideration other than cash or deferred money
+      that has value
+    order: HIGH
+    interpretation: Is the consideration given for the supply, apart from cash or deferred money, of valuable worth within
+      paragraph 7
+    grounding:
+    - F_SCT
+    - F_SCS
+    handler: heavy
+  M_WCCSTAS_A_CSIWC:
+    statement: The composite supply is a works contract as defined in clause (119) of section 2
+    order: HIGH
+    interpretation: Does the described activity fall within the works contract definition in clause (119) of section 2
+    grounding:
+    - F_AOTD
+    handler: heavy
+groups:
+  M_DOCFP2_G_CRA:
+    name: Court Route Alternatives
+    logic: ANY
+    members:
+    - M_DOCFP2_A_DCII
+    - M_DOCFP2_A_HCII
+    - M_DOCFP2_A_SCII
+    - M_DOCFP2_A_OBQAC
+    description: Any one qualifying route makes the body a court for paragraph 2
+  M_SIAFOS_G_LOOF:
+    name: Listed Or Other Form
+    logic: ANY
+    members:
+    - M_SIAFOS_A_SIAS
+    - M_SIAFOS_A_SIAT
+    - M_SIAFOS_A_SIAB
+    - M_SIAFOS_A_SIAE
+    - M_SIAFOS_A_SIALG
+    - M_SIAFOS_A_SIAR
+    - M_SIAFOS_A_SIAL
+    - M_SIAFOS_A_SIAD
+    - M_SIAFOS_A_SIAF
+    description: Any one of the listed forms, or any other qualifying form of supply, is enough. The list is illustrative.
+  M_SIAFOS_G_MOAS:
+    name: Made Or Agreed Supply
+    logic: ANY
+    members:
+    - M_SIAFOS_A_SMFC
+    - M_SIAFOS_A_SAFC
+    description: The supply is either made for a consideration or agreed to be made for a consideration. Both events are not
+      required.
+  M_IOSFC_G_ISS:
+    name: Import Services Scope
+    logic: ALL
+    members:
+    - M_IOSFC_A_SIIOS
+    - M_IOSFC_A_IIFC
+    description: Both the import of services limb and the for a consideration limb are needed for this inclusion.
+  M_SIAWC_G_ASCM:
+    name: All Schedule Conditions Met
+    logic: ALL
+    members:
+    - M_SIAWC_A_ASISI
+    - M_SIAWC_A_AMOA
+    - M_SIAWC_A_MWAC
+    description: Each atom is tested independently and all three are required.
+  M_CALS_G_PAA:
+    name: Primary Authority Alternatives
+    logic: ANY
+    members:
+    - M_CALS_A_AITG
+    - M_CALS_A_AIAI
+    description: The Government or any authority authorised to issue completion certificate under any law for the time being
+      in force.
+  M_CALS_G_SRC:
+    name: Surveyor Route Conditions
+    logic: ALL
+    members:
+    - M_CALS_A_CNRFA
+    - M_CALS_A_AILS
+    description: Where a completion certificate is not required from such authority - the licensed surveyor listed in the
+      clause.
+  M_DOCACE_G_GOAIR:
+    name: Government Or Authorised Issuer Route
+    logic: ANY
+    members:
+    - M_DOCACE_A_CAIG
+    - M_DOCACE_A_AULA
+    description: The competent authority is the Government or an authority authorised to issue the completion certificate
+  M_DOCACE_G_ERCNR:
+    name: Engineer Route Certificate Not Required
+    logic: ALL
+    members:
+    - M_DOCACE_A_CNRFA
+    - M_DOCACE_A_CERWI
+    description: Where the certificate is not required from such authority, a chartered engineer registered with the Institution
+      of Engineers (India) is the competent authority
+  M_CAA_G_GOAA:
+    name: Government Or Authorised Authority
+    logic: ANY
+    members:
+    - M_CAA_A_AITG
+    - M_CAA_A_AAUL
+    description: The Government or any authority authorised under any law in force to issue a completion certificate
+  M_CAA_G_RAR:
+    name: Registered Architect Route
+    logic: ALL
+    members:
+    - M_CAA_A_CNRFA
+    - M_CAA_A_ARWC
+    description: No certificate is required from such authority and the certifier is a registered architect
+  M_DOCFS_G_ECW:
+    name: Extended Construction Works
+    logic: ANY
+    members:
+    - M_DOCFS_A_WIAA
+    - M_DOCFS_A_WIAA2
+    - M_DOCFS_A_WIAR
+    - M_DOCFS_A_WIAR2
+    description: Any one of the four listed works, which the expression includes.
+  M_DOCFS_G_ECSC:
+    name: Existing Civil Structure Condition
+    logic: ALL
+    members:
+    - M_DOCFS_A_SEBW
+    - M_DOCFS_A_SIC
+    description: The listed works must be carried out on an existing civil structure, so both qualifiers apply together.
+  M_PAANGNS_G_APAC:
+    name: All Public Authority Conditions
+    logic: ALL
+    members:
+    - M_PAANGNS_A_UBGOA
+    - M_PAANGNS_A_EAAPA
+    - M_PAANGNS_A_ANOCR
+    description: The activity must be undertaken by the named government body, in a public authority capacity, and be notified.
+  M_TOPOGAS_G_TAOT:
+    name: Treatment And Owner Test
+    logic: ALL
+    members:
+    - M_TOPOGAS_A_TOPA
+    - M_TOPOGAS_A_GOAP
+    description: Both the treatment or process applied to goods and the goods belonging to another person must be present
+  M_SBCOT_G_CTC:
+    name: Court Tribunal Conditions
+    logic: ALL
+    members:
+    - M_SBCOT_A_SPBCOT
+    - M_SBCOT_A_CEUL
+    - M_SBCOT_A_ELIF
+    description: All three conditions must be met
+  M_DBCPH_G_DPCG:
+    name: Duty Post Capacity Group
+    logic: ALL
+    members:
+    - M_DBCPH_A_AIDP
+    - M_DBCPH_A_PHCP
+    - M_DBCPH_A_DPITC
+    description: Duties, constitutional post and capacity must all hold together
+  M_FPBM_G_MFG:
+    name: Member Function Group
+    logic: ALL
+    members:
+    - M_FPBM_A_AIMF
+    - M_FPBM_A_PILM
+    description: Both the function test and the member test must be true
+  M_ESICOE_G_ESG:
+    name: Employee Service Group
+    logic: ALL
+    members:
+    - M_ESICOE_A_SBETE
+    - M_ESICOE_A_SICOE
+    description: Both the employee-to-employer service test and the employment connection test must hold
+  M_NSOGWEI_G_NTTM:
+    name: Non Taxable Territory Movement
+    logic: ALL
+    members:
+    - M_NSOGWEI_A_TISOG
+    - M_NSOGWEI_A_OINTT
+    - M_NSOGWEI_A_DAPINTT
+    - M_NSOGWEI_A_GWEI
+    description: All four paragraph 7 conditions must hold together.
+  M_SOWGBC_G_WSE:
+    name: Warehoused Supply Elements
+    logic: ALL
+    members:
+    - M_SOWGBC_A_GAWG
+    - M_SOWGBC_A_AIASOG
+    - M_SOWGBC_A_SMTAP
+    description: The goods are warehoused, the activity is a supply of those goods, and the supply is made to any person.
+  M_SOGBCBC_G_CTA:
+    name: Consignee Transfer Act
+    logic: ALL
+    members:
+    - M_SOGBCBC_A_SBC
+    - M_SOGBCBC_A_STOP
+    - M_SOGBCBC_A_TBDE
+    description: The consignee supplies goods to another person by endorsement of documents of title
+  M_SOGBCBC_G_DACW:
+    name: Dispatch And Clearance Window
+    logic: ALL
+    members:
+    - M_SOGBCBC_A_DFFP
+    - M_SOGBCBC_A_SBHC
+    description: The supply is after foreign dispatch and before clearance for home consumption, and both timing limits must
+      hold
+  M_TOTIG_G_TGC:
+    name: Title Goods Conditions
+    logic: ALL
+    members:
+    - M_TOTIG_A_TOTIG
+    - M_TOTIG_A_TSIG
+    description: Both the transfer of title and the goods subject must be satisfied.
+  M_TORIGIS_G_TSA:
+    name: Transfer Subject Alternatives
+    logic: ANY
+    members:
+    - M_TORIGIS_A_TORIG
+    - M_TORIGIS_A_TOUS
+    description: At least one of the transfer subject forms must hold
+  M_TOTIG2_G_TTTG:
+    name: Title Transfer Terms Group
+    logic: ALL
+    members:
+    - M_TOTIG2_A_ATOTIG
+    - M_TOTIG2_A_ASPP
+    - M_TOTIG2_A_PPAFD
+    - M_TOTIG2_A_PUFC
+    description: All four title transfer terms must hold together, as the source joins them with an agreement, a future date
+      and payment upon full consideration.
+  M_LOLIS_G_LIA:
+    name: Land Interest Alternatives
+    logic: ANY
+    members:
+    - M_LOLIS_A_TILOL
+    - M_LOLIS_A_TITOL
+    - M_LOLIS_A_TIEOL
+    - M_LOLIS_A_TILTOL
+    description: Any one of the four listed interests in land is enough
+  M_LOBIS_G_BLDC:
+    name: Building Lease Deeming Conditions
+    logic: ALL
+    members:
+    - M_LOBIS_A_LOLO
+    - M_LOBIS_A_PIAB
+    - M_LOBIS_A_LFBOC
+    description: The lease or letting out, the building subject and the business or commerce purpose must all hold.
+  M_TOBAG_G_DSC:
+    name: Deemed Supply Conditions
+    logic: ALL
+    members:
+    - M_TOBAG_A_GFBA
+    - M_TOBAG_A_GTODO
+    - M_TOBAG_A_ABCP
+    - M_TOBAG_A_GNLBA
+    description: All four conditions of the transfer or disposal of business goods
+  M_PUOBGIS_G_POONBU:
+    name: Private Or Other Non Business Use
+    logic: ANY
+    members:
+    - M_PUOBGIS_A_GPTPU
+    - M_PUOBGIS_A_GUFNBP
+    - M_PUOBGIS_A_GMAFNBU
+    description: Goods are put to any private use, or are used for a non-business purpose, or are made available to any person
+      for use for a non-business purpose.
+  M_PUOBGIS_G_APFDC:
+    name: All Paragraph Four Deeming Conditions
+    logic: ALL
+    members:
+    - M_PUOBGIS_A_UDBBP
+    - M_PUOBGIS_A_GHFBP
+    - M_PUOBGIS_G_POONBU
+    description: Direction by a business person, business goods, and one of the use forms must all hold.
+  M_PRETDS_G_DCM:
+    name: Deeming Conditions Met
+    logic: ALL
+    members:
+    - M_PRETDS_A_PCTBTP
+    - M_PRETDS_A_GFPOBA
+    description: A person ceases to be a taxable person AND the goods form part of the assets of a business carried on by
+      him.
+  M_PRETDS_G_PREM:
+    name: Personal Representative Exception Met
+    logic: ALL
+    members:
+    - M_PRETDS_A_BCOBR
+    - M_PRETDS_A_RDTP
+    description: The business is carried on by a personal representative AND that personal representative is deemed to be
+      a taxable person.
+  M_BTAGC_G_DCM:
+    name: Deeming Conditions Met
+    logic: ALL
+    members:
+    - M_BTAGC_A_PCTS
+    - M_BTAGC_A_GABA
+    description: Both the cessation of taxable person status and the goods being business assets must hold for the deeming
+      to arise.
+  M_ROIPS_G_ROIP:
+    name: Renting Of Immovable Property
+    logic: ALL
+    members:
+    - M_ROIPS_A_TIR
+    - M_ROIPS_A_RPII
+    description: Both the renting form and the immovable property subject must hold
+  M_COCAS_G_COS:
+    name: Construction Object Scope
+    logic: ANY
+    members:
+    - M_COCAS_A_AICOS
+    - M_COCAS_A_BIFS
+    description: Construction of a complex, building, civil structure or part thereof, and the inclusive (non-exhaustive)
+      route of a complex or building intended for sale to a buyer wholly or partly.
+  M_COCAS_G_CTE:
+    name: Consideration Timing Exception
+    logic: ANY
+    members:
+    - M_COCAS_A_ECACC
+    - M_COCAS_A_ECAFO
+    description: Entire consideration received after the earlier of completion certificate (where required) or first occupation.
+      Receipt after either event satisfies this because of whichever is earlier.
+  M_NSSOLAB_A_BSUST:
+    name: Any of the referred steps (M_NSSOLAB_A_BSUST)
+    logic: ANY
+    members:
+    - M_CAA_PD_CAO
+    - M_CALS_PD_CADM
+    - M_COCAS_PD_CDSOS
+    - M_DOCACE_PD_CADO
+    - M_DOCFS_PD_CMO
+    description: TRUE when any step of the law this check refers to is TRUE
+  M_NSSOLAB_G_LOBO:
+    name: Land Or Building Object
+    logic: ANY
+    members:
+    - M_NSSOLAB_A_SIOL
+    - M_NSSOLAB_A_SIOB
+    description: The property sold is land or a building.
+  M_SOFBCOM_A_SIFS:
+    name: Any of the referred steps (M_SOFBCOM_A_SIFS)
+    logic: ANY
+    members:
+    - M_ACNGNS_PD_ACNS
+    - M_DBCPH_PD_NSO
+    - M_DOCFP2_PD_CDFP2
+    - M_ESICOE_PD_NSO
+    - M_FPBM_PD_NSO
+    - M_MOWG_PD_WGMO
+    - M_NSOGWEI_PD_NSO
+    - M_NSSOLAB_PD_LOBNS
+    - M_SBCOT_PD_NSO
+    - M_SOGBCBC_PD_NSCT
+    - M_SOWGBC_PD_NSO
+    description: TRUE when any step of the law this check refers to is TRUE
+  M_SOFBCOM_A_SIBS:
+    name: Any of the referred steps (M_SOFBCOM_A_SIBS)
+    logic: ANY
+    members:
+    - M_ACNGNS_PD_ACNS
+    - M_DBCPH_PD_NSO
+    - M_DOCFP2_PD_CDFP2
+    - M_ESICOE_PD_NSO
+    - M_FPBM_PD_NSO
+    - M_MOWG_PD_WGMO
+    - M_NSOGWEI_PD_NSO
+    - M_NSSOLAB_PD_LOBNS
+    - M_SBCOT_PD_NSO
+    - M_SOGBCBC_PD_NSCT
+    - M_SOWGBC_PD_NSO
+    description: TRUE when any step of the law this check refers to is TRUE
+  M_SOFBCOM_A_SICS:
+    name: Any of the referred steps (M_SOFBCOM_A_SICS)
+    logic: ANY
+    members:
+    - M_ACNGNS_PD_ACNS
+    - M_DBCPH_PD_NSO
+    - M_DOCFP2_PD_CDFP2
+    - M_ESICOE_PD_NSO
+    - M_FPBM_PD_NSO
+    - M_MOWG_PD_WGMO
+    - M_NSOGWEI_PD_NSO
+    - M_NSSOLAB_PD_LOBNS
+    - M_SBCOT_PD_NSO
+    - M_SOGBCBC_PD_NSCT
+    - M_SOWGBC_PD_NSO
+    description: TRUE when any step of the law this check refers to is TRUE
+  M_SOFBCOM_A_SIMS:
+    name: Any of the referred steps (M_SOFBCOM_A_SIMS)
+    logic: ANY
+    members:
+    - M_ACNGNS_PD_ACNS
+    - M_DBCPH_PD_NSO
+    - M_DOCFP2_PD_CDFP2
+    - M_ESICOE_PD_NSO
+    - M_FPBM_PD_NSO
+    - M_MOWG_PD_WGMO
+    - M_NSOGWEI_PD_NSO
+    - M_NSSOLAB_PD_LOBNS
+    - M_SBCOT_PD_NSO
+    - M_SOGBCBC_PD_NSCT
+    - M_SOWGBC_PD_NSO
+    description: TRUE when any step of the law this check refers to is TRUE
+  M_SOFBCOM_G_FRS:
+    name: Funeral Related Services
+    logic: ANY
+    members:
+    - M_SOFBCOM_A_SIFS
+    - M_SOFBCOM_A_SIBS
+    - M_SOFBCOM_A_SICS
+    - M_SOFBCOM_A_SIMS
+    - M_SOFBCOM_A_DTPOS
+    description: Any one of the listed funeral, burial, crematorium or mortuary services, with transport of the deceased counted
+      only as part of those services
+  M_ANGNS_A_ASISIII:
+    name: Any of the referred steps (M_ANGNS_A_ASISIII)
+    logic: ANY
+    members:
+    - M_ACNGNS_PD_ACNS
+    - M_DBCPH_PD_NSO
+    - M_DOCFP2_PD_CDFP2
+    - M_ESICOE_PD_NSO
+    - M_FPBM_PD_NSO
+    - M_MOWG_PD_WGMO
+    - M_NSOGWEI_PD_NSO
+    - M_NSSOLAB_PD_LOBNS
+    - M_SBCOT_PD_NSO
+    - M_SOFBCOM_PD_NSO
+    - M_SOGBCBC_PD_NSCT
+    - M_SOWGBC_PD_NSO
+    description: TRUE when any step of the law this check refers to is TRUE
+  M_TTOIPS_G_IPUF:
+    name: Intellectual Property Use Forms
+    logic: ANY
+    members:
+    - M_TTOIPS_A_TITT
+    - M_TTOIPS_A_TPIU
+    description: Either the temporary transfer form or the permitted use or enjoyment form is enough
+  M_ISDS_G_SST:
+    name: Software Service Test
+    logic: ALL
+    members:
+    - M_ISDS_A_LSAK
+    - M_ISDS_A_ACITS
+    description: The activity is one of the eight listed activities and is of information technology software
+  M_RTODAS_G_AOK:
+    name: Agreed Obligation Kind
+    logic: ANY
+    members:
+    - M_RTODAS_A_OTRFA
+    - M_RTODAS_A_OTTS
+    - M_RTODAS_A_OTDA
+    description: The agreed obligation is one of the three listed kinds
+  M_TORTUGS_G_DST:
+    name: Deemed Service Test
+    logic: ALL
+    members:
+    - M_TORTUGS_A_TORTUG
+    - M_TORTUGS_A_CDOVC
+    description: Both the right to use transfer and the consideration must be met for the deeming to apply.
+  M_FODCSAS_G_FOQDG:
+    name: Food Or Qualifying Drink Goods
+    logic: ANY
+    members:
+    - M_FODCSAS_A_GAFOC
+    - M_FODCSAS_G_DOTAL
+    description: The goods are food or any other article for human consumption, or alternatively a drink other than alcoholic
+      liquor for human consumption.
+  M_FODCSAS_G_DOTAL:
+    name: Drink Other Than Alcoholic Liquor
+    logic: ALL
+    members:
+    - M_FODCSAS_A_GSAAD
+    - M_FODCSAS_A_DINAL
+    description: The drink route requires a drink that is not alcoholic liquor for human consumption.
+  M_SOGBUA_G_SCM:
+    name: Supply Conditions Met
+    logic: ALL
+    members:
+    - M_SOGBUA_A_SIUA
+    - M_SOGBUA_A_RIMT
+    - M_SOGBUA_A_SIIG
+    description: All three supply conditions are required together
+  M_SOGBUA_G_CFM:
+    name: Consideration Form Met
+    logic: ANY
+    members:
+    - M_SOGBUA_A_CPIC
+    - M_SOGBUA_A_CIDP
+    - M_SOGBUA_A_CIOV
+    description: Any one of the listed consideration forms satisfies the requirement
+  M_WCCSTAS_A_SICS:
+    name: Any of the referred steps (M_WCCSTAS_A_SICS)
+    logic: ANY
+    members:
+    - M_BTAGC_PD_GDS
+    - M_CAA_PD_CAO
+    - M_CALS_PD_CADM
+    - M_COCAS_PD_CDSOS
+    - M_DOCACE_PD_CADO
+    - M_DOCFS_PD_CMO
+    - M_ISDS_PD_DSSO
+    - M_LOBIS_PD_BLIS
+    - M_LOLIS_PD_LIDS
+    - M_PRETDS_PD_DDBPR
+    - M_PRETDS_PD_GDSOC
+    - M_PUOBGIS_PD_PUDSS
+    - M_ROIPS_PD_RTASS
+    - M_RTODAS_PD_DSS
+    - M_SOGBUA_PD_DSOG
+    - M_TOBAG_PD_DGSR
+    - M_TOPOGAS_PD_DSO
+    - M_TORIGIS_PD_TDSS
+    - M_TORTUGS_PD_DSO
+    - M_TOTIG2_PD_TTDGS
+    - M_TOTIG_PD_TTDGS
+    - M_TTOIPS_PD_IPSD
+    description: TRUE when any step of the law this check refers to is TRUE
+  M_WCCSTAS_G_WCCG:
+    name: Works Contract Composite Group
+    logic: ALL
+    members:
+    - M_WCCSTAS_A_SICS
+    - M_WCCSTAS_A_CSIWC
+    description: Both the composite supply test and the works contract test are needed for the deeming
+outcomes:
+  M_MOWG_LE_WGMO:
+    outcome: The term warehoused goods used for paragraph 8 carries the meaning given in the Customs Act, 1962
+    expr: M_MOWG_A_CAWGM
+    module: M_MOWG
+    description: 'Single legal outcome: the Customs Act meaning governs the term for paragraph 8, with no different meaning
+      to be applied.'
+  M_DOCFP2_LE_CDFP2:
+    outcome: COURT_FOR_PARA2
+    expr: M_DOCFP2_G_CRA
+    module: M_DOCFP2
+    description: The body is a court for paragraph 2 where at least one court route applies
+  M_SIAFOS_LE_ISO:
+    outcome: INCLUDED_IN_SUPPLY
+    expr: M_SIAFOS_G_LOOF AND M_SIAFOS_G_MOAS AND M_SIAFOS_A_SBPIB
+    module: M_SIAFOS
+    description: The transaction falls within the inclusive meaning of supply when it takes a listed or other form of supply,
+      is made or agreed to be made for a consideration, and is by a person in the course or furtherance of business.
+  M_IOSFC_LE_ISIO:
+    outcome: SUPPLY_INCLUDED
+    expr: M_IOSFC_G_ISS
+    module: M_IOSFC
+    description: Import of services for a consideration is included in supply whether or not in the course or furtherance
+      of business. Inclusion is not exhaustive and no business-context condition is applied.
+  M_SIAWC_LE_SAIS:
+    outcome: SUPPLY_INCLUDED
+    expr: M_SIAWC_G_ASCM
+    module: M_SIAWC
+    description: The activity is included in supply when all three schedule conditions are met.
+  M_CALS_LE_CADM:
+    outcome: IS_COMPETENT_AUTHORITY
+    expr: M_CALS_G_PAA OR M_CALS_G_SRC
+    module: M_CALS
+    description: The expression competent authority is satisfied by either the primary authority route or the licensed surveyor
+      route.
+  M_DOCACE_LE_CADO:
+    outcome: COMPETENT_AUTHORITY_DEFINED
+    expr: M_DOCACE_G_GOAIR OR M_DOCACE_G_ERCNR
+    module: M_DOCACE
+    description: The entity is a competent authority for paragraph 5(b) under the exhaustive definition
+  M_CAA_LE_CAO:
+    outcome: IS_COMPETENT_AUTHORITY
+    expr: M_CAA_G_GOAA OR M_CAA_G_RAR
+    module: M_CAA
+    description: The certifying body is a competent authority if it is the Government or an authority authorised under law,
+      or if no certificate is required from such authority and it is a registered architect
+  M_DOCFS_LE_CMO:
+    outcome: WITHIN_CONSTRUCTION
+    expr: (M_DOCFS_G_ECW AND M_DOCFS_G_ECSC) OR M_DOCFS_A_OCBLW
+    module: M_DOCFS
+    description: The activity is within construction for this clause if it is a listed extended work on an existing civil
+      structure, or other construction within the open inclusion.
+  M_PAANGNS_LE_TNGNS:
+    outcome: TREATED_NEITHER_SUPPLY_OF_GOODS_NOR_SUPPLY_OF_SERVICES
+    expr: M_PAANGNS_G_APAC
+    module: M_PAANGNS
+    description: When all three conditions hold the activity is deemed neither a supply of goods nor a supply of services.
+  M_TOPOGAS_LE_DSO:
+    outcome: SUPPLY_OF_SERVICES
+    expr: M_TOPOGAS_G_TAOT
+    module: M_TOPOGAS
+    description: Where the treatment or process test and the another-person goods test are both met, the activity is deemed
+      a supply of services
+  M_ACNGNS_LE_ACNS:
+    outcome: NEITHER_SUPPLY
+    expr: M_ACNGNS_A_AIAC AND NOT M_ACNGNS_A_CILBG
+    module: M_ACNGNS
+    description: Entry 6 applies only where the activity is an actionable claim and the claim is not of the excluded lottery,
+      betting or gambling kind.
+  M_SBCOT_LE_NSO:
+    outcome: NEITHER_SUPPLY_OF_GOODS_NOR_SERVICES
+    expr: M_SBCOT_G_CTC
+    module: M_SBCOT
+    description: Outcome applies only when all court and Tribunal conditions hold
+  M_DBCPH_LE_NSO:
+    outcome: NEITHER_SUPPLY
+    expr: M_DBCPH_G_DPCG
+    module: M_DBCPH
+    description: All three conjunctive tests must hold for the paragraph 3(b) outcome
+  M_FPBM_LE_NSO:
+    outcome: NEITHER_SUPPLY_OF_GOODS_NOR_SERVICES
+    expr: M_FPBM_G_MFG
+    module: M_FPBM
+    description: The activity is treated neither as a supply of goods nor a supply of services when the member function group
+      is true
+  M_ESICOE_LE_NSO:
+    outcome: NEITHER_SUPPLY
+    expr: M_ESICOE_G_ESG
+    module: M_ESICOE
+    description: Outcome is neither a supply of goods nor a supply of services only when the whole employee service group
+      is TRUE
+  M_NSOGWEI_LE_NSO:
+    outcome: NEITHER_SUPPLY_OF_GOODS_NOR_SERVICES
+    expr: M_NSOGWEI_G_NTTM
+    module: M_NSOGWEI
+    description: All paragraph 7 conditions hold, so the movement is neither a supply of goods nor a supply of services.
+  M_SOWGBC_LE_NSO:
+    outcome: NEITHER_SUPPLY
+    expr: M_SOWGBC_G_WSE AND M_SOWGBC_A_SBHCC
+    module: M_SOWGBC
+    description: The warehoused supply elements are all met and the supply occurs before clearance for home consumption.
+  M_SOGBCBC_LE_NSCT:
+    outcome: NEITHER_SUPPLY
+    expr: M_SOGBCBC_G_CTA AND M_SOGBCBC_G_DACW
+    module: M_SOGBCBC
+    description: The consignee goods transfer is treated as neither supply of goods nor supply of services only when both
+      the transfer act and the dispatch and clearance window are met
+  M_TOTIG_LE_TTDGS:
+    outcome: SUPPLY_OF_GOODS
+    expr: M_TOTIG_G_TGC
+    module: M_TOTIG
+    description: A transfer of title in goods is deemed a supply of goods.
+  M_TORIGIS_LE_TDSS:
+    outcome: SUPPLY_OF_SERVICES
+    expr: M_TORIGIS_G_TSA AND M_TORIGIS_A_TWT
+    module: M_TORIGIS
+    description: The transfer subject condition holds and the transfer is without transfer of title, so the transaction is
+      a supply of services
+  M_TOTIG2_LE_TTDGS:
+    outcome: SUPPLY_OF_GOODS_DEEMED
+    expr: M_TOTIG2_G_TTTG
+    module: M_TOTIG2
+    description: When all title transfer terms hold the transaction is deemed a supply of goods.
+  M_LOLIS_LE_LIDS:
+    outcome: SUPPLY_OF_SERVICES
+    expr: M_LOLIS_G_LIA
+    module: M_LOLIS
+    description: The land interest is deemed a supply of services when one of the four listed interests applies
+  M_LOBIS_LE_BLIS:
+    outcome: DEEMED_SUPPLY_OF_SERVICES
+    expr: M_LOBIS_G_BLDC
+    module: M_LOBIS
+    description: A lease or letting out of a building for business or commerce, wholly or partly, is deemed a supply of services.
+  M_TOBAG_LE_DGSR:
+    outcome: DEEMED_SUPPLY_OF_GOODS_BY_PERSON
+    expr: M_TOBAG_G_DSC
+    module: M_TOBAG
+    description: Where all four conditions are met, the transfer or disposal is a supply of goods by the person
+  M_PUOBGIS_LE_PUDSS:
+    outcome: The usage or making available of such goods is a supply of services
+    expr: M_PUOBGIS_G_APFDC
+    module: M_PUOBGIS
+    description: 'All deeming conditions are met: directed by a business person, goods held or used for the business, and
+      private use or non-business use or making available.'
+  M_PRETDS_LE_GDSOC:
+    outcome: DEEMED_SUPPLY_APPLIES
+    expr: M_PRETDS_G_DCM AND NOT M_PRETDS_G_PREM
+    module: M_PRETDS
+    description: The goods are deemed to be supplied by the person in the course or furtherance of his business immediately
+      before he ceases to be a taxable person. This applies when the deeming conditions are met and the personal representative
+      exception is not met.
+  M_PRETDS_LE_DDBPR:
+    outcome: DEEMING_DISAPPLIED
+    expr: M_PRETDS_G_DCM AND M_PRETDS_G_PREM
+    module: M_PRETDS
+    description: The deemed supply under paragraph 4(c)(ii) does not apply because the business is carried on by a personal
+      representative who is deemed to be a taxable person. This says nothing on whether the transaction is a supply on any
+      other basis.
+  M_BTAGC_LE_GDS:
+    outcome: DEEMED_SUPPLY_OF_GOODS
+    expr: M_BTAGC_G_DCM AND NOT M_BTAGC_A_BTAGC
+    module: M_BTAGC
+    description: The goods are deemed supplied when the deeming conditions hold and the business is not transferred as a going
+      concern to another person.
+  M_ROIPS_LE_RTASS:
+    outcome: SUPPLY_OF_SERVICES_DEEMED
+    expr: M_ROIPS_G_ROIP
+    module: M_ROIPS
+    description: Renting of immovable property is treated as supply of services when the renting of immovable property group
+      holds
+  M_COCAS_LE_CDSOS:
+    outcome: TREATED_AS_SUPPLY_OF_SERVICES
+    expr: M_COCAS_G_COS AND NOT M_COCAS_G_CTE
+    module: M_COCAS
+    description: Construction of the specified immovable property is treated as a supply of services unless the entire consideration
+      was received after the earlier of completion certificate (where required) or first occupation.
+  M_NSSOLAB_LE_LOBNS:
+    outcome: NEITHER_SUPPLY
+    expr: M_NSSOLAB_A_SIAS AND M_NSSOLAB_G_LOBO AND NOT (M_NSSOLAB_A_SIOB AND M_NSSOLAB_A_BSUST)
+    module: M_NSSOLAB
+    description: The transaction is a sale of land, or a sale of building that is not one to which clause (b) of paragraph
+      5 of Schedule II applies.
+  M_SOFBCOM_LE_NSO:
+    outcome: NEITHER_SUPPLY
+    expr: M_SOFBCOM_G_FRS
+    module: M_SOFBCOM
+    description: The service is treated as neither supply under this Schedule III entry when any listed funeral, burial, crematorium
+      or mortuary service is established, or when transportation of the deceased is established as included in such a service
+  M_ANGNS_LE_TNGNS:
+    outcome: TREATED_NEITHER_SUPPLY_OF_GOODS_NOR_SUPPLY_OF_SERVICES
+    expr: M_ANGNS_A_ASISIII
+    module: M_ANGNS
+    description: If the activity or transaction is specified in Schedule III, it shall be treated neither as a supply of goods
+      nor as a supply of services, notwithstanding sub-section (1).
+  M_TTOIPS_LE_IPSD:
+    outcome: SUPPLY_OF_SERVICES
+    expr: M_TTOIPS_A_RIIP AND M_TTOIPS_G_IPUF
+    module: M_TTOIPS
+    description: The transaction is treated as a supply of services when the right is an intellectual property right and the
+      transaction is a temporary transfer or permits use or enjoyment of it
+  M_ISDS_LE_DSSO:
+    outcome: DEEMED_SUPPLY_OF_SERVICES
+    expr: M_ISDS_G_SST
+    module: M_ISDS
+    description: Deemed supply of services where a listed software activity is performed on information technology software
+  M_RTODAS_LE_DSS:
+    outcome: DEEMED_SUPPLY_OF_SERVICES
+    expr: M_RTODAS_A_PATO AND M_RTODAS_G_AOK
+    module: M_RTODAS
+    description: An agreed obligation of a listed kind is treated as a supply of services
+  M_TORTUGS_LE_DSO:
+    outcome: DEEMED_SUPPLY_OF_SERVICES
+    expr: M_TORTUGS_G_DST
+    module: M_TORTUGS
+    description: The transaction is deemed a supply of services when the right to use transfer and the consideration test
+      are both met.
+  M_FODCSAS_LE_FDCDS:
+    outcome: DEEMED_SUPPLY_OF_SERVICES
+    expr: M_FODCSAS_A_SIACS AND M_FODCSAS_A_GSIAM AND M_FODCSAS_G_FOQDG AND M_FODCSAS_A_SFVC
+    module: M_FODCSAS
+    description: 'All conditions together: a composite supply of goods in any manner, the goods being food or other article
+      for human consumption or a qualifying drink, for cash, deferred payment or other valuable consideration.'
+  M_SOGBUA_LE_DSOG:
+    outcome: DEEMED_SUPPLY_OF_GOODS
+    expr: M_SOGBUA_G_SCM AND M_SOGBUA_G_CFM
+    module: M_SOGBUA
+    description: The listed supply is treated as a supply of goods when all supply conditions are met and the consideration
+      form is met
+  M_WCCSTAS_LE_WCDO:
+    outcome: TREATED_AS_SUPPLY_OF_SERVICES
+    expr: M_WCCSTAS_G_WCCG
+    module: M_WCCSTAS
+    description: A composite supply that is a works contract is treated as a supply of services
+triggers:
+  M_NSOGWEI_CT_TSR:
+    question: Are the documents unclear about whether the origin or destination place lies in the non-taxable territory, or
+      whether the goods entered India?
+    trigger: F_SOTS = 'UNKNOWN' OR F_SDTS = 'UNKNOWN' OR F_GIES = 'UNKNOWN'
+    beside: M_NSOGWEI_LE_NSO
+  M_SOWGBC_CT_CTD:
+    question: Do the documents show whether the supply was made before clearance for home consumption?
+    trigger: F_SCT2 = 'UNKNOWN'
+    beside: M_SOWGBC_LE_NSO
+  M_SOGBCBC_CT_DTC:
+    question: Do the bill of lading and endorsement records confirm the order of dispatch, endorsement and home clearance?
+    trigger: F_SDT = 'UNKNOWN' OR F_GCS = 'UNKNOWN'
+    beside: M_SOGBCBC_LE_NSCT
+  M_LOLIS_CT_LIR:
+    question: Is the interest in land granted a lease, tenancy, easement or licence to occupy land despite another label?
+    trigger: F_SLIT IN ['OTHER', 'UNKNOWN']
+    beside: M_LOLIS_LE_LIDS
+  M_TTOIPS_CT_TBR:
+    question: Does the contract make the transfer temporary, or is it an outright transfer that another provision must decide
+    trigger: F_IPUF = 'UNKNOWN'
+    beside: M_TTOIPS_LE_IPSD
+products:
+  M_MOWG_PD_WGMO:
+    statement: 'Single legal outcome: the Customs Act meaning governs the term for paragraph 8, with no different meaning
+      to be applied.'
+  M_DOCFP2_PD_CDFP2:
+    statement: The body is a court for paragraph 2 where at least one court route applies
+  M_SIAFOS_PD_ISO:
+    statement: The transaction falls within the inclusive meaning of supply when it takes a listed or other form of supply,
+      is made or agreed to be made for a consideration, and is by a person in the course or furtherance of business.
+  M_IOSFC_PD_ISIO:
+    statement: Import of services for a consideration is included in supply whether or not in the course or furtherance of
+      business. Inclusion is not exhaustive and no business-context condition is applied.
+  M_SIAWC_PD_SAIS:
+    statement: The activity is included in supply when all three schedule conditions are met.
+  M_CALS_PD_CADM:
+    statement: The expression competent authority is satisfied by either the primary authority route or the licensed surveyor
+      route.
+  M_DOCACE_PD_CADO:
+    statement: The entity is a competent authority for paragraph 5(b) under the exhaustive definition
+  M_CAA_PD_CAO:
+    statement: The certifying body is a competent authority if it is the Government or an authority authorised under law,
+      or if no certificate is required from such authority and it is a registered architect
+  M_DOCFS_PD_CMO:
+    statement: The activity is within construction for this clause if it is a listed extended work on an existing civil structure,
+      or other construction within the open inclusion.
+  M_PAANGNS_PD_TNGNS:
+    statement: When all three conditions hold the activity is deemed neither a supply of goods nor a supply of services.
+  M_TOPOGAS_PD_DSO:
+    statement: Where the treatment or process test and the another-person goods test are both met, the activity is deemed
+      a supply of services
+  M_ACNGNS_PD_ACNS:
+    statement: Entry 6 applies only where the activity is an actionable claim and the claim is not of the excluded lottery,
+      betting or gambling kind.
+  M_SBCOT_PD_NSO:
+    statement: Outcome applies only when all court and Tribunal conditions hold
+  M_DBCPH_PD_NSO:
+    statement: All three conjunctive tests must hold for the paragraph 3(b) outcome
+  M_FPBM_PD_NSO:
+    statement: The activity is treated neither as a supply of goods nor a supply of services when the member function group
+      is true
+  M_ESICOE_PD_NSO:
+    statement: Outcome is neither a supply of goods nor a supply of services only when the whole employee service group is
+      TRUE
+  M_NSOGWEI_PD_NSO:
+    statement: All paragraph 7 conditions hold, so the movement is neither a supply of goods nor a supply of services.
+  M_SOWGBC_PD_NSO:
+    statement: The warehoused supply elements are all met and the supply occurs before clearance for home consumption.
+  M_SOGBCBC_PD_NSCT:
+    statement: The consignee goods transfer is treated as neither supply of goods nor supply of services only when both the
+      transfer act and the dispatch and clearance window are met
+  M_TOTIG_PD_TTDGS:
+    statement: A transfer of title in goods is deemed a supply of goods.
+  M_TORIGIS_PD_TDSS:
+    statement: The transfer subject condition holds and the transfer is without transfer of title, so the transaction is a
+      supply of services
+  M_TOTIG2_PD_TTDGS:
+    statement: When all title transfer terms hold the transaction is deemed a supply of goods.
+  M_LOLIS_PD_LIDS:
+    statement: The land interest is deemed a supply of services when one of the four listed interests applies
+  M_LOBIS_PD_BLIS:
+    statement: A lease or letting out of a building for business or commerce, wholly or partly, is deemed a supply of services.
+  M_TOBAG_PD_DGSR:
+    statement: Where all four conditions are met, the transfer or disposal is a supply of goods by the person
+  M_PUOBGIS_PD_PUDSS:
+    statement: 'All deeming conditions are met: directed by a business person, goods held or used for the business, and private
+      use or non-business use or making available.'
+  M_PRETDS_PD_GDSOC:
+    statement: The goods are deemed to be supplied by the person in the course or furtherance of his business immediately
+      before he ceases to be a taxable person. This applies when the deeming conditions are met and the personal representative
+      exception is not met.
+  M_PRETDS_PD_DDBPR:
+    statement: The deemed supply under paragraph 4(c)(ii) does not apply because the business is carried on by a personal
+      representative who is deemed to be a taxable person. This says nothing on whether the transaction is a supply on any
+      other basis.
+  M_BTAGC_PD_GDS:
+    statement: The goods are deemed supplied when the deeming conditions hold and the business is not transferred as a going
+      concern to another person.
+  M_ROIPS_PD_RTASS:
+    statement: Renting of immovable property is treated as supply of services when the renting of immovable property group
+      holds
+  M_COCAS_PD_CDSOS:
+    statement: Construction of the specified immovable property is treated as a supply of services unless the entire consideration
+      was received after the earlier of completion certificate (where required) or first occupation.
+  M_NSSOLAB_PD_LOBNS:
+    statement: The transaction is a sale of land, or a sale of building that is not one to which clause (b) of paragraph 5
+      of Schedule II applies.
+  M_SOFBCOM_PD_NSO:
+    statement: The service is treated as neither supply under this Schedule III entry when any listed funeral, burial, crematorium
+      or mortuary service is established, or when transportation of the deceased is established as included in such a service
+  M_ANGNS_PD_TNGNS:
+    statement: If the activity or transaction is specified in Schedule III, it shall be treated neither as a supply of goods
+      nor as a supply of services, notwithstanding sub-section (1).
+  M_TTOIPS_PD_IPSD:
+    statement: The transaction is treated as a supply of services when the right is an intellectual property right and the
+      transaction is a temporary transfer or permits use or enjoyment of it
+  M_ISDS_PD_DSSO:
+    statement: Deemed supply of services where a listed software activity is performed on information technology software
+  M_RTODAS_PD_DSS:
+    statement: An agreed obligation of a listed kind is treated as a supply of services
+  M_TORTUGS_PD_DSO:
+    statement: The transaction is deemed a supply of services when the right to use transfer and the consideration test are
+      both met.
+  M_FODCSAS_PD_FDCDS:
+    statement: 'All conditions together: a composite supply of goods in any manner, the goods being food or other article
+      for human consumption or a qualifying drink, for cash, deferred payment or other valuable consideration.'
+  M_SOGBUA_PD_DSOG:
+    statement: The listed supply is treated as a supply of goods when all supply conditions are met and the consideration
+      form is met
+  M_WCCSTAS_PD_WCDO:
+    statement: A composite supply that is a works contract is treated as a supply of services
+compounds:
+- id: C_MOWG
+  question: 'Schedule III, paragraph 8(b), Explanation 2: Meaning Of Warehoused Goods?'
+  includes:
+  - M_MOWG_LE_WGMO
+  produces:
+  - product: M_MOWG_PD_WGMO
+    from:
+    - M_MOWG_LE_WGMO
+- id: C_DOCFP2
+  question: 'Schedule III, paragraph 8(b), Explanation 1: Definition Of Court For Paragraph 2?'
+  includes:
+  - M_DOCFP2_LE_CDFP2
+  produces:
+  - product: M_DOCFP2_PD_CDFP2
+    from:
+    - M_DOCFP2_LE_CDFP2
+- id: C_S7_SS1
+  question: 'Section 7(1): which clause applies?'
+  includes:
+  - M_SIAFOS_LE_ISO
+  - M_IOSFC_LE_ISIO
+  - M_SIAWC_LE_SAIS
+  produces:
+  - product: M_SIAFOS_PD_ISO
+    from:
+    - M_SIAFOS_LE_ISO
+  - product: M_IOSFC_PD_ISIO
+    from:
+    - M_IOSFC_LE_ISIO
+  - product: M_SIAWC_PD_SAIS
+    from:
+    - M_SIAWC_LE_SAIS
+- id: C_SCHII_EN5_CB_E1_N1
+  question: 'Schedule II, paragraph 5(b), Explanation, sub-item (1): which clause applies?'
+  includes:
+  - M_CALS_LE_CADM
+  - M_DOCACE_LE_CADO
+  - M_CAA_LE_CAO
+  produces:
+  - product: M_CALS_PD_CADM
+    from:
+    - M_CALS_LE_CADM
+  - product: M_DOCACE_PD_CADO
+    from:
+    - M_DOCACE_LE_CADO
+  - product: M_CAA_PD_CAO
+    from:
+    - M_CAA_LE_CAO
+- id: C_DOCFS
+  question: 'Schedule II, paragraph 5(b), Explanation (2): Definition Of Construction For Services?'
+  includes:
+  - M_DOCFS_LE_CMO
+  produces:
+  - product: M_DOCFS_PD_CMO
+    from:
+    - M_DOCFS_LE_CMO
+- id: C_TOPOGAS
+  question: 'Schedule II, paragraph 3: Treatment Or Process On Goods As Services?'
+  includes:
+  - M_TOPOGAS_LE_DSO
+  produces:
+  - product: M_TOPOGAS_PD_DSO
+    from:
+    - M_TOPOGAS_LE_DSO
+- id: C_ACNGNS
+  question: 'Schedule III, entry 6: Actionable Claims Neither Goods Nor Services?'
+  includes:
+  - M_ACNGNS_LE_ACNS
+  produces:
+  - product: M_ACNGNS_PD_ACNS
+    from:
+    - M_ACNGNS_LE_ACNS
+- id: C_SBCOT
+  question: 'Schedule III, paragraph 2: Services By Court Or Tribunal?'
+  includes:
+  - M_SBCOT_LE_NSO
+  produces:
+  - product: M_SBCOT_PD_NSO
+    from:
+    - M_SBCOT_LE_NSO
+- id: C_SCHIII_EN3
+  question: 'Schedule III, paragraph 3: which clause applies?'
+  includes:
+  - M_DBCPH_LE_NSO
+  - M_FPBM_LE_NSO
+  produces:
+  - product: M_DBCPH_PD_NSO
+    from:
+    - M_DBCPH_LE_NSO
+  - product: M_FPBM_PD_NSO
+    from:
+    - M_FPBM_LE_NSO
+- id: C_ESICOE
+  question: 'Schedule III, paragraph 1: Employee Services In Course Of Employment?'
+  includes:
+  - M_ESICOE_LE_NSO
+  produces:
+  - product: M_ESICOE_PD_NSO
+    from:
+    - M_ESICOE_LE_NSO
+- id: C_NSOGWEI
+  question: 'Schedule III, paragraph 7: Non-Taxable Supply Of Goods Without Entering India?'
+  includes:
+  - M_NSOGWEI_LE_NSO
+  produces:
+  - product: M_NSOGWEI_PD_NSO
+    from:
+    - M_NSOGWEI_LE_NSO
+- id: C_SCHIII_EN8
+  question: 'Schedule III, paragraph 8: which clause applies?'
+  includes:
+  - M_SOWGBC_LE_NSO
+  - M_SOGBCBC_LE_NSCT
+  produces:
+  - product: M_SOWGBC_PD_NSO
+    from:
+    - M_SOWGBC_LE_NSO
+  - product: M_SOGBCBC_PD_NSCT
+    from:
+    - M_SOGBCBC_LE_NSCT
+- id: C_SCHII_EN1
+  question: 'Schedule II, paragraph 1: which clause applies?'
+  includes:
+  - M_TOTIG_LE_TTDGS
+  - M_TORIGIS_LE_TDSS
+  - M_TOTIG2_LE_TTDGS
+  produces:
+  - product: M_TOTIG_PD_TTDGS
+    from:
+    - M_TOTIG_LE_TTDGS
+  - product: M_TORIGIS_PD_TDSS
+    from:
+    - M_TORIGIS_LE_TDSS
+  - product: M_TOTIG2_PD_TTDGS
+    from:
+    - M_TOTIG2_LE_TTDGS
+- id: C_SCHII_EN2
+  question: 'Schedule II, paragraph 2: which clause applies?'
+  includes:
+  - M_LOLIS_LE_LIDS
+  - M_LOBIS_LE_BLIS
+  produces:
+  - product: M_LOLIS_PD_LIDS
+    from:
+    - M_LOLIS_LE_LIDS
+  - product: M_LOBIS_PD_BLIS
+    from:
+    - M_LOBIS_LE_BLIS
+- id: C_SCHII_EN4
+  question: 'Schedule II, paragraph 4: which clause applies?'
+  includes:
+  - M_TOBAG_LE_DGSR
+  - M_PUOBGIS_LE_PUDSS
+  produces:
+  - product: M_TOBAG_PD_DGSR
+    from:
+    - M_TOBAG_LE_DGSR
+  - product: M_PUOBGIS_PD_PUDSS
+    from:
+    - M_PUOBGIS_LE_PUDSS
+- id: C_SCHII_EN4_CC
+  question: 'Schedule II, paragraph 4(c): which clause applies?'
+  includes:
+  - M_PRETDS_LE_GDSOC
+  - M_PRETDS_LE_DDBPR
+  - M_BTAGC_LE_GDS
+  produces:
+  - product: M_PRETDS_PD_GDSOC
+    from:
+    - M_PRETDS_LE_GDSOC
+  - product: M_PRETDS_PD_DDBPR
+    from:
+    - M_PRETDS_LE_DDBPR
+  - product: M_BTAGC_PD_GDS
+    from:
+    - M_BTAGC_LE_GDS
+  exclusive:
+  - M_PRETDS_LE_GDSOC
+  - M_PRETDS_LE_DDBPR
+- id: C_SCHII_EN5
+  question: 'Schedule II, paragraph 5: which clause applies?'
+  includes:
+  - M_ROIPS_LE_RTASS
+  - M_COCAS_LE_CDSOS
+  - M_TTOIPS_LE_IPSD
+  - M_ISDS_LE_DSSO
+  - M_RTODAS_LE_DSS
+  - M_TORTUGS_LE_DSO
+  produces:
+  - product: M_ROIPS_PD_RTASS
+    from:
+    - M_ROIPS_LE_RTASS
+  - product: M_COCAS_PD_CDSOS
+    from:
+    - M_COCAS_LE_CDSOS
+  - product: M_TTOIPS_PD_IPSD
+    from:
+    - M_TTOIPS_LE_IPSD
+  - product: M_ISDS_PD_DSSO
+    from:
+    - M_ISDS_LE_DSSO
+  - product: M_RTODAS_PD_DSS
+    from:
+    - M_RTODAS_LE_DSS
+  - product: M_TORTUGS_PD_DSO
+    from:
+    - M_TORTUGS_LE_DSO
+- id: C_NSSOLAB
+  question: 'Schedule III paragraph 5: Neither Supply Sale Of Land And Building?'
+  includes:
+  - M_NSSOLAB_LE_LOBNS
+  produces:
+  - product: M_NSSOLAB_PD_LOBNS
+    from:
+    - M_NSSOLAB_LE_LOBNS
+- id: C_SOFBCOM
+  question: 'Schedule III, entry 4: Services Of Funeral Burial Crematorium Or Mortuary?'
+  includes:
+  - M_SOFBCOM_LE_NSO
+  produces:
+  - product: M_SOFBCOM_PD_NSO
+    from:
+    - M_SOFBCOM_LE_NSO
+- id: C_S7_SS2
+  question: 'Section 7(2): which clause applies?'
+  includes:
+  - M_PAANGNS_LE_TNGNS
+  - M_ANGNS_LE_TNGNS
+  produces:
+  - product: M_PAANGNS_PD_TNGNS
+    from:
+    - M_PAANGNS_LE_TNGNS
+  - product: M_ANGNS_PD_TNGNS
+    from:
+    - M_ANGNS_LE_TNGNS
+- id: C_SOGBUA
+  question: 'Schedule II, paragraph 7: Supply Of Goods By Unincorporated Association?'
+  includes:
+  - M_SOGBUA_LE_DSOG
+  produces:
+  - product: M_SOGBUA_PD_DSOG
+    from:
+    - M_SOGBUA_LE_DSOG
+- id: C_SCHII_EN6
+  question: 'Schedule II, paragraph 6: which clause applies?'
+  includes:
+  - M_FODCSAS_LE_FDCDS
+  - M_WCCSTAS_LE_WCDO
+  produces:
+  - product: M_FODCSAS_PD_FDCDS
+    from:
+    - M_FODCSAS_LE_FDCDS
+  - product: M_WCCSTAS_PD_WCDO
+    from:
+    - M_WCCSTAS_LE_WCDO
+time:
+  law_date: F_DOI

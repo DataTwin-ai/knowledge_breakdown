@@ -43,9 +43,11 @@ def measures(conn, registry) -> Dict[str, float]:
             "facts_used_by_one_atom": int(single or 0)}
 
 
-def pairs(conn, registry, min_similarity: float, limit: int = 200) -> List[dict]:
+def pairs(conn, registry, min_similarity: float, limit: int = 200, only_ids: List[str] = None) -> List[dict]:
     """Pairs of registered facts that may be one fact: same type, similarity >= min_similarity - by name + nl or by
-    concept (the higher of both, like the fact check)."""
+    concept (the higher of both, like the fact check). only_ids: only pairs with at least one of these facts (the
+    fact check after a run). Each pair also has the insert time of both facts (the first one is kept)."""
+    only = "AND (a.fact_id = ANY(%s) OR b.fact_id = ANY(%s))" if only_ids else ""
     with conn.cursor() as cur:
         cur.execute(sql.SQL("""SELECT * FROM (SELECT a.fact_id, a.name, a.entity, a.data_type, a.options, a.nl,
                 b.fact_id, b.name, b.entity, b.data_type, b.options, b.nl, b.aliases,
@@ -55,16 +57,18 @@ def pairs(conn, registry, min_similarity: float, limit: int = 200) -> List[dict]
                          CASE WHEN a.concept_embedding IS NOT NULL AND b.concept_embedding IS NOT NULL
                               AND vector_dims(a.concept_embedding) = vector_dims(b.concept_embedding)
                               THEN 1 - (a.concept_embedding <=> b.concept_embedding) END) AS sim,
-                a.concept, b.concept
+                a.concept, b.concept, a.inserted_at, b.inserted_at
             FROM {} a JOIN {} b ON a.fact_id < b.fact_id AND a.data_type IS NOT DISTINCT FROM b.data_type
             WHERE a.possible_duplicate_of IS DISTINCT FROM b.fact_id AND b.possible_duplicate_of IS DISTINCT FROM a.fact_id
-            ) x WHERE sim >= %s ORDER BY sim DESC LIMIT %s""")
-                    .format(registry.t(registry.fact_t), registry.t(registry.fact_t)), (min_similarity, limit))
+            ONLY_IDS) x WHERE sim >= %s ORDER BY sim DESC LIMIT %s""".replace("ONLY_IDS", only))
+                    .format(registry.t(registry.fact_t), registry.t(registry.fact_t)),
+                    ([list(only_ids), list(only_ids)] if only_ids else []) + [min_similarity, limit])
         rows = cur.fetchall()
     return [{"a": {"fact": r[0], "name": r[1], "concept": r[14] or "", "entity": r[2], "type": r[3], "options": r[4],
                    "nl": r[5]},
              "b": {"fact_id": r[6], "name": r[7], "concept": r[15] or "", "entity": r[8], "type": r[9],
-                   "options": r[10], "nl": r[11], "aliases": r[12], "similarity": round(float(r[13]), 4)}} for r in rows]
+                   "options": r[10], "nl": r[11], "aliases": r[12], "similarity": round(float(r[13]), 4)},
+             "a_first": (r[16] is not None and r[17] is not None and r[16] <= r[17])} for r in rows]
 
 
 def review(conn, registry, store, ask: Callable[[dict], str], min_similarity: float, batch: int = 20) -> dict:
@@ -90,6 +94,53 @@ def review(conn, registry, store, ask: Callable[[dict], str], min_similarity: fl
     digest = hashlib.sha256(json.dumps(out, sort_keys=True, default=str).encode()).hexdigest()
     store.cache_put("ALL", REVIEW_KEY, REVIEW_KEY, digest, result)
     return result
+
+
+def sweep(conn, registry, store, ask: Callable[[dict], str], min_similarity: float, source_mkps: List[str],
+          note: Callable[[str], None] = lambda _m: None, batch: int = 20) -> List[str]:
+    """Bug list B8 (net 2): after the workers, the facts FIRST registered by this run's laws are checked against every
+    registered fact (laws that ran at the same time never saw each other's new facts). A pair the fact-check model
+    calls SAME is merged automatically: the later fact into the first one (like --fact-merge: new AKP versions use
+    the kept id, the old id becomes its alias). Returns the merges made ("OLD=KEEP")."""
+    if not source_mkps:
+        return []
+    with conn.cursor() as cur:
+        cur.execute(sql.SQL("SELECT fact_id FROM {} WHERE first_source_mkp = ANY(%s)")
+                    .format(registry.t(registry.fact_t)), (list(source_mkps),))
+        new_ids = [r[0] for r in cur.fetchall()]
+    if not new_ids:
+        return []
+    found = pairs(conn, registry, min_similarity, only_ids=new_ids)
+    merges, done = [], set()
+    for i in range(0, len(found), batch):
+        part = found[i:i + batch]
+        req = {"source": {"source_mkp": REVIEW_KEY, "text": "Two registered facts that may be the same input."},
+               "new_facts": [dict(p["a"], used_by=[]) for p in part],
+               "candidates": {p["a"]["fact"]: [p["b"]] for p in part}}
+        try:
+            answers = {a.get("fact"): a for a in parse(ask(req))}
+        except Exception as exc:
+            from llm_runtime_errors import is_rate_limited
+            if is_rate_limited(exc):
+                raise
+            note(f"FACT CHECK AFTER RUN   : {len(part)} pair(s) not checked - {type(exc).__name__}: {str(exc)[:120]}")
+            continue
+        for p in part:
+            a = answers.get(p["a"]["fact"], {})
+            if str(a.get("decision", "")).upper() != "SAME":
+                continue
+            keep, old = ((p["a"]["fact"], p["b"]["fact_id"]) if p["a_first"] else (p["b"]["fact_id"], p["a"]["fact"]))
+            if old in done or keep in done:
+                continue                                   # one merge per fact per sweep
+            try:
+                laws = merge(conn, registry, store, old, keep)
+            except ValueError as exc:                      # type / options do not fit: left for a person
+                note(f"FACT CHECK AFTER RUN   : {old} ~ {keep} not merged - {exc}")
+                continue
+            done |= {old, keep}
+            merges.append(f"{old}={keep}")
+            note(f"FACT CHECK AFTER RUN   : {old} merged into {keep} ({len(laws)} law(s)) - {str(a.get('reason', ''))[:100]}")
+    return merges
 
 
 def latest_review(store) -> dict:
@@ -121,7 +172,7 @@ def merge(conn, registry, store, old: str, keep: str) -> List[str]:
     for instrument, version, source_mkp in mkps:
         with conn.cursor() as cur:
             cur.execute(sql.SQL("""SELECT mkp, type, akp_id, concept, results, mkp_id, mkp_version, tier, source_hash,
-                same_akp_id, concept_embedding::text, atom_embedding::text FROM {} WHERE instrument=%s AND version_id=%s
+                CASE WHEN type = 'A_REF' THEN akp_id END, concept_embedding::text, atom_embedding::text FROM {} WHERE instrument=%s AND version_id=%s
                 AND source_mkp=%s AND is_latest AND validation_status='APPROVED' ORDER BY ordinal""").format(store.t(store.table)),
                         (instrument, version, source_mkp))
             recs = cur.fetchall()

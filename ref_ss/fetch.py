@@ -121,7 +121,16 @@ def verify_pdf(path: Path, number: Optional[int], year: Optional[int], kind: str
         pat = rf"(?<!\d){int(number)}\s+of\s+{int(year)}(?!\d)"
         if not re.search(pat, text, re.I):
             return False, f"Act {number} of {year} is not in the first pages"
-        return True, "number and year found"
+        # bug list C13: the updated principal Act (200+ pages) names "Act 31 of 2018" in its footnotes - the
+        # amending Act names its own number in its TITLE, at the top of page 1
+        try:
+            head = " ".join(first_pages_text(path, 1).split())[:1500]
+        except Exception:
+            head = text[:1500]
+        if not re.search(pat, head, re.I):
+            return False, (f"Act {number} of {year} is only in later text (footnotes), not in the title on page 1 - "
+                           f"probably the principal Act as amended, not the amending Act")
+        return True, "number and year found in the title"
     pat = rf"(?<!\d)0?{int(number)}\s*/\s*(?:\d+\s*/\s*)?{int(year)}(?!\d)"
     if not re.search(pat, text):
         return False, f"{kind.lower()} {number}/{year} is not in the first pages"

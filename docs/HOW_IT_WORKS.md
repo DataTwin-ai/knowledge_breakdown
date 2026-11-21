@@ -18,6 +18,13 @@
 
 - `Config/settings.json` — fixed settings: folders, prompt files, table names, limits, word lists, `pool`
   (`max_job_chars`, `requeue_limit`), `refs` (tables, official hosts), `fact_catalog`.
+- **Table names (2026-11-19):** every table is named in `Config/settings.json`; no name is made in the code. Every
+  table after MKP ends with `_new` (`akp.table` `akp_new`, `akp.cache_table`, `akp.llm_cache_table`, `akp.fact_table`,
+  `akp.atom_fact_table`, `akp.time_fact_table`, `gkp.table` `gkp_new`, `gkp.cache_table`, `gkp.llm_cache_table`,
+  `gkp.coverage_table`, `gkp.taxonomy_table`, `governance_master.table` / `history_table` / `tables`,
+  `relationship.table`, `fact_catalog.table` / `index_table`). `kp_settings.check_tables` stops the run when a name is
+  missing or one table has two names. IKP, MKP, `mkp_ref`, `ref_document` keep their tables; MKP reads
+  `mkp.taxonomy_table` (`gkp_taxonomy`) because the taxonomy is part of its input hash. To rename: settings only.
 
 **Law folder.** Put PDFs in `Law/Acts`, `Law/Rules`, `Law/Notifications`, `Law/Circulars`. The name, code, type and
 fixed reference ID of each PDF are kept in `Config/documents.json`. An entry there with a `url` and no PDF is
@@ -51,7 +58,11 @@ downloaded at the start (`features.download_missing_pdfs` + `access.internet`).
   `Output/logs/law_arc_<date>.log`, each line tagged with its worker (`[W2]`).
 - **One error log per document.** `Output/<DOC>/error_log.csv` (time, document, unit, stage, worker, error, retries,
   status). A failing unit never stops the run; `python main.py --retry-failed` runs only the units whose last row is
-  FAILED.
+  FAILED (a failed row for the WHOLE document - IKP / MKP_LOAD could not reach the database - is skipped: it is not
+  a law, and running it again would run the whole document). When the database cannot be reached at all (network
+  down), a worker waits up to `database.unreachable_wait_seconds` (trying every `unreachable_retry_seconds`) and the
+  unit goes back in the queue, instead of the whole queue failing; the governance master builds once more after a
+  dropped connection.
 
 ---
 
@@ -133,8 +144,9 @@ downloaded at the start (`features.download_missing_pdfs` + `access.internet`).
    PDF; only when all that finds nothing, the stronger `ref_link_retry` model (Claude Sonnet) searches once more.
    `link_status` OK (status LINK_FOUND) / BAD (LINK_BAD) / NOT_FOUND (PENDING). `ref_engine.py` uses the same search.
    `ref_engine.py` downloads the OK ones and finds another link for the others.
-   **Status of each law:** `mkp_ref.target_status` is INSERTED when the exact law the reference points to has a
-   saved MKP (Schedule I is PENDING until its MKPs are made), updated at the end of every run. `ref_document.status`
+   **Status of each law:** `mkp_ref.target_status` is INSERTED when the exact clause the reference points to has an
+   approved AKP in the AKP table (`akp_new`; per clause, not per document - an MKP alone is not enough), updated at
+   the end of every run. View `refs.parts_view` (`v_reference_parts_new`): each document with its inserted clauses. `ref_document.status`
    is about the document's file only.
 10. **Save** (`store.commit`, one transaction per unit) with the MKP embedding. **Versioning:**
    - each MKP element gets `mkp_version` 1, 2, 3, …;
@@ -184,7 +196,31 @@ New `mkp` columns: `group_names`, `self_refs`, `cross_refs` (JSON lists).
    5. **When TRUE:**
       - Python adds the reference links.
       - The atoms are embedded (concept + family, and statement).
-      - The **SAME check** (`law_arc_akp_same_prompt.txt`) asks which new atoms already exist, comparing only against existing atoms with similarity above 0.90 (no call when there is no such atom). An atom confirmed SAME becomes `A_REF` pointing to the existing `akp_id`. Its fact links stay; its text is not stored twice.
+      - The **SAME check** (bug list A, 2026-11-18): every new atom gets up to 5 saved atoms of OTHER laws by RAG (statement similarity > 0.90, or 0.80-0.90 with the same facts and rule, or concept >= 0.92 with statement >= 0.70). An exact copy (same statement, facts and rule) is SAME by Python; the rest go to the SAME model (`law_arc_akp_same_prompt.txt`, SAME check only), which names the saved atom by its `akp_id`. SAME = the same condition on the same subject testing the same input, even when the two laws' outcomes differ. A SAME atom is saved as an `A_REF` row whose `akp_id` (and `same_akp_id`) is the **saved atom's id** (e.g. `M_LTPTOG_A_SIG`): this law's groups / LE use that id, the new id is never made, the row keeps this law's wording only as a record, its fact links stay. Every SAME answer that is not applied is logged (`SAME NOT APPLIED : ... - reason`).
+      - **Old AKP cache (2026-11-19, `akp.reuse_old_cache_table`, '' = off, only with use_cache true):** an MKP with no
+        AKP in the new tables but an approved answer for the same MKP input in the old cache table (`akp_cache`) uses
+        those atoms - no generator / judge / comparison call; an old A_REF becomes a plain atom again, then only the
+        fact check, the SAME check and the check at save run, and the result is saved in `akp_new` + `akp_cache_new`
+        (log `REUSED old AKP cache`). Nothing is copied straight from the old cache. No old answer -> AKP from the start.
+        Old fact ids are NOT kept (they belong to the old fact table: old F_PRS "Person Relation Status" is another fact
+        than new F_PRS "Person Registration Status"): every old fact gets a temporary id and is matched again by name
+        and meaning; a fact the old atom read without declaring it comes from `akp.reuse_old_fact_table` (`akp_fact`).
+        Log `OLD FACTS`, `OLD FACT MISSING`.
+      - **Same atom = same facts (2026-11-19):** an `A_REF` tests the SAVED atom's facts and rule (log `SAME FACTS`);
+        a fact only that A_REF used is not registered (log `FACT DROPPED`). One atom id never points to two facts.
+      - **Fact shape (2026-11-19):** a fact is an attribute with values, not a yes/no fact per value. Python
+        (`guard.flag_facts`, `FACT SHAPE`) sends back alternatives of one choice (ANY group / OR in an LE) that each
+        test their own new BOOL fact of the same entity: make ONE CODE fact with options.
+      - **No `same_akp_id` column (2026-11-19):** an `A_REF` row's `akp_id` is the saved atom's id; readers take the
+        reused id from `akp_id` of `A_REF` rows.
+      - **At save** (bug list A5, like the facts): inside the save lock the worker checks again the atoms other workers saved after its SAME check (laws running at the same time) - same RAG + Python + SAME model, only those atoms; log `SAME AT SAVE`.
+      - **After the workers** (`main.py`, `akp.same_sweep_after_run`): the atoms saved in the run are checked again against every saved atom (laws that ran at the same time never saw each other) - same rule, pairs prompt `law_arc_akp_same_pair_prompt.txt`; a SAME pair gives the later law a new AKP version using the first-saved id, then GKP runs again for that law. For atoms saved before the fix: `python akp_engine.py --same-review` writes `Output/same_review.xlsx` (one row per close pair, the AI's answer, an APPROVE column - nothing changes), a person marks YES, then `python akp_engine.py --same-apply` maps those rows.
+      - The **governance master** writes a SAME atom ONCE, under the saved id, and every law that uses it points to it.
+      - **Same facts (bug list B):** facts with no name / concept embedding get them at the start of AKP (an embedding
+        that fails is logged); a NEW fact whose concept is missing, longer than 3 words or only its name gets one
+        more try (`law_arc_akp_concept_prompt.txt`); after the workers, the facts first registered by the run's laws
+        are checked against every registered fact (`akp.fact_sweep_after_run`, the fact-check model) and a SAME pair
+        is merged into the first-registered fact (like `--fact-merge`). The second check at save time stays.
       - Python keeps only real TSG ids in each atom's `groups` field (`clean_atom_groups`).
 3. **Save** (one transaction):
    - `akp`: next `akp_version`; older rows get `is_latest=false` and are marked SUPERSEDED.
@@ -371,6 +407,30 @@ the first pages → `Law/Notifications/<ID>.pdf` + `Config/documents.json` (code
 file is refused (LINK_BAD) and the LLM is asked once more; never found → NOT_FOUND (add it by hand). With `--run` the
 new documents go through `main.py --documents ...` and become INSERTED.
 
+**Automatic after the workers (bug list C, 2026-11-18)** - `main.py._references`, helpers in `ref_ss/auto.py`,
+before the SAME checks and the governance master; the manual `ref_engine.py` stays:
+- **SELF** (same PDF, e.g. 7(1)(a) -> Schedule III): the direct targets of the run's laws with no MKP yet run like a
+  user scope, MKP -> AKP -> GKP (`refs.self_depth` 1 = only what these laws name, at most `refs.self_limit` per run).
+  The target keeps its own TSG; the citing law's governance master pulls its checks in by the same ids.
+- **CROSS** (outside document; `refs.auto_fetch`, `features.web_scraping`, `access.internet`): at most
+  `refs.auto_fetch_limit` documents are downloaded and checked (`ref_engine.run(ref_ids=...)`; a document already
+  VERIFIED / INSERTED is reused), IKP'd, and the EXACT part each citing law needs is found - Python first (an amending
+  text names the provision it changes: "In section 2 ... in clause (17), for sub-clause (h) ..."), the
+  `law_arc_ref_part_prompt.txt` model only when Python finds nothing (keys of that document only); a small document
+  cited as a whole (at most `refs.whole_document_max_parts` parts) runs whole. The part is saved in
+  `mkp_ref.source_key` and runs MKP -> AKP with **no GKP** (no TSG of its own). A part already inserted (approved
+  AKP) is **not run again**: the citing law only gets its link. A reference run never uses `scope.default`.
+- **Which atom (2026-11-19):** at AKP save Python writes `outside_refs: [ref ids]` on the exact atom that names the
+  document (its number "14/2017" in the atom's words; with no number, the MKP's only outside reference goes to the
+  atom that says notified / circular). Log `REFERENCE : <atom> holds <ref>`, or `REFERENCE NOT ON ATOM`.
+- **Governance master:** it follows `mkp_ref.source_key` like a self reference: the part comes in **full**
+  (included_as `REFERENCE <ref id> <part>`) and the marked atom is answered by the part's steps (`_wire_reference`).
+  The same part used by law a and law b is the same ids in both yaml files. Design: project note `reference_design.md`.
+- **Status** (`mkp_ref.target_status`): PENDING -> QUEUED -> INSERTED, or FAILED (kept FAILED until inserted;
+  `--retry-failed` runs the failed units). A QUEUED row left by a stopped run is picked again by the next run.
+- The download check refuses an amending Act whose number is not in the title on page 1 (the principal Act as
+  amended names it only in footnotes); titles lose a leading "Inserted by" / "Substituted vide".
+
 ## 10. Fact catalog: the fact flow (`fact_catalog_engine.py`, `fact_catalog_ss/`)
 
 Built after the governance masters (`run.fact_catalog`), no LLM. For every fact of `akp_fact`: what it is, **how it is
@@ -389,6 +449,11 @@ or derivable), PARTIAL (with the missing facts by kind) or NOT_RUN. This picks *
 a document; inside each one the engine still walks the steps in the law's order.
 
 ## 11. Deleting wrong knowledge points (`kp_delete.py`, `db_migrate.py`)
+
+`kp_delete.py` also (bug list F23): lists the other laws whose SAME atom (`A_REF`) was an atom of a deleted law (run
+them again, or the next run's SAME check maps them), removes the outside-document part links that pointed into the
+deleted law and sets those references back to PENDING. `--same-review` and the SAME check after every run list
+SAME atoms whose saved atom was reworded / removed in a new version (F24).
 
 Delete an MKP row (pgAdmin, psql, or `python kp_delete.py --mkp <element>` / `--unit <key prefix>` / `--dry-run`;
 needs `access.database_delete`) and database triggers delete everything made from it: its phrases, AKP atoms, fact
@@ -483,7 +548,7 @@ Decided in the project notes (`claude/akp_rebuild_notes.md`); everything is re-r
 |---|---|---|
 | Ids | MKP `M_<acronym of the concept name>`, unique across all laws (a clash gets a second letter, then a number); every AKP element `<MKP id>_<TYPE>_<acronym>`; facts `F_<acronym>` with no prefix. The models keep their working ids; Python rewrites every id just before saving. `akp.akp_id` is the id of every row (no element column). | `kp_ids.py`, `akp_ss/ids.py`, `mkp_ss/store.py` |
 | Fact flow | layer 1: the fact list given to the model (same unit, provisions it refers to, its TSGs, nearest, most used); layer 2 (before the model): same name / saved alias -> the registered id, only when the type, entity and options fit (a same name with another type gets its own numbered id); layer 3: every new fact vs ALL registered facts, found by name + nl AND by concept; a fact with the same name but other option words goes to the model, which maps the options (`option_map`: AGREED_TO_BE_PAID -> PAYABLE, or NEW for a real new value) and Python rewrites the rules (SAME / DERIVED / NEW, Python gate on type, entity, options; a legal conclusion goes back to the models); layer 4: `python akp_engine.py --fact-review` (merge list, sheet "Fact review" of akp.xlsx) and `--fact-merge OLD=KEEP` (new AKP versions). `akp_fact` has aliases, source_kind, derivation, concept. The fact-flow numbers (reuse rate, new facts per MKP, facts used by one atom, possible duplicates) are printed after every run. SAME atoms are found by statement AND concept (`same_concept_min_similarity`, `same_concept_statement_floor`). LK rows are named by their relation (`M_IOSFC_LK_AMENDS`). | `akp_ss/facts.py`, `akp_ss/factcheck.py`, `akp_ss/review.py`, `law_arc_akp_fact_prompt.txt` |
-| SAME | candidates above 0.90, plus 0.80-0.90 when they read the same facts with the same rule; SAME and NOT SAME answers kept in akp_cache; two atoms of one law with the same facts and rule are merged. | `akp_engine.py` (`_same_band`), `akp_ss/ids.py` (`merge_same_tests`) |
+| SAME | candidates above 0.90, plus 0.80-0.90 when they read the same facts with the same rule, plus by concept; exact copies SAME by Python, the rest by the SAME model (named by akp_id); a SAME atom = A_REF row with the saved atom's id (groups / LE use it); every unapplied answer logged; SAME check of the run's atoms after the workers; --same-review / --same-apply for saved atoms; the governance master writes a shared atom once; two atoms of one law with the same facts and rule are merged. | `akp_engine.py` (`_same_band`, `_python_same`, `_apply_same`, `same_sweep`), `akp_ss/same_review.py`, `akp_ss/ids.py`, `governance_master_ss/build.py` |
 | Handler | every atom: `handler: python / light / heavy` (AKP decides while splitting, Python gate, the comparison checks it); written on every governance-master predicate. | `akp_ss/guard.py`, `governance_master_ss/build.py` |
 | Law in force | `time: law_date: F_DOI` (Date Of Invoice, `Config/governance_master_map.json` law_date) in every governance master; the AKP time step makes old-text atoms of a provision changed after `akp.gst_start` and adds `valid_from` / `valid_to` + ANY groups; time facts keep effective_from and in_force_from. | `akp_ss/timestep.py`, `law_arc_akp_time_prompt.txt` |
 | GKP | AKP's group is checked by a Python score (embedding, among the closest, MKP agrees / anchor / facts) - the verifiers only when Python is not sure, plus an audit share; `python_score` on every row; `calibrate` once, then `python gkp_engine.py --calibration`. MKP, AKP and GKP read the taxonomy from the `gkp_taxonomy` table (re-read when GKP creates a group). `gkp_tg18_proposals` removed. | `gkp_ss/score.py`, `gkp_ss/taxonomy.py` (`current`) |

@@ -36,11 +36,17 @@ def _vec(v) -> Optional[str]:
 
 
 class AkpStore:
-    def __init__(self, conn, schema: str, table: str = "akp", cache_table: str = "akp_cache",
-                 mkp_table: str = "mkp"):
+    def __init__(self, conn, schema: str, table: str, cache_table: str, mkp_table: str, llm_table: str,
+                 time_table: str):
+        """Every table name from Config/settings.json akp (table, cache_table, mkp_table, llm_cache_table,
+        time_fact_table) - none is made here."""
         self.conn, self.schema = conn, schema
         self.table, self.cache_table, self.mkp_table = table, cache_table, mkp_table
-        self.llm_table, self.time_table = f"{table}_llm_cache", f"{table.rsplit('_akp', 1)[0]}_time_fact"
+        self.llm_table, self.time_table = llm_table, time_table
+
+    @classmethod
+    def from_settings(cls, conn, schema: str, s: dict) -> "AkpStore":
+        return cls(conn, schema, s["table"], s["cache_table"], s["mkp_table"], s["llm_cache_table"], s["time_fact_table"])
 
     def t(self, name: str):
         return sql.SQL("{}.{}").format(sql.Identifier(self.schema), sql.Identifier(name))
@@ -74,9 +80,8 @@ class AkpStore:
             sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS mkp_version integer").format(T),
             sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS tier text").format(T),
             # akp_id: the abbreviated id of every row (notes section 3; there is no separate element column).
-            # SAME: a SAME atom (A_REF) has the existing atom's id in same_akp_id
+            # SAME: a SAME atom is type A_REF and its akp_id IS the saved atom's id (2026-11-19: no same_akp_id column)
             sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS akp_id text").format(T),
-            sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS same_akp_id text").format(T),
             # the TSG ids of each atom (its groups field), like mkp.group_names; the confirmed group is in gkp
             sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS group_names jsonb").format(T),
             sql.SQL("""CREATE TABLE IF NOT EXISTS {} (instrument text NOT NULL, version_id text NOT NULL,
@@ -138,6 +143,43 @@ class AkpStore:
                      (instrument, version, source_mkp, fingerprint), fetch=True)
         return r[0][0] if r else None
 
+    def old_cache(self, table: str, instrument, version, source_mkp, fingerprint) -> Optional[dict]:
+        """The answer saved for this same MKP input (same fingerprint) in the OLD AKP cache table
+        (akp.reuse_old_cache_table, 2026-11-19). None when that table or that row is not there."""
+        try:
+            r = self.run(sql.SQL("SELECT results_json FROM {} WHERE instrument=%s AND version_id=%s AND source_mkp=%s "
+                                 "AND input_sha256=%s").format(self.t(table)),
+                         (instrument, version, source_mkp, fingerprint), fetch=True)
+        except Exception:
+            self.conn.rollback()
+            return None
+        return r[0][0] if r else None
+
+    def old_fact_defs(self, table: str, ids: List[str]) -> Dict[str, dict]:
+        """2026-11-19: the OLD fact table's definitions of these ids (old-cache reuse) - an old atom may read a fact it
+        did not declare (it reused it from the old fact list). {} when the table or the ids are not there."""
+        if not table or not ids:
+            return {}
+        try:
+            r = self.run(sql.SQL("SELECT fact_id, name, entity, data_type, unit, options, evidence, derived_from, nl, "
+                                 "concept FROM {} WHERE fact_id = ANY(%s)").format(self.t(table)), (list(ids),), fetch=True)
+        except Exception:
+            self.conn.rollback()
+            return {}
+        cols = ("fact_id", "name", "entity", "type", "unit", "options", "evidence", "derived_from", "nl", "concept")
+        return {x[0]: dict(zip(cols, x)) for x in r}
+
+    def outside_refs(self, link_table: str, version, source_mkp) -> List[dict]:
+        """The outside documents this MKP names (mkp_ref, scope CROSS): [{ref_id, mention}] - reference design item 7."""
+        try:
+            r = self.run(sql.SQL("SELECT DISTINCT ref_id, mention FROM {} WHERE version_id=%s AND mkp_element=%s "
+                                 "AND scope='CROSS' ORDER BY ref_id").format(self.t(link_table)),
+                         (version, source_mkp), fetch=True)
+        except Exception:
+            self.conn.rollback()
+            return []
+        return [{"ref_id": a, "mention": b or ""} for a, b in r]
+
     def cache_put(self, instrument, version, source_mkp, fingerprint, data: dict, commit: bool = True) -> None:
         self.run(sql.SQL("""INSERT INTO {} (instrument, version_id, source_mkp, input_sha256, results_json)
             VALUES (%s,%s,%s,%s,%s::jsonb) ON CONFLICT (instrument, version_id, source_mkp, input_sha256)
@@ -154,6 +196,12 @@ class AkpStore:
                              "ORDER BY akp_version DESC LIMIT 1").format(self.t(self.table)),
                      (instrument, version, source_mkp), fetch=True)
         return {"akp_version": r[0][0], "source_hash": r[0][1], "mkp_version": r[0][2], "atoms": int(r[0][3] or 0)} if r else None
+
+    def atom_ids(self) -> set:
+        """The akp_ids of every saved atom (latest, approved, type A) right now - what a worker's SAME check saw, so
+        the save can find the atoms other workers saved after it (bug list A5, 2026-11-19)."""
+        return {r[0] for r in self.run(sql.SQL("SELECT akp_id FROM {} WHERE type='A' AND is_latest "
+                                               "AND validation_status='APPROVED'").format(self.t(self.table)), fetch=True)}
 
     def same_as_latest(self, cur, instrument, version, source_mkp, rows: List[dict]) -> Optional[int]:
         """The latest approved akp_version when `rows` say exactly the same (type, akp_id, results), else None."""
@@ -252,11 +300,11 @@ class AkpStore:
             cv, av = vectors.get(i, (None, None)) if row["TYPE"] == "A" else (None, None)
             cur.execute(sql.SQL("""INSERT INTO {} (instrument, version_id, source_mkp, mkp_id, source_hash, ordinal, mkp, type,
                 akp_id, concept, results, concept_embedding, atom_embedding, validation_status, akp_version, is_latest,
-                inserted_at, mkp_version, tier, same_akp_id, group_names) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
-                %s::vector,%s::vector,'APPROVED',%s,true,now(),%s,%s,%s,%s::jsonb)""").format(T),
+                inserted_at, mkp_version, tier, group_names) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                %s::vector,%s::vector,'APPROVED',%s,true,now(),%s,%s,%s::jsonb)""").format(T),
                         (instrument, version, source_mkp, mkp_id, fingerprint, i, row["MKP"], row["TYPE"], row["ELEMENT"],
                          row["CONCEPT"], row["RESULTS"], _vec(cv), _vec(av), akp_version, mkp_version, tier,
-                         row.get("SAME_AKP_ID"), group_names(row)))
+                         group_names(row)))
         return akp_version
 
     def time_facts(self, instrument, version) -> List[dict]:
@@ -307,7 +355,7 @@ class AkpStore:
     # ---------------- for Excel
     def export_rows(self):
         std = self.run(sql.SQL("""SELECT instrument, source_mkp, mkp_id, mkp, type, akp_id, concept, results, akp_version,
-            inserted_at, akp_id, same_akp_id, COALESCE(group_names::text, '') FROM {} WHERE is_latest AND validation_status='APPROVED' ORDER BY instrument, source_mkp, ordinal""")
+            inserted_at, akp_id, CASE WHEN type = 'A_REF' THEN akp_id END, COALESCE(group_names::text, '') FROM {} WHERE is_latest AND validation_status='APPROVED' ORDER BY instrument, source_mkp, ordinal""")
                        .format(self.t(self.table)), fetch=True)
         cache = self.run(sql.SQL("""SELECT DISTINCT ON (instrument, source_mkp) instrument, source_mkp, results_json FROM {}
             ORDER BY instrument, source_mkp, updated_at DESC""").format(self.t(self.cache_table)), fetch=True)

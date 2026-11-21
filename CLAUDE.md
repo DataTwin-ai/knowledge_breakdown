@@ -13,7 +13,7 @@ PDF ─► IKP ─► worker pool [ MKP ─► AKP (+ fact network) ─► GKP ]
 2. **Existing scripts and prompts are the baseline.** Change only what is required, or what fixes a real defect. No unwanted tables, columns or features. Ask first if you think something extra is needed.
 3. **Layout:** one `<step>_engine.py` plus a `<step>_ss/` folder with `tests/` per step (ikp, mkp, akp, gkp, governance_master). Names use IKP / MKP / AKP / GKP / governance master, never "pass".
 4. **`main.py` changes only with approval.** Show the new or changed function and where it goes.
-5. **No hidden defaults.** Day-to-day switches and the LLM + model per job are in `permission.json`; fixed paths, tables, prompts and thresholds are in `Config/settings.json` (both read by `kp_settings.py`). A missing key stops the run with its name.
+5. **Every table name comes from `Config/settings.json`** (tables after MKP end with `_new`, 2026-11-19); the code never builds a table name. **No hidden defaults.** Day-to-day switches and the LLM + model per job are in `permission.json`; fixed paths, tables, prompts and thresholds are in `Config/settings.json` (both read by `kp_settings.py`). A missing key stops the run with its name.
 6. **Prompts keep their flow:** the same header, row types and step order. Changing a prompt changes the raw LLM-answer cache keys of that step. Batch prompt edits, and log them at the top of the prompt file.
 7. **Every model answer passes a Python gate before it is saved.** Write tests for parsers, gates, versioning and resume. Tests that need PostgreSQL must `pytest.skip` when the DB is down. Prefer tests that run without the DB.
 8. **Versioning everywhere:** the scripts insert only, never `DELETE` or overwrite content. A new version only when the content is different; then version n+1 and `is_latest=false` on older rows. Readers always filter `is_latest`. Only the user deletes (pgAdmin or `kp_delete.py`, `access.database_delete`); the triggers in `db_migrate.py` then remove everything made from that MKP / IKP node.
@@ -29,7 +29,8 @@ PDF ─► IKP ─► worker pool [ MKP ─► AKP (+ fact network) ─► GKP ]
 |---|---|
 | IKP | `law_arc_ikp_map_prompt.txt` (LLM assist, only for chapters that fail the gate) |
 | MKP | `law_arc_mkp_prompt.txt`, `law_arc_mkp_judge_prompt.txt` |
-| AKP | `law_arc_akp_prompt.txt`, `law_arc_akp_judge_prompt.txt`, `law_arc_akp_comparison_prompt.txt`, `law_arc_akp_same_prompt.txt`, `law_arc_akp_fact_prompt.txt` (fact check: is a new fact really new?), `law_arc_akp_time_prompt.txt` (time step: old / new law of an amended provision) |
+| AKP | `law_arc_akp_prompt.txt`, `law_arc_akp_judge_prompt.txt`, `law_arc_akp_comparison_prompt.txt`, `law_arc_akp_same_prompt.txt`, `law_arc_akp_fact_prompt.txt` (fact check: is a new fact really new?), `law_arc_akp_time_prompt.txt` (time step: old / new law of an amended provision), `law_arc_akp_same_pair_prompt.txt` (SAME check of saved atom pairs: after every run, `--same-review`), `law_arc_akp_concept_prompt.txt` (one more try for a weak fact concept) |
+| References | `law_arc_ref_part_prompt.txt` (which part of an outside document a law needs; only when Python finds none) |
 | GKP | `law_arc_gkp_prompt.txt` (VERIFY, JUDGE, CREATE) |
 
 ## IDs and words that must not be mixed up
@@ -38,6 +39,7 @@ PDF ─► IKP ─► worker pool [ MKP ─► AKP (+ fact network) ─► GKP ]
 - **`TG01`… / `TSG01_01`…** are taxonomy groups (TG) and sub-groups (TSG): 15 TG / 81 TSG in `Config/gst_taxonomy.json` plus the ones GKP created (`created_by: GKP`); columns `tg_id` and `tsg_id`. MKP rows (`groups`, `mkp.group_names`) and AKP atoms (`groups` field, saved in `akp.group_names`) carry TSG ids too.
 - **Reference IDs** (`ref_ss/ids.py`) are made by Python, never by the LLM: `N_CTR_04_2018`, `CIR_47_2018`, `ACT_31_2018`, or a document code (`CGSTR17`).
 - **Abbreviated ids (`kp_ids.py`, made by Python only):** MKP `M_<acronym of the concept name>` (unique across all laws), every AKP element `<MKP id>_<TYPE>_<acronym>` (TYPE A, G, LE, PD, OR, CT, TC, LK; `akp.akp_id`, there is no element column), facts `F_<acronym of the fact name>` with no prefix; an LK row is named by its relation (`M_IOSFC_LK_AMENDS`). The models keep their own working ids; `akp_ss/ids.py` rewrites them just before saving.
+- **SAME atom (`A_REF`)**: an atom with the same meaning as a saved atom of another law is saved as an `A_REF` row whose `akp_id` IS the saved atom's id (`M_LTPTOG_A_SIG`); the new law's groups / LE use it and the governance master writes it once. There is no `same_akp_id` column (2026-11-19).
 - **Facts (`F_...`)** are raw inputs, never conclusions. One fact keeps one id across all laws (a registered fact keeps its id; the same name or a saved alias reuses it). `akp_atom_fact` is the fact network.
 - **Two kinds of version:**
   - **Run version** (`version_no`, `mkp_version`, `akp_version`, `gkp_version`) is our own output.

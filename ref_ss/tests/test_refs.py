@@ -142,24 +142,39 @@ def test_reference_status_rules(conn):
         assert dict(cur.fetchall()) == {"ACT_31_2018": "PENDING", "CGSTR17": "INSERTED", "N_CTR_04_2018": "PENDING"}
     assert sorted(p["ref_id"] for p in st.pending()) == ["ACT_31_2018", "N_CTR_04_2018"]
     st.mark_inserted("N_CTR_04_2018", "N04_2018")
-    # the status of each law: CGSTR17 file is held, but rule 27 has no MKP yet -> PENDING; the notification has one
+    # reference design 2026-11-19: INSERTED = the exact clause has an approved AKP (per clause, not per document).
+    # rule 27 has no AKP yet -> PENDING; the notification part has one, but only once source_key names it
     with conn.cursor() as cur:
-        cur.execute("""DROP TABLE IF EXISTS public.t_ref_mkp;
-            CREATE TABLE public.t_ref_mkp (type text, element text, is_latest boolean, instrument_code text);
-            INSERT INTO public.t_ref_mkp VALUES ('MKP', 'N04_2018_P1#TEXT', true, 'N04_2018'),
-                                                ('MKP', 'CGSTR17_R2#TEXT', true, 'CGSTR17')""")
+        cur.execute("""DROP TABLE IF EXISTS public.t_ref_akp;
+            CREATE TABLE public.t_ref_akp (instrument text, source_mkp text, is_latest boolean, validation_status text);
+            INSERT INTO public.t_ref_akp VALUES ('N04_2018', 'N04_2018_P1#TEXT', true, 'APPROVED'),
+                                                ('CGSTR17', 'CGSTR17_R2#TEXT', true, 'APPROVED')""")
     conn.commit()
-    assert st.update_target_status("t_ref_mkp") == 3
+    assert st.update_target_status("t_ref_akp", "t_ref_parts") == 3
     got = {r["ref_id"]: (r["status"], r["doc_status"]) for r in st.for_mkp("V1", "CGSTA17_S15_SS1#TEXT")}
-    assert got == {"N_CTR_04_2018": ("INSERTED", "INSERTED"), "CGSTR17": ("PENDING", "INSERTED"),
+    assert got == {"N_CTR_04_2018": ("PENDING", "INSERTED"), "CGSTR17": ("PENDING", "INSERTED"),
                    "ACT_31_2018": ("PENDING", "PENDING")}
-    with conn.cursor() as cur:                                            # rule 27 is made -> INSERTED
-        cur.execute("INSERT INTO public.t_ref_mkp VALUES ('MKP', 'CGSTR17_R27_SR1#TEXT', true, 'CGSTR17')")
+    with conn.cursor() as cur:                       # the exact part is found -> INSERTED; a second part not yet in
+        cur.execute("UPDATE public.t_ref_link SET source_key='N04_2018_P1' WHERE ref_id='N_CTR_04_2018'")
     conn.commit()
-    st.update_target_status("t_ref_mkp")
-    assert {r["ref_id"]: r["status"] for r in st.for_mkp("V1", "CGSTA17_S15_SS1#TEXT")}["CGSTR17"] == "INSERTED"
+    st.update_target_status("t_ref_akp")
+    assert {r["ref_id"]: r["status"] for r in st.for_mkp("V1", "CGSTA17_S15_SS1#TEXT")}["N_CTR_04_2018"] == "INSERTED"
     with conn.cursor() as cur:
-        cur.execute("DROP TABLE public.t_ref_doc; DROP TABLE public.t_ref_link; DROP TABLE public.t_ref_mkp")
+        cur.execute("UPDATE public.t_ref_link SET source_key='N04_2018_P1,N04_2018_P2' WHERE ref_id='N_CTR_04_2018'")
+    conn.commit()
+    st.update_target_status("t_ref_akp")
+    assert {r["ref_id"]: r["status"] for r in st.for_mkp("V1", "CGSTA17_S15_SS1#TEXT")}["N_CTR_04_2018"] == "PENDING"
+    with conn.cursor() as cur:                                            # rule 27 gets its AKP -> INSERTED
+        cur.execute("INSERT INTO public.t_ref_akp VALUES ('CGSTR17', 'CGSTR17_R27_SR1#TEXT', true, 'APPROVED')")
+        cur.execute("SELECT ref_id, inserted_clauses FROM public.t_ref_parts ORDER BY 1")
+        parts = dict(cur.fetchall())
+    conn.commit()
+    st.update_target_status("t_ref_akp")
+    assert {r["ref_id"]: r["status"] for r in st.for_mkp("V1", "CGSTA17_S15_SS1#TEXT")}["CGSTR17"] == "INSERTED"
+    assert parts["N_CTR_04_2018"] == 1
+    with conn.cursor() as cur:
+        cur.execute("DROP VIEW public.t_ref_parts; DROP TABLE public.t_ref_doc; DROP TABLE public.t_ref_link; "
+                    "DROP TABLE public.t_ref_akp")
     conn.commit()
 
 

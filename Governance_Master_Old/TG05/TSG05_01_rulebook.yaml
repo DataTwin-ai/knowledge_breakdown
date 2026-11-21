@@ -1,0 +1,2375 @@
+# GOVERNANCE MASTER TSG05_01 Time of supply – goods (TG05 Time & Period)
+# LAW ARC - 43 laws - status NEEDS_REVIEW
+name: TSG05_01 Time of supply – goods - GOVERNANCE MASTER rulebook
+version: TSG05_01
+facts:
+  F_VSS:
+    name: Voucher Supply Status
+    type: CODE
+    options:
+    - NOT_VOUCHER_BY_SUPPLIER
+    - UNKNOWN
+    - VOUCHER_BY_SUPPLIER
+    tier: T1
+  F_SIS2:
+    name: Supply Identifiability Status
+    type: CODE
+    options:
+    - IDENTIFIABLE
+    - NOT_IDENTIFIABLE
+    - UNKNOWN
+    tier: T1
+  F_SRBED:
+    name: Supply Recipient Books Entry Date
+    type: DATE
+    tier: T1
+  F_TDUC:
+    name: Time Determinable Under Clauses
+    type: CODE
+    options:
+    - 'NO'
+    - UNKNOWN
+    - 'YES'
+    tier: T1
+  F_SPCC:
+    name: Supply Preceding Case Coverage
+    type: CODE
+    options:
+    - COVERED_BY_PRECEDING_CASE
+    - NOT_COVERED
+    - UNKNOWN
+    tier: T1
+  F_SPRD:
+    name: Supplier Payment Receipt Date
+    type: DATE
+    tier: T0
+  F_SCB:
+    name: Supply Charge Basis
+    type: CODE
+    options:
+    - FORWARD_CHARGE
+    - REVERSE_CHARGE
+    - UNKNOWN
+    tier: T0
+  F_DOII:
+    name: Date Of Invoice Issue
+    type: DATE
+    tier: T0
+  F_LDID:
+    name: Lieu Document Issue Date
+    type: DATE
+    tier: T0
+  F_LDIS:
+    name: Lieu Document Issuer Status
+    type: CODE
+    options:
+    - OTHER_PERSON
+    - SUPPLIER
+    - UNKNOWN
+    tier: T1
+  F_CCCD:
+    name: Clause C Candidate Date
+    type: DATE
+    tier: T0
+  F_SIK:
+    name: Supply Item Kind
+    type: CODE
+    options:
+    - BOTH
+    - CAPITAL_GOODS
+    - GOODS
+    - OTHER
+    - SERVICES
+    - UNKNOWN
+    tier: T1
+  F_PSR:
+    name: Payment Supply Reference
+    type: TEXT
+    tier: T1
+  F_GRD:
+    name: Goods Receipt Date
+    type: DATE
+    tier: T0
+  F_PDO:
+    name: Payment Date Order
+    type: CODE
+    options:
+    - BANK_EARLIER
+    - BOOKS_EARLIER_OR_SAME
+    - UNKNOWN
+    tier: T0
+  F_GTS:
+    name: Goods Taxable Status
+    type: BOOLEAN
+    tier: T1
+  F_SEA:
+    name: Supply Excess Amount
+    type: AMOUNT
+    tier: T0
+  F_SOE:
+    name: Supplier Option Elected
+    type: BOOLEAN
+    tier: T1
+  F_IITS:
+    name: Invoice Issue Timing Status
+    type: CODE
+    options:
+    - AFTER_DUE_DATE
+    - ON_OR_BEFORE_DUE_DATE
+    - UNKNOWN
+    tier: T0
+  F_CIT:
+    name: Certificate Issuer Type
+    type: CODE
+    options:
+    - AUTHORISED_UNDER_LAW
+    - GOVERNMENT
+    - OTHER
+    - UNKNOWN
+    tier: T0
+  F_IAUL:
+    name: Issuer Authorisation Under Law
+    type: CODE
+    options:
+    - AUTHORISED_UNDER_LAW
+    - NOT_AUTHORISED
+    - UNKNOWN
+    tier: T1
+  F_CCR:
+    name: Completion Certificate Requirement
+    type: CODE
+    options:
+    - NOT_REQUIRED
+    - REQUIRED
+    - UNKNOWN
+    tier: T1
+  F_SLS2:
+    name: Surveyor Licence Status
+    type: CODE
+    options:
+    - LICENSED_LOCAL_BODY_SURVEYOR
+    - LICENSED_DEVELOPMENT_OR_PLANNING_SURVEYOR
+    - LICENSED_OTHER
+    - NOT_LICENSED
+    - UNKNOWN
+    tier: T1
+  F_DCS:
+    name: Definition Context Status
+    type: CODE
+    options:
+    - CONTEXT_REQUIRES_OTHER_MEANING
+    - NO_CONTRARY_CONTEXT
+    - UNKNOWN
+    tier: T1
+  F_GDS:
+    name: Goods Despatch Status
+    type: CODE
+    options:
+    - DESPATCHED
+    - NOT_DESPATCHED
+    - UNKNOWN
+    tier: T0
+  F_DP:
+    name: Despatch Purpose
+    type: CODE
+    options:
+    - DELIVERY
+    - OTHER
+    - UNKNOWN
+    tier: T1
+  F_DAR:
+    name: Despatch Actor Role
+    type: CODE
+    options:
+    - SUPPLIER
+    - AGENT_OF_SUPPLIER
+    - OTHER
+    - UNKNOWN
+    tier: T1
+  F_SCW:
+    name: Statutory Context Wording
+    type: TEXT
+    tier: T1
+  F_SDP:
+    name: Supply Delivery Pattern
+    type: CODE
+    options:
+    - CONTINUOUS_OR_RECURRENT
+    - ONE_TIME
+    - OTHER
+    - UNKNOWN
+    tier: T1
+  F_SES:
+    name: Supply Execution Status
+    type: CODE
+    options:
+    - AGREED_TO_BE_MADE
+    - BOTH
+    - MADE
+    - NEITHER
+    - UNKNOWN
+    tier: T1
+  F_SIUC:
+    name: Supply Is Under Contract
+    type: BOOLEAN
+    tier: T1
+  F_IP:
+    name: Invoice Periodicity
+    type: CODE
+    options:
+    - REGULAR_OR_PERIODIC
+    - ONE_OFF
+    - OTHER
+    - UNKNOWN
+    tier: T0
+  F_GNS:
+    name: Goods Notification Status
+    type: CODE
+    options:
+    - SPECIFIED
+    - NOT_SPECIFIED
+    - UNKNOWN
+    tier: T1
+  F_NCS:
+    name: Notification Conditions Status
+    type: CODE
+    options:
+    - MET
+    - NOT_MET
+    - NO_CONDITIONS_SPECIFIED
+    - UNKNOWN
+    tier: T1
+  F_IIAI:
+    name: Item Is An Instrument
+    type: BOOLEAN
+    tier: T1
+  F_OTAACE:
+    name: Obligation To Accept As Consideration Exists
+    type: BOOLEAN
+    tier: T1
+  F_SIOI:
+    name: Supply Indicated On Instrument
+    type: BOOLEAN
+    tier: T1
+  F_SIIRD:
+    name: Supply Indicated In Related Documentation
+    type: BOOLEAN
+    tier: T1
+  F_SIOI2:
+    name: Supplier Indicated On Instrument
+    type: BOOLEAN
+    tier: T1
+  F_SIIRD2:
+    name: Supplier Indicated In Related Documentation
+    type: BOOLEAN
+    tier: T1
+  F_FOS:
+    name: Form Of Supply
+    type: CODE
+    options:
+    - BARTER
+    - DISPOSAL
+    - EXCHANGE
+    - LEASE
+    - LICENCE
+    - OTHER
+    - RENTAL
+    - SALE
+    - TRANSFER
+    tier: T1
+  F_DOS:
+    name: Description Of Supply
+    type: TEXT
+    tier: T1
+  F_SCT:
+    name: Supply Consideration Type
+    type: CODE
+    options:
+    - BOTH
+    - MONEY
+    - NONE
+    - NON_MONEY
+    tier: T1
+  F_SLS:
+    name: Supplier Legal Status
+    type: TEXT
+    tier: T0
+  F_AOTD:
+    name: Activity Or Transaction Description
+    type: TEXT
+    tier: T1
+  F_SIS:
+    name: Service Import Status
+    type: CODE
+    options:
+    - IMPORTED
+    - NOT_IMPORTED
+    - UNKNOWN
+    tier: T1
+  F_SCS:
+    name: Supply Consideration Status
+    type: CODE
+    options:
+    - AGREED
+    - NONE
+    - PAID
+    tier: T1
+  F_ASC:
+    name: Activity Status Code
+    type: CODE
+    options:
+    - MADE
+    - AGREED
+    tier: T1
+  F_KOR:
+    name: Kind of return
+    type: CODE
+    options:
+    - PRESCRIBED
+    - OTHERWISE_REQUIRED
+    tier: T1
+  F_SORR:
+    name: Source of return requirement
+    type: CODE
+    options:
+    - ACT
+    - RULES
+    - BOTH
+    tier: T1
+  F_DRK:
+    name: Document Record Kind
+    type: CODE
+    options:
+    - WRITTEN_OR_PRINTED
+    - ELECTRONIC_RECORD
+    - BOTH_WRITTEN_AND_ELECTRONIC
+    - OTHER
+    - UNKNOWN
+    tier: T1
+  F_SRLP:
+    name: Supply RCM Legal Provision
+    type: CODE
+    options:
+    - CGST_S9_3
+    - CGST_S9_4
+    - IGST_S5_3
+    - IGST_S5_4
+    - NONE
+    - UNKNOWN
+    tier: T1
+  F_IMS:
+    name: Item Mobility Status
+    type: CODE
+    options:
+    - IMMOVABLE
+    - MOVABLE
+    - UNKNOWN
+    tier: T1
+  F_IC:
+    name: Item Classification
+    type: CODE
+    options:
+    - MONEY
+    - SECURITIES
+    - ACTIONABLE_CLAIM
+    - GROWING_CROPS
+    - GRASS
+    - ATTACHED_TO_LAND
+    - OTHER
+    - UNKNOWN
+    tier: T1
+  F_AST:
+    name: Agreement Severance Type
+    type: CODE
+    options:
+    - BEFORE_SUPPLY
+    - UNDER_CONTRACT_OF_SUPPLY
+    - NO_AGREEMENT
+    - UNKNOWN
+    tier: T1
+  F_ANS:
+    name: Authority Notification Status
+    type: CODE
+    options:
+    - NOTIFIED_BY_BOARD
+    - NOTIFIED_BY_GOVERNMENT
+    - NOT_NOTIFIED
+    - UNKNOWN
+    tier: T1
+  F_AUT:
+    name: Activity Undertaker Type
+    type: CODE
+    options:
+    - CENTRAL_GOVERNMENT
+    - LOCAL_AUTHORITY
+    - OTHER
+    - STATE_GOVERNMENT
+    tier: T1
+  F_CERS:
+    name: Chartered Engineer Registration Status
+    type: CODE
+    options:
+    - REGISTERED_IEI
+    - NOT_REGISTERED_IEI
+    - UNKNOWN
+    tier: T0
+  F_ACR:
+    name: Architect Council Registration
+    type: BOOLEAN
+    tier: T0
+  F_PLET:
+    name: Person Legal Entity Type
+    type: CODE
+    options:
+    - AOP_BOI
+    - ARTIFICIAL_JURIDICAL_PERSON
+    - COMPANY
+    - GOVERNMENT
+    - HUF
+    - INDIVIDUAL
+    - LLP
+    - LOCAL_AUTHORITY
+    - OTHER
+    - PARTNERSHIP
+    - SOCIETY
+    - TRUST
+    - UNKNOWN
+    tier: T0
+  F_LCD:
+    name: Legal Context Description
+    type: TEXT
+    tier: T1
+  F_KOE:
+    name: Kind Of Entity
+    type: CODE
+    options:
+    - AOP
+    - ARTIFICIAL_JURIDICAL_PERSON
+    - BODY_CORPORATE
+    - BOI
+    - COMPANY
+    - COOPERATIVE_SOCIETY
+    - CORPORATION
+    - FIRM
+    - GOVERNMENT
+    - GOVERNMENT_COMPANY
+    - HUF
+    - INDIVIDUAL
+    - LLP
+    - LOCAL_AUTHORITY
+    - OTHER
+    - SOCIETY
+    - TRUST
+    tier: T0
+  F_COD:
+    name: Context Override Definition
+    type: BOOLEAN
+    tier: T1
+  F_ELC:
+    name: Entity Legal Classification
+    type: CODE
+    options:
+    - STATUTORY_CORPORATION
+    - GOVERNMENT_COMPANY
+    - OTHER
+    tier: T0
+  F_KOE2:
+    name: Kind of Entity
+    type: CODE
+    options:
+    - BODY_CORPORATE
+    - INDIVIDUAL
+    - FIRM
+    - LLP
+    - HUF
+    - AOP_BOI
+    - GOVERNMENT
+    - LOCAL_AUTHORITY
+    - COMPANY
+    - OTHER
+    tier: T1
+  F_COI:
+    name: Country of Incorporation
+    type: CODE
+    options:
+    - INDIA
+    - OUTSIDE_INDIA
+    - UNKNOWN
+    tier: T0
+  F_ET:
+    name: Entity Type
+    type: CODE
+    options:
+    - CANTONMENT_BOARD
+    - COOPERATIVE_SOCIETY
+    - DEVELOPMENT_BOARD
+    - DISTRICT_COUNCIL
+    - MUNICIPALITY
+    - OTHER
+    - PANCHAYAT
+    - REGIONAL_COUNCIL
+    tier: T0
+  F_ERSUCSL:
+    name: Entity Registration Status Under Co-operative Society Law
+    type: CODE
+    options:
+    - REGISTERED
+    - NOT_REGISTERED
+    - UNKNOWN
+    tier: T0
+  F_KOP:
+    name: Kind of Person
+    type: CODE
+    options:
+    - ARTIFICIAL_JURIDICAL_PERSON
+    - INDIVIDUAL
+    - HUF
+    - COMPANY
+    - FIRM
+    - LLP
+    - ASSOCIATION_OF_PERSONS
+    - BODY_OF_INDIVIDUALS
+    - GOVERNMENT
+    - LOCAL_AUTHORITY
+    - STATUTORY_BODY
+    - TRUST
+    - OTHER
+    tier: T0
+  F_PFOS84C:
+    name: Person Fits Other S2(84) Category
+    type: BOOLEAN
+    tier: T1
+  F_DPIOG:
+    name: Document Published In Official Gazette
+    type: BOOLEAN
+    tier: T1
+  F_TBD:
+    name: Term Being Defined
+    type: TEXT
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_CALS_A_AITG:
+    statement: The competent authority is the Government
+    order: LOW
+    rule: F_CIT = 'GOVERNMENT'
+    handler: python
+  M_CALS_A_AIAI:
+    statement: The competent authority is an authority authorised to issue completion certificate under any law for the time
+      being in force
+    order: HIGH
+    interpretation: Is the authority authorised under any law for the time being in force to issue a completion certificate?
+    grounding:
+    - F_IAUL
+    handler: heavy
+  M_CALS_A_CNRFA:
+    statement: A completion certificate is not required from the Government or the authority authorised to issue it (non-requirement
+      of such certificate from such authority)
+    order: HIGH
+    interpretation: Is there a non-requirement of a completion certificate from such authority for the property or work concerned?
+    grounding:
+    - F_CCR
+    handler: light
+  M_CALS_A_AILS:
+    statement: The competent authority is a licensed surveyor of the respective local body of the city or town or village
+      or development or planning authority
+    order: HIGH
+    interpretation: Is the person a licensed surveyor of the respective local body of the city or town or village or of the
+      development or planning authority? The source wording is ambiguous on how the list attaches and is retained as written.
+    grounding:
+    - F_SLS2
+    handler: heavy
+  M_DOCACE_A_CAIG:
+    statement: The competent authority is the Government
+    order: LOW
+    rule: F_CIT = 'GOVERNMENT'
+    handler: python
+  M_DOCACE_A_AULA:
+    statement: The competent authority is any authority authorised to issue completion certificate under any law for the time
+      being in force
+    order: HIGH
+    interpretation: Is the issuing authority authorised to issue completion certificates under a law for the time being in
+      force?
+    grounding:
+    - F_CIT
+    handler: heavy
+  M_DOCACE_A_CNRFA:
+    statement: In case of non-requirement of such completion certificate from such authority, the certificate is not required
+      from that authority
+    order: LOW
+    rule: F_CCR = 'NOT_REQUIRED'
+    handler: python
+  M_DOCACE_A_CERWI:
+    statement: The competent authority is a chartered engineer registered with the Institution of Engineers (India)
+    order: LOW
+    rule: F_CERS = 'REGISTERED_IEI'
+    handler: python
+  M_CAA_A_AITG:
+    statement: The competent authority is the Government
+    order: LOW
+    rule: F_CIT = 'GOVERNMENT'
+    handler: python
+  M_CAA_A_AAUL:
+    statement: The competent authority is any authority authorised to issue completion certificate under any law for the time
+      being in force
+    order: HIGH
+    interpretation: Is the issuing authority authorised to issue a completion certificate under any law for the time being
+      in force?
+    grounding:
+    - F_IAUL
+    handler: light
+  M_CAA_A_CNRFA:
+    statement: A completion certificate is not required from the Government or authority authorised under any law to issue
+      it
+    order: LOW
+    rule: F_CCR = 'NOT_REQUIRED'
+    handler: python
+  M_CAA_A_ARWC:
+    statement: The competent authority is an architect registered with the Council of Architecture constituted under the Architects
+      Act, 1972
+    order: LOW
+    rule: F_ACR = TRUE
+    handler: python
+  M_ROGBD_A_CDNO:
+    statement: The context does not otherwise require a different meaning for 'removal' in this Act.
+    order: HIGH
+    interpretation: Does the surrounding legal text or specific provision context indicate that 'removal' should be interpreted
+      differently than this definition?
+    grounding:
+    - F_DCS
+    handler: light
+  M_ROGBD_A_GAD:
+    statement: There is a despatch of the goods.
+    order: LOW
+    rule: F_GDS = 'DESPATCHED'
+    handler: python
+  M_ROGBD_A_DIFD:
+    statement: The despatch of the goods is for delivery.
+    order: LOW
+    rule: F_DP = 'DELIVERY'
+    handler: python
+  M_ROGBD_A_DBS:
+    statement: The despatch of the goods for delivery is by the supplier thereof.
+    order: LOW
+    rule: F_DAR = 'SUPPLIER'
+    handler: python
+  M_ROGBD_A_DBSA:
+    statement: The despatch of the goods for delivery is by any other person acting on behalf of such supplier.
+    order: LOW
+    rule: F_DAR = 'AGENT_OF_SUPPLIER'
+    handler: python
+  M_DOCSOG_A_CRDM:
+    statement: The context in which the term continuous supply of goods is used in this Act otherwise requires a meaning different
+      from this definition
+    order: HIGH
+    if_false: context does not require a different meaning
+    interpretation: Does the wording or context of the provision of this Act where the term is used require a meaning of continuous
+      supply of goods different from the one given in this definition?
+    grounding:
+    - F_SCW
+    handler: heavy
+  M_DOCSOG_A_SIASOG:
+    statement: The supply is a supply of goods
+    order: LOW
+    rule: F_SIK IN ['GOODS','CAPITAL_GOODS']
+    handler: python
+  M_DOCSOG_A_GPCOR:
+    statement: The supply of goods is provided continuously or on recurrent basis, whether or not by means of a wire, cable,
+      pipeline or other conduit
+    order: HIGH
+    if_false: goods are not provided or are provided only once
+    interpretation: From the contract, delivery schedule and invoices, are the goods actually being provided continuously
+      or on a recurrent basis? The delivery means such as wire, cable or pipeline is irrelevant.
+    grounding:
+    - F_SDP
+    - F_SES
+    handler: light
+  M_DOCSOG_A_GACOR:
+    statement: The supply of goods is agreed to be provided continuously or on recurrent basis, whether or not by means of
+      a wire, cable, pipeline or other conduit
+    order: HIGH
+    if_false: no agreement for continuous or recurrent provision
+    interpretation: Do the contract or agreement terms provide that the goods are to be supplied continuously or on a recurrent
+      basis? The delivery means such as wire, cable or pipeline is irrelevant.
+    grounding:
+    - F_SDP
+    - F_SES
+    handler: light
+  M_DOCSOG_A_SIUAC:
+    statement: The supply of goods is provided or agreed to be provided under a contract
+    order: LOW
+    rule: F_SIUC = TRUE
+    handler: python
+  M_DOCSOG_A_SIROP:
+    statement: The supplier invoices the recipient on a regular or periodic basis for the supply of goods
+    order: LOW
+    rule: F_IP = 'REGULAR_OR_PERIODIC'
+    handler: python
+  M_DOCSOG_A_GSBGN:
+    statement: The supply is a supply of such goods as the Government may by notification specify as included in continuous
+      supply of goods
+    order: HIGH
+    if_false: no notification specifies these goods
+    interpretation: Is there a Government notification under this definition that specifies the goods supplied as included
+      in continuous supply of goods?
+    grounding:
+    - F_GNS
+    handler: light
+  M_DOCSOG_A_NCAM:
+    statement: The conditions the Government has set by notification for the inclusion of such goods are met
+    order: LOW
+    rule: F_NCS IN ['MET','NO_CONDITIONS_SPECIFIED']
+    handler: python
+  M_DOVI_A_CDNROM:
+    statement: Unless the context otherwise requires, the definition of 'voucher' applies.
+    order: HIGH
+    interpretation: Does the context of the provision where 'voucher' is used require a meaning different from the one in
+      Section 2(118)?
+    grounding:
+    - F_DCS
+    handler: heavy
+  M_DOVI_A_TIIAI:
+    statement: The item is an instrument.
+    order: HIGH
+    interpretation: Does the item being assessed qualify as an 'instrument' (e.g., a document or electronic record that gives
+      rights)?
+    grounding:
+    - F_IIAI
+    handler: light
+  M_DOVI_A_OTAAC:
+    statement: There is an obligation to accept the instrument as consideration or part consideration.
+    order: HIGH
+    interpretation: Do the terms of the instrument or related documentation create an obligation for a supplier to accept
+      it as full or part payment?
+    grounding:
+    - F_OTAACE
+    handler: light
+  M_DOVI_A_CIFAS:
+    statement: The consideration is for a supply of goods or services or both.
+    order: LOW
+    rule: F_SIK IN ['GOODS', 'SERVICES', 'BOTH']
+    handler: python
+  M_DOVI_A_SIOTI:
+    statement: The goods or services or both to be supplied are indicated on the instrument itself.
+    order: HIGH
+    interpretation: Are the specific goods or services that can be redeemed identified on the face of the instrument?
+    grounding:
+    - F_SIOI
+    handler: light
+  M_DOVI_A_SIIRD:
+    statement: The goods or services or both to be supplied are indicated in related documentation, including the terms and
+      conditions of use of such instrument.
+    order: HIGH
+    interpretation: Are the specific goods or services that can be redeemed identified in documentation related to the instrument
+      (e.g., its terms and conditions)?
+    grounding:
+    - F_SIIRD
+    handler: light
+  M_DOVI_A_SIOTI2:
+    statement: The identities of potential suppliers are indicated on the instrument itself.
+    order: HIGH
+    interpretation: Are the identities of the potential suppliers who will accept the voucher identified on the face of the
+      instrument?
+    grounding:
+    - F_SIOI2
+    handler: light
+  M_DOVI_A_SIIRD2:
+    statement: The identities of potential suppliers are indicated in related documentation, including the terms and conditions
+      of use of such instrument.
+    order: HIGH
+    interpretation: Are the identities of the potential suppliers who will accept the voucher identified in documentation
+      related to the instrument (e.g., its terms and conditions)?
+    grounding:
+    - F_SIIRD2
+    handler: light
+  M_SIAFOS_A_SIAS:
+    statement: The supply of goods or services or both is a sale
+    order: LOW
+    rule: F_FOS = 'SALE'
+    handler: python
+  M_SIAFOS_A_SIAT:
+    statement: The supply of goods or services or both is a transfer
+    order: LOW
+    rule: F_FOS = 'TRANSFER'
+    handler: python
+  M_SIAFOS_A_SIAB:
+    statement: The supply of goods or services or both is a barter
+    order: LOW
+    rule: F_FOS = 'BARTER'
+    handler: python
+  M_SIAFOS_A_SIAE:
+    statement: The supply of goods or services or both is an exchange
+    order: LOW
+    rule: F_FOS = 'EXCHANGE'
+    handler: python
+  M_SIAFOS_A_SIALG:
+    statement: The supply of goods or services or both is a licence
+    order: LOW
+    rule: F_FOS = 'LICENCE'
+    handler: python
+  M_SIAFOS_A_SIAR:
+    statement: The supply of goods or services or both is a rental
+    order: LOW
+    rule: F_FOS = 'RENTAL'
+    handler: python
+  M_SIAFOS_A_SIAL:
+    statement: The supply of goods or services or both is a lease
+    order: LOW
+    rule: F_FOS = 'LEASE'
+    handler: python
+  M_SIAFOS_A_SIAD:
+    statement: The supply of goods or services or both is a disposal
+    order: LOW
+    rule: F_FOS = 'DISPOSAL'
+    handler: python
+  M_SIAFOS_A_SIAF:
+    statement: The supply of goods or services or both takes another form of supply that is not one of the listed examples
+      of sale, transfer, barter, exchange, licence, rental, lease or disposal
+    order: HIGH
+    interpretation: Does the described transaction amount to a form of supply of goods or services or both other than the
+      listed examples, since the list is illustrative only?
+    grounding:
+    - F_FOS
+    - F_DOS
+    handler: light
+  M_SIAFOS_A_SMFC:
+    statement: The supply was made for a consideration
+    order: LOW
+    rule: F_SES = 'MADE' AND F_SCT IN ['MONEY','NON_MONEY','BOTH']
+    handler: python
+  M_SIAFOS_A_SAFC:
+    statement: The supply was agreed to be made for a consideration
+    order: LOW
+    rule: F_SES = 'AGREED_TO_BE_MADE' AND F_SCT IN ['MONEY','NON_MONEY','BOTH']
+    handler: python
+  M_SIAFOS_A_SBPIB:
+    statement: The supply is made or agreed to be made by a person in the course or furtherance of business
+    order: HIGH
+    interpretation: Given the supplier and the activity described, is the supply made or agreed to be made by a person in
+      the course or furtherance of business?
+    grounding:
+    - F_SLS
+    - F_AOTD
+    handler: heavy
+  M_IOSFC_A_SIIOS:
+    statement: The transaction is an import of services within the meaning of the Act
+    order: HIGH
+    interpretation: Is the service an import of services in its statutory sense, given the service import status evidence
+    grounding:
+    - F_SIS
+    handler: heavy
+  M_IOSFC_A_IIFC:
+    statement: The import of services is for a consideration
+    order: LOW
+    rule: F_SCS IN ['PAID', 'AGREED']
+    handler: python
+  M_SIAWC_A_ASISI:
+    statement: The activity is one of the activities specified in Schedule I
+    order: HIGH
+    interpretation: Does the described activity fall within an activity specified in Schedule I of the Act?
+    grounding:
+    - F_AOTD
+    handler: heavy
+  M_SIAWC_A_AMOA:
+    statement: The activity is made or agreed to be made
+    order: LOW
+    rule: F_ASC IN ['MADE', 'AGREED']
+    handler: python
+  M_SIAWC_A_MWAC:
+    statement: The activity is made or agreed to be made without a consideration
+    order: LOW
+    rule: F_SCS = 'NONE'
+    handler: python
+  M_DORE_A_CROM:
+    statement: The context in which the term 'return' is used requires a different meaning.
+    order: LOW
+    rule: F_DCS = 'CONTEXT_REQUIRES_OTHER_MEANING'
+    handler: python
+  M_DORE_A_RIP:
+    statement: The return is prescribed.
+    order: LOW
+    rule: F_KOR = 'PRESCRIBED'
+    handler: python
+  M_DORE_A_RIOR:
+    statement: The return is otherwise required to be furnished.
+    order: LOW
+    rule: F_KOR = 'OTHERWISE_REQUIRED'
+    handler: python
+  M_DORE_A_RRBA:
+    statement: The return is required to be furnished by or under this Act.
+    order: LOW
+    rule: F_SORR IN ['ACT', 'BOTH']
+    handler: python
+  M_DORE_A_RRBR:
+    statement: The return is required to be furnished by or under the rules made thereunder.
+    order: LOW
+    rule: F_SORR IN ['RULES', 'BOTH']
+    handler: python
+  M_DOD_A_CDNROM:
+    statement: The context in which the term document is used does not otherwise require a meaning other than the definition
+      in this Act
+    order: HIGH
+    interpretation: Does the provision in which document is used otherwise require a meaning different from this definition
+    grounding:
+    - F_DCS
+    handler: heavy
+  M_DOD_A_DIWOPR:
+    statement: The document is a written or printed record of any sort
+    order: LOW
+    rule: F_DRK IN ['WRITTEN_OR_PRINTED', 'BOTH_WRITTEN_AND_ELECTRONIC']
+    handler: python
+  M_DOD_A_DIER:
+    statement: The document is an electronic record as defined in clause (t) of section 2 of the Information Technology Act,
+      2000
+    order: HIGH
+    interpretation: Is the record an electronic record within clause (t) of section 2 of the Information Technology Act, 2000
+      as referred to by this definition
+    grounding:
+    - F_DRK
+    handler: heavy
+  M_DOD_A_RWOM:
+    statement: The record is included within the open meaning of document although it is neither a written or printed record
+      nor an electronic record
+    order: HIGH
+    interpretation: Does the word includes in this definition bring this other form of record within the meaning of document
+    grounding:
+    - F_DRK
+    handler: heavy
+  M_RCD_A_CDNROM:
+    statement: The definition of 'reverse charge' applies, unless the context otherwise requires.
+    order: HIGH
+    interpretation: Does the legal context in which the term 'reverse charge' is used require a meaning different from the
+      one provided in Section 2(98)?
+    grounding:
+    - F_DCS
+    handler: light
+  M_RCD_A_LAUCAS93:
+    statement: The liability arises under sub-section (3) of section 9 of the CGST Act.
+    order: LOW
+    rule: F_SRLP = 'CGST_S9_3'
+    handler: python
+  M_RCD_A_LAUCAS94:
+    statement: The liability arises under sub-section (4) of section 9 of the CGST Act.
+    order: LOW
+    rule: F_SRLP = 'CGST_S9_4'
+    handler: python
+  M_RCD_A_LAUIAS53:
+    statement: The liability arises under sub-section (3) of section 5 of the Integrated Goods and Services Tax Act.
+    order: LOW
+    rule: F_SRLP = 'IGST_S5_3'
+    handler: python
+  M_RCD_A_LAUIAS54:
+    statement: The liability arises under sub-section (4) of section 5 of the Integrated Goods and Services Tax Act.
+    order: LOW
+    rule: F_SRLP = 'IGST_S5_4'
+    handler: python
+  M_DOGO_A_CDNROM:
+    statement: The context in which the term 'goods' is used does not require a different meaning.
+    order: LOW
+    rule: F_DCS = 'NO_CONTRARY_CONTEXT'
+    handler: python
+  M_DOGO_A_TIIMP:
+    statement: The item is a kind of movable property.
+    order: HIGH
+    interpretation: Based on the item's description and nature, is it considered movable property?
+    grounding:
+    - F_IMS
+    - F_AOTD
+    handler: heavy
+  M_DOGO_A_TIINM:
+    statement: The item is other than money.
+    order: LOW
+    rule: F_IC != 'MONEY'
+    handler: python
+  M_DOGO_A_TIINS:
+    statement: The item is other than securities.
+    order: LOW
+    rule: F_IC != 'SECURITIES'
+    handler: python
+  M_DOGO_A_TIIAAC:
+    statement: The item is an actionable claim.
+    order: LOW
+    rule: F_IC = 'ACTIONABLE_CLAIM'
+    handler: python
+  M_DOGO_A_TIIGC:
+    statement: The item is growing crops.
+    order: LOW
+    rule: F_IC = 'GROWING_CROPS'
+    handler: python
+  M_DOGO_A_TIIG:
+    statement: The item is grass.
+    order: LOW
+    rule: F_IC = 'GRASS'
+    handler: python
+  M_DOGO_A_IIATL:
+    statement: The item is a thing attached to or forming part of the land.
+    order: LOW
+    rule: F_IC = 'ATTACHED_TO_LAND'
+    handler: python
+  M_DOGO_A_IIATBS:
+    statement: The thing is agreed to be severed before supply or under a contract of supply.
+    order: LOW
+    rule: F_AST IN ['BEFORE_SUPPLY', 'UNDER_CONTRACT_OF_SUPPLY']
+    handler: python
+  M_DOCOA_A_CDNROM:
+    statement: In this Act, unless the context otherwise requires, the context does not require a meaning of competent authority
+      other than the defined meaning
+    order: HIGH
+    interpretation: Does the context of this Act, or of the provision in which the term is used, require a meaning other than
+      the defined meaning of competent authority?
+    grounding:
+    - F_DCS
+    handler: heavy
+  M_DOCOA_A_ANBG:
+    statement: The competent authority is such authority as may be notified by the Government
+    order: LOW
+    rule: F_ANS = 'NOTIFIED_BY_GOVERNMENT'
+    handler: python
+  M_DOG_A_ITCG:
+    statement: '"Government" means the Central Government.'
+    order: LOW
+    rule: F_AUT = 'CENTRAL_GOVERNMENT'
+    handler: python
+  M_DOG_A_CDNROM:
+    statement: The context does not otherwise require a different meaning for 'Government'.
+    order: LOW
+    rule: F_DCS = 'NO_CONTRARY_CONTEXT'
+    handler: python
+  M_DOPI_A_PII:
+    statement: A 'person' includes an individual
+    order: LOW
+    rule: F_PLET = 'INDIVIDUAL'
+    handler: python
+  M_DOPI_A_CDNO:
+    statement: The context does not require a different meaning for the term 'person'
+    order: HIGH
+    interpretation: Does the specific legal context in which the term 'person' is used require a different definition that
+      overrides the general one from Section 2(84)(a)?
+    grounding:
+    - F_LCD
+    handler: heavy
+  M_PIHUF_A_EIHUF:
+    statement: The entity is a Hindu Undivided Family
+    order: LOW
+    rule: F_PLET = 'HUF'
+    handler: python
+  M_PIC_A_EIAC:
+    statement: The entity under consideration is a company.
+    order: LOW
+    rule: F_KOE = 'COMPANY'
+    handler: python
+  M_DOPF_A_AFIIITDOP:
+    statement: A firm is included in the definition of 'person'
+    order: LOW
+    rule: F_PLET = 'PARTNERSHIP'
+    handler: python
+  M_PILLP_A_LLPIP:
+    statement: A Limited Liability Partnership is included in the definition of 'person'.
+    order: LOW
+    rule: F_PLET = 'LLP'
+    handler: python
+  M_PILLP_A_CAI:
+    statement: The context does not require 'person' to be interpreted otherwise.
+    order: HIGH
+    interpretation: Does the specific legal context of the current provision require 'person' to be interpreted in a way that
+      excludes a Limited Liability Partnership?
+    grounding:
+    - F_COD
+    handler: light
+  M_PIAOP_A_CDNRDM:
+    statement: The context of the provision where 'person' is used does not require a meaning different from the one provided
+      in Section 2(84)
+    order: HIGH
+    interpretation: Does the context of the provision where 'person' is used require a meaning different from the statutory
+      definition in Section 2(84)?
+    grounding:
+    - F_LCD
+    handler: heavy
+  M_PIAOP_A_EIAAOP:
+    statement: The entity is an association of persons, whether incorporated or not, in India or outside India
+    order: LOW
+    rule: F_KOE = 'AOP'
+    handler: python
+  M_PIAOP_A_EIABOI:
+    statement: The entity is a body of individuals, whether incorporated or not, in India or outside India
+    order: LOW
+    rule: F_KOE = 'BOI'
+    handler: python
+  M_PISCOGC_A_CDNRO:
+    statement: The context does not require a meaning of 'person' different from this definition
+    order: HIGH
+    interpretation: Does the specific legal context of the provision where 'person' is used imply a meaning different from
+      the standard definition?
+    grounding:
+    - F_LCD
+    handler: heavy
+  M_PISCOGC_A_EIASC:
+    statement: The entity is a corporation established by or under any Central Act, State Act or Provincial Act
+    order: LOW
+    rule: F_ELC = 'STATUTORY_CORPORATION'
+    handler: python
+  M_PISCOGC_A_EIAGC:
+    statement: The entity is a Government company as defined in clause (45) of section 2 of the Companies Act, 2013
+    order: LOW
+    rule: F_ELC = 'GOVERNMENT_COMPANY'
+    handler: python
+  M_PIFBC_A_EIBC:
+    statement: The entity is a body corporate
+    order: LOW
+    rule: F_KOE2 = 'BODY_CORPORATE'
+    handler: python
+  M_PIFBC_A_BCIOI:
+    statement: The body corporate is incorporated by or under the laws of a country outside India
+    order: LOW
+    rule: F_COI = 'OUTSIDE_INDIA'
+    handler: python
+  M_PIFBC_A_DAUCRO:
+    statement: The definition of 'person' applies unless the context otherwise requires.
+    order: HIGH
+    interpretation: Does the specific context in which the term 'person' is used in the Act require a meaning different from
+      this definition?
+    grounding:
+    - F_LCD
+    handler: heavy
+  M_PICS_A_CDNOR:
+    statement: The context in which the term 'person' is used does not require a different meaning
+    order: HIGH
+    interpretation: Does the specific context of the law where the term 'person' is used require a meaning that excludes a
+      co-operative society?
+    grounding:
+    - F_LCD
+    handler: heavy
+  M_PICS_A_EIRCS:
+    statement: The entity is a co-operative society registered under any law relating to co-operative societies
+    order: LOW
+    rule: F_ET = 'COOPERATIVE_SOCIETY' AND F_ERSUCSL = 'REGISTERED'
+    handler: python
+  M_PILA_A_UTCOR:
+    statement: the context does not otherwise require the definition to be excluded
+    order: HIGH
+    interpretation: Does the specific legal context of the transaction require a different meaning of 'person' than the one
+      provided in this definition?
+    grounding:
+    - F_LCD
+    handler: heavy
+  M_PILA_A_PIALA:
+    statement: '"person" includes a local authority'
+    order: LOW
+    rule: F_AUT = 'LOCAL_AUTHORITY'
+    handler: python
+  M_PICOSG_A_CDNOR:
+    statement: The context does not otherwise require a different meaning of 'person'
+    order: HIGH
+    interpretation: Does the specific legal context of the provision being applied require a meaning of 'person' that excludes
+      Central or State Government?
+    grounding:
+    - F_LCD
+    handler: heavy
+  M_PICOSG_A_PICG:
+    statement: The person is a Central Government
+    order: LOW
+    rule: F_AUT = 'CENTRAL_GOVERNMENT'
+    handler: python
+  M_PICOSG_A_PISG:
+    statement: The person is a State Government
+    order: LOW
+    rule: F_AUT = 'STATE_GOVERNMENT'
+    handler: python
+  M_PIS_A_EIAS:
+    statement: The entity is a society as defined under the Societies Registration Act, 1860
+    order: HIGH
+    interpretation: Is the entity a society as defined under the Societies Registration Act, 1860?
+    grounding:
+    - F_KOE
+    handler: heavy
+  M_PIS_A_CDNRO:
+    statement: The context does not require an interpretation of 'person' different from the statutory definition
+    order: HIGH
+    interpretation: Based on the legal context, is there any reason to interpret the term 'person' in a way that excludes
+      a society?
+    grounding:
+    - F_LCD
+    handler: heavy
+  M_PIT_A_PIT:
+    statement: For the purposes of this Act, a trust is included in the definition of 'person'.
+    order: LOW
+    rule: F_KOE = 'TRUST'
+    handler: python
+  M_PIT_A_CDNRO:
+    statement: The context does not otherwise require a different interpretation.
+    order: HIGH
+    interpretation: Does the specific context in which the term 'person' is used require an interpretation that excludes a
+      trust?
+    grounding:
+    - F_LCD
+    handler: heavy
+  M_PIAJP_A_EIAAJP:
+    statement: The entity is an artificial juridical person
+    order: HIGH
+    interpretation: Is the entity an artificial juridical person by its nature or legal status (e.g., a statutory corporation,
+      deity, idol)?
+    grounding:
+    - F_KOP
+    handler: heavy
+  M_PIAJP_A_ANIPC:
+    statement: The artificial juridical person does not fall within any of the categories (a) to (m) of Section 2(84)
+    order: HIGH
+    interpretation: Does this artificial juridical person also fit into any of the specific categories (a) to (m) of Section
+      2(84) of the CGST Act?
+    grounding:
+    - F_PFOS84C
+    handler: heavy
+  M_DONAN_A_NMPIOG:
+    statement: '"notification" means a notification published in the Official Gazette'
+    order: LOW
+    rule: F_DPIOG = TRUE
+    handler: python
+  M_DONAN_A_DAUCRO:
+    statement: The definition of "notification" and related expressions applies unless the context otherwise requires.
+    order: HIGH
+    interpretation: Does the specific legal context in which 'notification', 'notify', or 'notified' is used require a meaning
+      different from the general definition or construction rule?
+    grounding:
+    - F_LCD
+    handler: heavy
+  M_DONAN_A_NANCA:
+    statement: The expressions "notify" and "notified" shall be construed accordingly.
+    order: HIGH
+    interpretation: Are the terms 'notify' or 'notified' being used in a manner consistent with the definition established
+      for 'notification' and its contextual application?
+    grounding:
+    - F_TBD
+    handler: light
+  M_GVTOSR_A_SIVBS:
+    statement: The supply is a supply of vouchers by a supplier
+    order: LOW
+    rule: F_VSS = 'VOUCHER_BY_SUPPLIER'
+    handler: python
+  M_GVTOSR_A_CIOTPC:
+    statement: The case is one of the 'all other cases', that is a voucher supply case other than the case dealt with in the
+      preceding sub-clause (a) of the same sub-section
+    order: HIGH
+    interpretation: Is this a voucher supply case other than the case covered by the preceding sub-clause (a) of the same
+      sub-section? The content of sub-clause (a) is not part of this MKP, so F_SIS2 is used only as the observable input and
+      the result stays UNKNOWN if the sibling clause or the fact cannot be established
+    grounding:
+    - F_SIS2
+    handler: light
+  M_TOSVI_A_SOVBS:
+    statement: The supply is a supply of vouchers by a supplier.
+    order: LOW
+    rule: F_VSS = 'VOUCHER_BY_SUPPLIER'
+    handler: python
+  M_TOSVI_A_SIAI:
+    statement: The supply is identifiable at the point of issue of the voucher.
+    order: HIGH
+    interpretation: Does the contract, the terms and conditions or the voucher show that the supply was identifiable at the
+      point the voucher was issued?
+    grounding:
+    - F_SIS2
+    handler: light
+  M_TOSGAIP_A_SRSA:
+    statement: The supplier receives such addition in value, and the date of that receipt fixes the time of supply of the
+      addition
+    order: LOW
+    rule: F_SPRD IS_SET
+    handler: python
+  M_RCGTID_A_SORCB:
+    statement: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis
+    order: LOW
+    rule: F_SCB = 'REVERSE_CHARGE'
+    handler: python
+  M_RCGTID_A_IIBS:
+    statement: An invoice was issued by the supplier for the supply and its date of issue is available
+    order: LOW
+    rule: F_DOII IS_SET
+    handler: python
+  M_RCGTID_A_LDIBS:
+    statement: Any other document by whatever name called in lieu of an invoice was issued by the supplier and its date of
+      issue is available
+    order: LOW
+    rule: F_LDID IS_SET AND F_LDIS = 'SUPPLIER'
+    handler: python
+  M_RCGTID_A_DFTDC:
+    statement: The date immediately following thirty days from the date of issue of the invoice or other document in lieu
+      thereof by the supplier is available as a candidate date for the time of supply
+    order: LOW
+    rule: F_CCCD IS_SET
+    handler: python
+  M_TOSGRRD_A_SURCB:
+    statement: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis
+    order: LOW
+    rule: F_SCB = 'REVERSE_CHARGE'
+    handler: python
+  M_TOSGRRD_A_GRDIL:
+    statement: The date of the receipt of goods is a date listed for determining the time of supply
+    order: LOW
+    rule: F_GRD IS_SET
+    handler: python
+  M_TOSGRRD_A_RDIEL:
+    statement: The date of the receipt of goods is the earliest of the dates listed for the time of supply
+    order: HIGH
+    interpretation: Is the date of receipt of goods the earliest of all the dates listed for time of supply on reverse charge
+      supplies? Other listed dates are outside this MKP and must be compared with it. If they are not available the answer
+      is UNKNOWN.
+    grounding:
+    - F_GRD
+    handler: heavy
+  M_TOSGRCP_A_SIORC:
+    statement: The supply is one in respect of which tax is paid or liable to be paid on reverse charge basis
+    order: LOW
+    rule: F_SCB = 'REVERSE_CHARGE'
+    handler: python
+  M_TOSGRCP_A_BPDIE:
+    statement: The date of payment as entered in the books of account of the recipient is the same as or earlier than the
+      date on which the payment is debited in his bank account
+    order: LOW
+    rule: F_PDO = 'BOOKS_EARLIER_OR_SAME'
+    handler: python
+  M_TOSGRCP_A_BDDIE:
+    statement: The date on which the payment is debited in the recipient's bank account is earlier than the date of payment
+      as entered in his books of account
+    order: LOW
+    rule: F_PDO = 'BANK_EARLIER'
+    handler: python
+  M_FTOSGRB_A_RBED:
+    statement: The time of supply shall be the date of entry in the books of account of the recipient of supply
+    order: LOW
+    rule: F_SRBED IS_SET
+    handler: python
+  M_TOSGPD_A_SIOG:
+    statement: The supply is a supply of goods
+    order: LOW
+    rule: F_SIK = 'GOODS'
+    handler: python
+  M_TOSGPD_A_PRFS:
+    statement: The supplier receives the payment with respect to the supply
+    order: HIGH
+    interpretation: Does the payment received by the supplier relate to this supply of goods?
+    grounding:
+    - F_PSR
+    - F_SPRD
+    handler: light
+  M_TOSGPD_A_PRDIR:
+    statement: The date on which the supplier receives the payment with respect to the supply is established
+    order: LOW
+    rule: F_SPRD IS_SET
+    handler: python
+  M_TOSGID_A_IIOOBDD:
+    statement: The date of issue of invoice by the supplier is not later than the last date on which the supplier is required,
+      under section 31, to issue the invoice with respect to the supply, so the invoice issue date is the earlier of the two
+      dates
+    order: LOW
+    rule: F_IITS = 'ON_OR_BEFORE_DUE_DATE'
+    handler: python
+  M_TOSGID_A_S31DIE:
+    statement: The last date on which the supplier is required, under section 31, to issue the invoice with respect to the
+      supply is earlier than the date of issue of invoice by the supplier
+    order: LOW
+    rule: F_IITS = 'AFTER_DUE_DATE'
+    handler: python
+  M_LTPTOG_A_SIOG:
+    statement: The supply on which the liability to pay tax arises is a supply of goods
+    order: LOW
+    rule: F_SIK IN ['GOODS','BOTH']
+    handler: python
+  M_LTPTOG_A_TOSDUS:
+    statement: The time of supply, at which the liability to pay tax arises, is determined in accordance with the provisions
+      of this section
+    order: LOW
+    rule: F_TDUC = 'YES'
+    handler: python
+  M_EAOGTOS_A_SOTG:
+    statement: The supplier is a supplier of taxable goods
+    order: LOW
+    rule: F_GTS = TRUE
+    handler: python
+  M_EAOGTOS_A_SREA:
+    statement: The supplier receives an amount in excess of the amount indicated in the tax invoice
+    order: LOW
+    rule: F_SEA > 0
+    handler: python
+  M_EAOGTOS_A_EUTOT:
+    statement: The amount received is up to one thousand rupees in excess of the amount indicated in the tax invoice, the
+      limit being inclusive
+    order: LOW
+    rule: F_SEA <= 1000
+    handler: python
+  M_EAOGTOS_A_SEID:
+    statement: The said supplier has elected, at the option of the said supplier, to apply the date of issue of invoice as
+      the time of supply for such excess amount
+    order: LOW
+    rule: F_SOE = TRUE
+    handler: python
+  M_VSTOSRD_A_SFIOC:
+    statement: The supply falls in all other cases, that is, it is not covered by a preceding case of the voucher time-of-supply
+      provision, which is not stated in this MKP.
+    order: LOW
+    rule: F_SPCC = 'NOT_COVERED'
+    handler: python
+groups:
+  M_CALS_G_PAA:
+    name: Primary Authority Alternatives
+    logic: ANY
+    members:
+    - M_CALS_A_AITG
+    - M_CALS_A_AIAI
+    description: The Government or any authority authorised to issue completion certificate under any law for the time being
+      in force.
+  M_CALS_G_SRC:
+    name: Surveyor Route Conditions
+    logic: ALL
+    members:
+    - M_CALS_A_CNRFA
+    - M_CALS_A_AILS
+    description: Where a completion certificate is not required from such authority - the licensed surveyor listed in the
+      clause.
+  M_DOCACE_G_GOAIR:
+    name: Government Or Authorised Issuer Route
+    logic: ANY
+    members:
+    - M_DOCACE_A_CAIG
+    - M_DOCACE_A_AULA
+    description: The competent authority is the Government or an authority authorised to issue the completion certificate
+  M_DOCACE_G_ERCNR:
+    name: Engineer Route Certificate Not Required
+    logic: ALL
+    members:
+    - M_DOCACE_A_CNRFA
+    - M_DOCACE_A_CERWI
+    description: Where the certificate is not required from such authority, a chartered engineer registered with the Institution
+      of Engineers (India) is the competent authority
+  M_CAA_G_GOAA:
+    name: Government Or Authorised Authority
+    logic: ANY
+    members:
+    - M_CAA_A_AITG
+    - M_CAA_A_AAUL
+    description: The Government or any authority authorised under any law in force to issue a completion certificate
+  M_CAA_G_RAR:
+    name: Registered Architect Route
+    logic: ALL
+    members:
+    - M_CAA_A_CNRFA
+    - M_CAA_A_ARWC
+    description: No certificate is required from such authority and the certifier is a registered architect
+  M_ROGBD_G_DAIV:
+    name: Despatch Actor Is Valid
+    logic: ANY
+    members:
+    - M_ROGBD_A_DBS
+    - M_ROGBD_A_DBSA
+    description: The goods are despatched by either the supplier or their agent.
+  M_DOCSOG_G_MOIR:
+    name: Means Or Includes Routes
+    logic: ANY
+    members:
+    - M_DOCSOG_G_CMDC
+    - M_DOCSOG_G_NGIR
+    description: Either the core means-definition conditions are met or the open includes-route for Government notified goods
+      applies.
+  M_DOCSOG_G_CMDC:
+    name: Core Means Definition Conditions
+    logic: ALL
+    members:
+    - M_DOCSOG_A_SIASOG
+    - M_DOCSOG_G_POAC
+    - M_DOCSOG_A_SIUAC
+    - M_DOCSOG_A_SIROP
+    description: All joint requirements of the means-part of the definition.
+  M_DOCSOG_G_POAC:
+    name: Provided Or Agreed Continuity
+    logic: ANY
+    members:
+    - M_DOCSOG_A_GPCOR
+    - M_DOCSOG_A_GACOR
+    description: The supply is provided OR agreed to be provided continuously or on recurrent basis - either event is enough
+      and both are not required.
+  M_DOCSOG_G_NGIR:
+    name: Notified Goods Inclusion Route
+    logic: ALL
+    members:
+    - M_DOCSOG_A_GSBGN
+    - M_DOCSOG_A_NCAM
+    description: 'Open inclusion: supply of goods the Government specifies by notification, subject to the conditions it sets.'
+  M_DOVI_G_SOSII:
+    name: Supply Or Supplier Is Indicated
+    logic: ANY
+    members:
+    - M_DOVI_G_SDAI
+    - M_DOVI_G_SDAI2
+  M_DOVI_G_SDAI:
+    name: Supply Details Are Indicated
+    logic: ANY
+    members:
+    - M_DOVI_A_SIOTI
+    - M_DOVI_A_SIIRD
+  M_DOVI_G_SDAI2:
+    name: Supplier Details Are Indicated
+    logic: ANY
+    members:
+    - M_DOVI_A_SIOTI2
+    - M_DOVI_A_SIIRD2
+  M_SIAFOS_G_LOOF:
+    name: Listed Or Other Form
+    logic: ANY
+    members:
+    - M_SIAFOS_A_SIAS
+    - M_SIAFOS_A_SIAT
+    - M_SIAFOS_A_SIAB
+    - M_SIAFOS_A_SIAE
+    - M_SIAFOS_A_SIALG
+    - M_SIAFOS_A_SIAR
+    - M_SIAFOS_A_SIAL
+    - M_SIAFOS_A_SIAD
+    - M_SIAFOS_A_SIAF
+    description: Any one of the listed forms, or any other qualifying form of supply, is enough. The list is illustrative.
+  M_SIAFOS_G_MOAS:
+    name: Made Or Agreed Supply
+    logic: ANY
+    members:
+    - M_SIAFOS_A_SMFC
+    - M_SIAFOS_A_SAFC
+    description: The supply is either made for a consideration or agreed to be made for a consideration. Both events are not
+      required.
+  M_IOSFC_G_ISS:
+    name: Import Services Scope
+    logic: ALL
+    members:
+    - M_IOSFC_A_SIIOS
+    - M_IOSFC_A_IIFC
+    description: Both the import of services limb and the for a consideration limb are needed for this inclusion.
+  M_SIAWC_G_ASCM:
+    name: All Schedule Conditions Met
+    logic: ALL
+    members:
+    - M_SIAWC_A_ASISI
+    - M_SIAWC_A_AMOA
+    - M_SIAWC_A_MWAC
+    description: Each atom is tested independently and all three are required.
+  M_DORE_G_RFC:
+    name: Return Furnishing Criteria
+    logic: ALL
+    members:
+    - M_DORE_G_RT
+    - M_DORE_G_RS
+    description: A return must meet both type and source requirements.
+  M_DORE_G_RT:
+    name: Return Type
+    logic: ANY
+    members:
+    - M_DORE_A_RIP
+    - M_DORE_A_RIOR
+    description: A return must either be prescribed or otherwise required.
+  M_DORE_G_RS:
+    name: Requirement Source
+    logic: ANY
+    members:
+    - M_DORE_A_RRBA
+    - M_DORE_A_RRBR
+    description: The requirement to furnish the return must come from the Act or the Rules.
+  M_DOD_G_DFA:
+    name: Document Form Alternatives
+    logic: ANY
+    members:
+    - M_DOD_A_DIWOPR
+    - M_DOD_A_DIER
+    - M_DOD_A_RWOM
+    description: At least one form of record must be shown
+  M_RCD_G_LBFRC:
+    name: Legal Basis For Reverse Charge
+    logic: ANY
+    members:
+    - M_RCD_A_LAUCAS93
+    - M_RCD_A_LAUCAS94
+    - M_RCD_A_LAUIAS53
+    - M_RCD_A_LAUIAS54
+  M_DOGO_G_GBCD:
+    name: Goods By Core Definition
+    logic: ALL
+    members:
+    - M_DOGO_A_TIIMP
+    - M_DOGO_A_TIINM
+    - M_DOGO_A_TIINS
+  M_DOGO_G_GBSI:
+    name: Goods By Specific Inclusion
+    logic: ANY
+    members:
+    - M_DOGO_A_TIIAAC
+    - M_DOGO_A_TIIGC
+    - M_DOGO_A_TIIG
+    - M_DOGO_G_ATLAATBS
+  M_DOGO_G_ATLAATBS:
+    name: Attached To Land And Agreed To Be Severed
+    logic: ALL
+    members:
+    - M_DOGO_A_IIATL
+    - M_DOGO_A_IIATBS
+  M_DOCOA_G_DMC:
+    name: Defined Meaning Conditions
+    logic: ALL
+    members:
+    - M_DOCOA_A_CDNROM
+    - M_DOCOA_A_ANBG
+    description: Both the context test and the notification test must hold for the defined meaning
+  M_PIAOP_G_EIAOB:
+    name: Entity Is AOP Or BOI
+    logic: ANY
+    members:
+    - M_PIAOP_A_EIAAOP
+    - M_PIAOP_A_EIABOI
+  M_PISCOGC_G_EISCOGC:
+    name: Entity Is Statutory Corp Or Govt Co
+    logic: ANY
+    members:
+    - M_PISCOGC_A_EIASC
+    - M_PISCOGC_A_EIAGC
+    description: The entity is either a statutory corporation or a Government company.
+  M_PIFBC_G_FBCC:
+    name: Foreign Body Corporate Conditions
+    logic: ALL
+    members:
+    - M_PIFBC_A_EIBC
+    - M_PIFBC_A_BCIOI
+    description: All conditions for a foreign body corporate to be included in the definition of 'person'.
+  M_PICOSG_G_IAGE:
+    name: Is A Government Entity
+    logic: ANY
+    members:
+    - M_PICOSG_A_PICG
+    - M_PICOSG_A_PISG
+    description: Checks if the entity is either the Central Government or a State Government.
+  M_RCGTID_G_SIOLD:
+    name: Supplier Invoice Or Lieu Document
+    logic: ANY
+    members:
+    - M_RCGTID_A_IIBS
+    - M_RCGTID_A_LDIBS
+    description: Either an invoice or any other document in lieu of it was issued by the supplier
+  M_TOSGRRD_G_RCRC:
+    name: Reverse Charge Receipt Conditions
+    logic: ALL
+    members:
+    - M_TOSGRRD_A_SURCB
+    - M_TOSGRRD_A_GRDIL
+    - M_TOSGRRD_A_RDIEL
+    description: All three must hold - reverse charge supply, a goods receipt date exists, and that date is the earliest of
+      the listed dates.
+  M_FTOSGRB_A_TNDUC:
+    name: Any of the referred steps (M_FTOSGRB_A_TNDUC)
+    logic: ANY
+    members:
+    - M_RCGTID_PD_CCCDA
+    - M_TOSGRCP_PD_TOSBD
+    - M_TOSGRCP_PD_TOSBD2
+    - M_TOSGRRD_PD_RDITOS
+    description: TRUE when any step of the law this check refers to is TRUE
+  M_FTOSGRB_G_BFTM:
+    name: Both Fallback Tests Met
+    logic: ALL
+    members:
+    - M_FTOSGRB_A_TNDUC
+    - M_FTOSGRB_A_RBED
+    description: Non-determinability under the clauses and the recipient books entry must both hold.
+  M_TOSGPD_G_PRTT:
+    name: Payment Receipt Tests Together
+    logic: ALL
+    members:
+    - M_TOSGPD_A_PRFS
+    - M_TOSGPD_A_PRDIR
+    description: The supplier receives payment with respect to the supply AND the date of that receipt is established.
+  M_EAOGTOS_G_PCA:
+    name: Proviso Conditions All
+    logic: ALL
+    members:
+    - M_EAOGTOS_A_SOTG
+    - M_EAOGTOS_A_SREA
+    - M_EAOGTOS_A_EUTOT
+    - M_EAOGTOS_A_SEID
+    description: All four proviso conditions must hold together.
+  M_VSTOSRD_G_VSC:
+    name: Voucher Supply Case
+    logic: ALL
+    members:
+    - M_TOSVI_A_SOVBS
+    - M_VSTOSRD_A_SFIOC
+    description: Both the voucher-by-supplier condition and the all-other-cases condition must hold.
+  M_TOSSVI_G_VTRC:
+    name: Voucher Time Rule Conditions
+    logic: ALL
+    members:
+    - M_GVTOSR_A_SIVBS
+    - M_TOSVI_A_SIAI
+    description: Both the voucher supply condition and the identifiability condition must be met.
+outcomes:
+  M_CALS_LE_CADM:
+    outcome: IS_COMPETENT_AUTHORITY
+    expr: M_CALS_G_PAA OR M_CALS_G_SRC
+    module: M_CALS
+    description: The expression competent authority is satisfied by either the primary authority route or the licensed surveyor
+      route.
+  M_DOCACE_LE_CADO:
+    outcome: COMPETENT_AUTHORITY_DEFINED
+    expr: M_DOCACE_G_GOAIR OR M_DOCACE_G_ERCNR
+    module: M_DOCACE
+    description: The entity is a competent authority for paragraph 5(b) under the exhaustive definition
+  M_CAA_LE_CAO:
+    outcome: IS_COMPETENT_AUTHORITY
+    expr: M_CAA_G_GOAA OR M_CAA_G_RAR
+    module: M_CAA
+    description: The certifying body is a competent authority if it is the Government or an authority authorised under law,
+      or if no certificate is required from such authority and it is a registered architect
+  M_ROGBD_LE_RDM:
+    outcome: REMOVAL_DEFINITION_MET
+    expr: M_ROGBD_A_CDNO AND M_ROGBD_A_GAD AND M_ROGBD_A_DIFD AND M_ROGBD_G_DAIV
+    module: M_ROGBD
+    description: The definition of 'removal' for goods is met.
+  M_DOCSOG_LE_CSOGO:
+    outcome: IS_CONTINUOUS_SUPPLY_OF_GOODS
+    expr: NOT M_DOCSOG_A_CRDM AND M_DOCSOG_G_MOIR
+    module: M_DOCSOG
+    description: The definition is met when the context does not require otherwise and either the means-core conditions or
+      the notified-goods inclusion route is satisfied.
+  M_DOVI_LE_OIV:
+    outcome: IS_VOUCHER
+    expr: M_DOVI_A_CDNROM AND M_DOVI_A_TIIAI AND M_DOVI_A_OTAAC AND M_DOVI_A_CIFAS AND M_DOVI_G_SOSII
+    module: M_DOVI
+  M_SIAFOS_LE_ISO:
+    outcome: INCLUDED_IN_SUPPLY
+    expr: M_SIAFOS_G_LOOF AND M_SIAFOS_G_MOAS AND M_SIAFOS_A_SBPIB
+    module: M_SIAFOS
+    description: The transaction falls within the inclusive meaning of supply when it takes a listed or other form of supply,
+      is made or agreed to be made for a consideration, and is by a person in the course or furtherance of business.
+  M_IOSFC_LE_ISIO:
+    outcome: SUPPLY_INCLUDED
+    expr: M_IOSFC_G_ISS
+    module: M_IOSFC
+    description: Import of services for a consideration is included in supply whether or not in the course or furtherance
+      of business. Inclusion is not exhaustive and no business-context condition is applied.
+  M_SIAWC_LE_SAIS:
+    outcome: SUPPLY_INCLUDED
+    expr: M_SIAWC_G_ASCM
+    module: M_SIAWC
+    description: The activity is included in supply when all three schedule conditions are met.
+  M_DORE_LE_IAR:
+    outcome: IS_A_RETURN
+    expr: NOT M_DORE_A_CROM AND M_DORE_G_RFC
+    module: M_DORE
+    description: Determines if a document qualifies as a 'return' as per Section 2(97).
+  M_DOD_LE_DMA:
+    outcome: DOCUMENT_MEANING_APPLIES
+    expr: M_DOD_A_CDNROM AND M_DOD_G_DFA
+    module: M_DOD
+    description: The defined meaning of document applies where the context does not otherwise require and at least one document
+      form is shown
+  M_RCD_LE_DORCIM:
+    outcome: IS_REVERSE_CHARGE
+    expr: M_RCD_A_CDNROM AND M_RCD_G_LBFRC
+    module: M_RCD
+  M_DOGO_LE_DOIAG:
+    outcome: IS_GOODS
+    expr: M_DOGO_A_CDNROM AND (M_DOGO_G_GBCD OR M_DOGO_G_GBSI)
+    module: M_DOGO
+  M_DOCOA_LE_CAD:
+    outcome: DEFINED_MEANING
+    expr: M_DOCOA_G_DMC
+    module: M_DOCOA
+    description: The defined meaning applies where the context does not require otherwise and the authority is notified by
+      the Government
+  M_DOCOA_LE_COD:
+    outcome: CONTEXT_MEANING_APPLIES
+    expr: NOT M_DOCOA_A_CDNROM
+    module: M_DOCOA
+    description: The definition does not govern the term where the context requires another meaning
+  M_DOG_LE_GDM:
+    outcome: IS_GOVERNMENT_AS_DEFINED
+    expr: M_DOG_A_ITCG AND M_DOG_A_CDNROM
+    module: M_DOG
+    description: Determines if an entity qualifies as 'Government' according to Section 2(53).
+  M_DOPI_LE_PDII:
+    outcome: PERSON_INCLUDES_INDIVIDUAL
+    expr: M_DOPI_A_PII AND M_DOPI_A_CDNO
+    module: M_DOPI
+    description: Determines if an individual is considered a 'person' under this specific inclusive definition, considering
+      the context.
+  M_PIHUF_LE_PIH:
+    outcome: PERSON_INCLUDES_HUF
+    expr: M_PIHUF_A_EIHUF
+    module: M_PIHUF
+    description: This clause contributes to the definition of 'person' by including a Hindu Undivided Family.
+  M_PIC_LE_CIP:
+    outcome: ENTITY_IS_PERSON_VIA_COMPANY
+    expr: M_PIC_A_EIAC
+    module: M_PIC
+  M_DOPF_LE_PIF:
+    outcome: IS_PERSON
+    expr: M_DOPF_A_AFIIITDOP
+    module: M_DOPF
+  M_PILLP_LE_LIIP:
+    outcome: IS_PERSON
+    expr: M_PILLP_A_LLPIP AND M_PILLP_A_CAI
+    module: M_PILLP
+  M_PIAOP_LE_IAPUS84F:
+    outcome: IS_PERSON_UNDER_S2_84_f
+    expr: M_PIAOP_A_CDNRDM AND M_PIAOP_G_EIAOB
+    module: M_PIAOP
+  M_PISCOGC_LE_IIIPDS84G:
+    outcome: IS_INCLUDED_IN_PERSON_DEFINITION_S2_84_g
+    expr: M_PISCOGC_A_CDNRO AND M_PISCOGC_G_EISCOGC
+    module: M_PISCOGC
+    description: The entity is included in the definition of 'person' under Section 2(84)(g).
+  M_PIFBC_LE_PIFBC:
+    outcome: PERSON_INCLUDED
+    expr: M_PIFBC_G_FBCC AND M_PIFBC_A_DAUCRO
+    module: M_PIFBC
+    description: Determines if an entity is considered a 'person' under this Act because it is a body corporate incorporated
+      outside India, unless the context otherwise requires.
+  M_PICS_LE_CSIP:
+    outcome: M_PICS_PD_IPCS
+    expr: M_PICS_A_CDNOR AND M_PICS_A_EIRCS
+    module: M_PICS
+    description: This LE determines if a co-operative society is considered a 'person' under this specific sub-clause, subject
+      to contextual requirements.
+  M_PILA_LE_LAIP:
+    outcome: ENTITY_IS_PERSON
+    expr: M_PILA_A_UTCOR AND M_PILA_A_PIALA
+    module: M_PILA
+    description: Determines if an entity is considered a 'person' under this specific inclusive definition.
+  M_PICOSG_LE_GEIAP:
+    outcome: PERSON_INCLUDED
+    expr: M_PICOSG_A_CDNOR AND M_PICOSG_G_IAGE
+    module: M_PICOSG
+    description: Determines if a Central or State Government is included in the definition of 'person' under this clause,
+      considering contextual requirements.
+  M_PIS_LE_P:
+    outcome: PERSON_INCLUDES_SOCIETY
+    expr: M_PIS_A_EIAS AND M_PIS_A_CDNRO
+    module: M_PIS
+    description: Determines if a society is included in the definition of 'person' based on the Act and context.
+  M_PIT_LE_PDI:
+    outcome: PERSON_INCLUDED
+    expr: M_PIT_A_PIT AND M_PIT_A_CDNRO
+    module: M_PIT
+    description: Determines if a trust is included in the definition of 'person' based on the explicit inclusion and contextual
+      requirements.
+  M_PIAJP_LE_P:
+    outcome: PERSON_INCLUDES_AJP
+    expr: M_PIAJP_A_EIAAJP AND M_PIAJP_A_ANIPC
+    module: M_PIAJP
+    description: Determines if an entity qualifies as an artificial juridical person under this specific clause of the definition
+      of 'person', subject to contextual requirements.
+  M_DONAN_LE_ND:
+    outcome: NOTIFICATION_DEFINED
+    expr: M_DONAN_A_NMPIOG AND (NOT M_DONAN_A_DAUCRO)
+    module: M_DONAN
+    description: Determines if a given item qualifies as a 'notification' under the Act, subject to contextual override.
+  M_DONAN_LE_RTI:
+    outcome: RELATED_TERMS_INTERPRETED
+    expr: M_DONAN_A_NANCA AND (NOT M_DONAN_A_DAUCRO)
+    module: M_DONAN
+    description: Provides the rule for construing 'notify' and 'notified' based on the definition of 'notification' and contextual
+      override.
+  M_GVTOSR_LE_TOSIRD:
+    outcome: The time of supply is the date of redemption of the voucher (value taken from F_VRD)
+    expr: M_GVTOSR_A_SIVBS AND M_GVTOSR_A_CIOTPC
+    module: M_GVTOSR
+    description: Where the supply is a supply of vouchers by a supplier and the case is one of the 'all other cases', the
+      time of supply shall be the voucher redemption date.
+  M_TOSVI_LE_TOSVID:
+    outcome: TIME_OF_SUPPLY_IS_VOUCHER_ISSUE_DATE
+    expr: M_TOSVI_A_SOVBS AND M_TOSVI_A_SIAI
+    module: M_TOSVI
+    description: 'The time of supply is the date of issue of the voucher when both conditions hold: it is a supply of vouchers
+      by a supplier, and the supply is identifiable at the point of issue.'
+  M_TOSGAIP_LE_SRSA:
+    outcome: SUPPLIER_RECEIVES_SUCH_ADDITION
+    expr: M_TOSGAIP_A_SRSA
+    module: M_TOSGAIP
+    description: The supplier receives such addition in value, and the date of that receipt fixes the time of supply of the
+      addition (Section 12(6), part of the law)
+  M_RCGTID_LE_CCCDA:
+    outcome: CLAUSE_C_CANDIDATE_DATE
+    expr: M_RCGTID_A_SORCB AND M_RCGTID_G_SIOLD AND M_RCGTID_A_DFTDC
+    module: M_RCGTID
+    description: The clause (c) date is a candidate for the time of supply when the supply is under reverse charge and the
+      supplier issued an invoice or a document in lieu of it
+  M_TOSGRRD_LE_RDITOS:
+    outcome: TIME_OF_SUPPLY_IS_GOODS_RECEIPT_DATE
+    expr: M_TOSGRRD_G_RCRC
+    module: M_TOSGRRD
+    description: On a reverse charge supply the time of supply is the date of receipt of goods when that date is the earliest
+      of the listed dates.
+  M_TOSGRCP_LE_TOSBD:
+    outcome: TIME_OF_SUPPLY_IS_BOOKS_PAYMENT_DATE
+    expr: M_TOSGRCP_A_SIORC AND M_TOSGRCP_A_BPDIE
+    module: M_TOSGRCP
+    description: For a reverse charge supply where the books payment date is the same as or earlier than the bank debit date,
+      the time of supply is the date of payment entered in the recipient's books.
+  M_TOSGRCP_LE_TOSBD2:
+    outcome: TIME_OF_SUPPLY_IS_BANK_DEBIT_DATE
+    expr: M_TOSGRCP_A_SIORC AND M_TOSGRCP_A_BDDIE
+    module: M_TOSGRCP
+    description: For a reverse charge supply where the bank debit date is earlier than the books payment date, the time of
+      supply is the date on which the payment is debited in the recipient's bank account.
+  M_FTOSGRB_LE_FTA:
+    outcome: TIME_OF_SUPPLY_FALLBACK
+    expr: M_FTOSGRB_G_BFTM
+    module: M_FTOSGRB
+    description: Fallback applies only when the non-determinability condition and the recipient books entry both hold.
+  M_TOSGPD_LE_PDICD:
+    outcome: PAYMENT_RECEIPT_DATE_IS_CANDIDATE_TIME_OF_SUPPLY
+    expr: M_TOSGPD_A_SIOG AND M_TOSGPD_G_PRTT
+    module: M_TOSGPD
+    description: For a supply of goods where the supplier receives payment with respect to the supply, the date of that receipt
+      is the date offered by this clause as the time of supply. Under the parent chapeau it is the earlier of the listed dates.
+  M_TOSGID_LE_TIIID:
+    outcome: TIME_OF_SUPPLY_IS_INVOICE_ISSUE_DATE
+    expr: M_TOSGID_A_IIOOBDD
+    module: M_TOSGID
+    description: The time of supply of goods is the date of issue of the invoice by the supplier. This applies when that date
+      is not later than the section 31 last date, and on a tie both dates are the same.
+  M_TOSGID_LE_TIS31LD:
+    outcome: TIME_OF_SUPPLY_IS_LAST_DATE_TO_ISSUE_INVOICE
+    expr: M_TOSGID_A_S31DIE
+    module: M_TOSGID
+    description: The time of supply of goods is the last date on which the supplier is required under section 31 to issue
+      the invoice. This applies when that date is earlier than the invoice issue date.
+  M_LTPTOG_LE_GTLAAS:
+    outcome: LIABILITY_TO_PAY_TAX_ON_GOODS_ARISES_AT_TIME_OF_SUPPLY
+    expr: M_LTPTOG_A_SIOG AND M_LTPTOG_A_TOSDUS
+    module: M_LTPTOG
+    description: For a supply of goods, the liability to pay tax arises at the time of supply, once that time is determined
+      under the provisions of this section.
+  M_EAOGTOS_LE_ETOS:
+    outcome: TIME_OF_SUPPLY_EXCESS_INVOICE_DATE
+    expr: M_EAOGTOS_G_PCA
+    module: M_EAOGTOS
+    description: The excess-amount time of supply outcome applies only when all proviso conditions hold together.
+  M_VSTOSRD_LE_VRDT:
+    outcome: TIME_OF_SUPPLY_IS_VOUCHER_REDEMPTION_DATE
+    expr: M_VSTOSRD_G_VSC
+    module: M_VSTOSRD
+    description: Where the supply is of vouchers by a supplier and falls in all other cases, the time of supply is the date
+      of redemption of the voucher.
+  M_TOSSVI_LE_TOSIVID:
+    outcome: TIME_OF_SUPPLY_IS_VOUCHER_ISSUE_DATE
+    expr: M_TOSSVI_G_VTRC
+    module: M_TOSSVI
+    description: The time of supply shall be the date of issue of the voucher when the supply is a supply of vouchers by a
+      supplier and is identifiable at that point.
+triggers:
+  M_FTOSGRB_CT_DRR:
+    question: Does the time of supply determination record show whether clause (a), clause (b) or clause (c) fixes the time
+      of supply?
+    trigger: F_TDUC = 'UNKNOWN'
+    beside: M_FTOSGRB_LE_FTA
+products:
+  M_CALS_PD_CADM:
+    statement: The expression competent authority is satisfied by either the primary authority route or the licensed surveyor
+      route.
+  M_DOCACE_PD_CADO:
+    statement: The entity is a competent authority for paragraph 5(b) under the exhaustive definition
+  M_CAA_PD_CAO:
+    statement: The certifying body is a competent authority if it is the Government or an authority authorised under law,
+      or if no certificate is required from such authority and it is a registered architect
+  M_ROGBD_PD_RDM:
+    statement: The definition of 'removal' for goods is met.
+  M_DOCSOG_PD_CSOGO:
+    statement: The definition is met when the context does not require otherwise and either the means-core conditions or the
+      notified-goods inclusion route is satisfied.
+  M_DOVI_PD_OIV:
+    statement: IS_VOUCHER
+  M_SIAFOS_PD_ISO:
+    statement: The transaction falls within the inclusive meaning of supply when it takes a listed or other form of supply,
+      is made or agreed to be made for a consideration, and is by a person in the course or furtherance of business.
+  M_IOSFC_PD_ISIO:
+    statement: Import of services for a consideration is included in supply whether or not in the course or furtherance of
+      business. Inclusion is not exhaustive and no business-context condition is applied.
+  M_SIAWC_PD_SAIS:
+    statement: The activity is included in supply when all three schedule conditions are met.
+  M_DORE_PD_IAR:
+    statement: Determines if a document qualifies as a 'return' as per Section 2(97).
+  M_DOD_PD_DMA:
+    statement: The defined meaning of document applies where the context does not otherwise require and at least one document
+      form is shown
+  M_RCD_PD_DORCIM:
+    statement: IS_REVERSE_CHARGE
+  M_DOGO_PD_DOIAG:
+    statement: IS_GOODS
+  M_DOCOA_PD_CAD:
+    statement: The defined meaning applies where the context does not require otherwise and the authority is notified by the
+      Government
+  M_DOCOA_PD_COD:
+    statement: The definition does not govern the term where the context requires another meaning
+  M_DOG_PD_GDM:
+    statement: Determines if an entity qualifies as 'Government' according to Section 2(53).
+  M_DOPI_PD_PDII:
+    statement: Determines if an individual is considered a 'person' under this specific inclusive definition, considering
+      the context.
+  M_PIHUF_PD_PIH:
+    statement: This clause contributes to the definition of 'person' by including a Hindu Undivided Family.
+  M_PIC_PD_CIP:
+    statement: ENTITY_IS_PERSON_VIA_COMPANY
+  M_DOPF_PD_PIF:
+    statement: IS_PERSON
+  M_PILLP_PD_LIIP:
+    statement: IS_PERSON
+  M_PIAOP_PD_IAPUS84F:
+    statement: IS_PERSON_UNDER_S2_84_f
+  M_PISCOGC_PD_IIIPDS84G:
+    statement: The entity is included in the definition of 'person' under Section 2(84)(g).
+  M_PIFBC_PD_PIFBC:
+    statement: Determines if an entity is considered a 'person' under this Act because it is a body corporate incorporated
+      outside India, unless the context otherwise requires.
+  M_PICS_PD_CSIP:
+    statement: This LE determines if a co-operative society is considered a 'person' under this specific sub-clause, subject
+      to contextual requirements.
+  M_PILA_PD_LAIP:
+    statement: Determines if an entity is considered a 'person' under this specific inclusive definition.
+  M_PICOSG_PD_GEIAP:
+    statement: Determines if a Central or State Government is included in the definition of 'person' under this clause, considering
+      contextual requirements.
+  M_PIS_PD_P:
+    statement: Determines if a society is included in the definition of 'person' based on the Act and context.
+  M_PIT_PD_PDI:
+    statement: Determines if a trust is included in the definition of 'person' based on the explicit inclusion and contextual
+      requirements.
+  M_PIAJP_PD_P:
+    statement: Determines if an entity qualifies as an artificial juridical person under this specific clause of the definition
+      of 'person', subject to contextual requirements.
+  M_DONAN_PD_ND:
+    statement: Determines if a given item qualifies as a 'notification' under the Act, subject to contextual override.
+  M_DONAN_PD_RTI:
+    statement: Provides the rule for construing 'notify' and 'notified' based on the definition of 'notification' and contextual
+      override.
+  M_GVTOSR_PD_TOSIRD:
+    statement: Where the supply is a supply of vouchers by a supplier and the case is one of the 'all other cases', the time
+      of supply shall be the voucher redemption date.
+  M_TOSVI_PD_TOSVID:
+    statement: 'The time of supply is the date of issue of the voucher when both conditions hold: it is a supply of vouchers
+      by a supplier, and the supply is identifiable at the point of issue.'
+  M_TOSGAIP_PD_SRSA:
+    statement: The supplier receives such addition in value, and the date of that receipt fixes the time of supply of the
+      addition
+  M_RCGTID_PD_CCCDA:
+    statement: The clause (c) date is a candidate for the time of supply when the supply is under reverse charge and the supplier
+      issued an invoice or a document in lieu of it
+  M_TOSGRRD_PD_RDITOS:
+    statement: On a reverse charge supply the time of supply is the date of receipt of goods when that date is the earliest
+      of the listed dates.
+  M_TOSGRCP_PD_TOSBD:
+    statement: For a reverse charge supply where the books payment date is the same as or earlier than the bank debit date,
+      the time of supply is the date of payment entered in the recipient's books.
+  M_TOSGRCP_PD_TOSBD2:
+    statement: For a reverse charge supply where the bank debit date is earlier than the books payment date, the time of supply
+      is the date on which the payment is debited in the recipient's bank account.
+  M_FTOSGRB_PD_FTA:
+    statement: Fallback applies only when the non-determinability condition and the recipient books entry both hold.
+  M_TOSGPD_PD_PDICD:
+    statement: For a supply of goods where the supplier receives payment with respect to the supply, the date of that receipt
+      is the date offered by this clause as the time of supply. Under the parent chapeau it is the earlier of the listed dates.
+  M_TOSGID_PD_TIIID:
+    statement: The time of supply of goods is the date of issue of the invoice by the supplier. This applies when that date
+      is not later than the section 31 last date, and on a tie both dates are the same.
+  M_TOSGID_PD_TIS31LD:
+    statement: The time of supply of goods is the last date on which the supplier is required under section 31 to issue the
+      invoice. This applies when that date is earlier than the invoice issue date.
+  M_LTPTOG_PD_GTLAAS:
+    statement: For a supply of goods, the liability to pay tax arises at the time of supply, once that time is determined
+      under the provisions of this section.
+  M_EAOGTOS_PD_ETOS:
+    statement: The excess-amount time of supply outcome applies only when all proviso conditions hold together.
+  M_VSTOSRD_PD_VRDT:
+    statement: Where the supply is of vouchers by a supplier and falls in all other cases, the time of supply is the date
+      of redemption of the voucher.
+  M_TOSSVI_PD_TOSIVID:
+    statement: The time of supply shall be the date of issue of the voucher when the supply is a supply of vouchers by a supplier
+      and is identifiable at that point.
+compounds:
+- id: C_SCHII_EN5_CB_E1_N1
+  question: 'Schedule II, paragraph 5(b), Explanation, sub-item (1): which clause applies?'
+  includes:
+  - M_CALS_LE_CADM
+  - M_DOCACE_LE_CADO
+  - M_CAA_LE_CAO
+  produces:
+  - product: M_CALS_PD_CADM
+    from:
+    - M_CALS_LE_CADM
+  - product: M_DOCACE_PD_CADO
+    from:
+    - M_DOCACE_LE_CADO
+  - product: M_CAA_PD_CAO
+    from:
+    - M_CAA_LE_CAO
+- id: C_ROGBD
+  question: 'Section 2(96)(a): Removal Of Goods By Despatch?'
+  includes:
+  - M_ROGBD_LE_RDM
+  produces:
+  - product: M_ROGBD_PD_RDM
+    from:
+    - M_ROGBD_LE_RDM
+- id: C_DOCSOG
+  question: 'Section 2(32): Definition Of Continuous Supply Of Goods?'
+  includes:
+  - M_DOCSOG_LE_CSOGO
+  produces:
+  - product: M_DOCSOG_PD_CSOGO
+    from:
+    - M_DOCSOG_LE_CSOGO
+- id: C_DOVI
+  question: 'Section 2(118): Definition Of Voucher Instrument?'
+  includes:
+  - M_DOVI_LE_OIV
+  produces:
+  - product: M_DOVI_PD_OIV
+    from:
+    - M_DOVI_LE_OIV
+- id: C_S7_SS1
+  question: 'Section 7(1): which clause applies?'
+  includes:
+  - M_SIAFOS_LE_ISO
+  - M_IOSFC_LE_ISIO
+  - M_SIAWC_LE_SAIS
+  produces:
+  - product: M_SIAFOS_PD_ISO
+    from:
+    - M_SIAFOS_LE_ISO
+  - product: M_IOSFC_PD_ISIO
+    from:
+    - M_IOSFC_LE_ISIO
+  - product: M_SIAWC_PD_SAIS
+    from:
+    - M_SIAWC_LE_SAIS
+- id: C_DORE
+  question: 'Section 2(97): Definition Of Return?'
+  includes:
+  - M_DORE_LE_IAR
+  produces:
+  - product: M_DORE_PD_IAR
+    from:
+    - M_DORE_LE_IAR
+- id: C_DOD
+  question: 'Section 2(41): Definition Of Document?'
+  includes:
+  - M_DOD_LE_DMA
+  produces:
+  - product: M_DOD_PD_DMA
+    from:
+    - M_DOD_LE_DMA
+- id: C_RCD
+  question: 'Section 2(98): Reverse Charge Definition?'
+  includes:
+  - M_RCD_LE_DORCIM
+  produces:
+  - product: M_RCD_PD_DORCIM
+    from:
+    - M_RCD_LE_DORCIM
+- id: C_DOGO
+  question: 'Section 2(52): Definition Of Goods?'
+  includes:
+  - M_DOGO_LE_DOIAG
+  produces:
+  - product: M_DOGO_PD_DOIAG
+    from:
+    - M_DOGO_LE_DOIAG
+- id: C_DOCOA
+  question: 'Section 2(29): Definition Of Competent Authority?'
+  includes:
+  - M_DOCOA_LE_CAD
+  - M_DOCOA_LE_COD
+  produces:
+  - product: M_DOCOA_PD_CAD
+    from:
+    - M_DOCOA_LE_CAD
+  - product: M_DOCOA_PD_COD
+    from:
+    - M_DOCOA_LE_COD
+  exclusive:
+  - M_DOCOA_LE_CAD
+  - M_DOCOA_LE_COD
+- id: C_DOG
+  question: 'Section 2(53): Definition Of Government?'
+  includes:
+  - M_DOG_LE_GDM
+  produces:
+  - product: M_DOG_PD_GDM
+    from:
+    - M_DOG_LE_GDM
+- id: C_S2_C84
+  question: 'Section 2(84): which clause applies?'
+  includes:
+  - M_DOPI_LE_PDII
+  - M_PIHUF_LE_PIH
+  - M_PIC_LE_CIP
+  - M_DOPF_LE_PIF
+  - M_PILLP_LE_LIIP
+  - M_PIAOP_LE_IAPUS84F
+  - M_PISCOGC_LE_IIIPDS84G
+  - M_PIFBC_LE_PIFBC
+  - M_PICS_LE_CSIP
+  - M_PILA_LE_LAIP
+  - M_PICOSG_LE_GEIAP
+  - M_PIS_LE_P
+  - M_PIT_LE_PDI
+  - M_PIAJP_LE_P
+  produces:
+  - product: M_DOPI_PD_PDII
+    from:
+    - M_DOPI_LE_PDII
+  - product: M_PIHUF_PD_PIH
+    from:
+    - M_PIHUF_LE_PIH
+  - product: M_PIC_PD_CIP
+    from:
+    - M_PIC_LE_CIP
+  - product: M_DOPF_PD_PIF
+    from:
+    - M_DOPF_LE_PIF
+  - product: M_PILLP_PD_LIIP
+    from:
+    - M_PILLP_LE_LIIP
+  - product: M_PIAOP_PD_IAPUS84F
+    from:
+    - M_PIAOP_LE_IAPUS84F
+  - product: M_PISCOGC_PD_IIIPDS84G
+    from:
+    - M_PISCOGC_LE_IIIPDS84G
+  - product: M_PIFBC_PD_PIFBC
+    from:
+    - M_PIFBC_LE_PIFBC
+  - product: M_PICS_PD_CSIP
+    from:
+    - M_PICS_LE_CSIP
+  - product: M_PILA_PD_LAIP
+    from:
+    - M_PILA_LE_LAIP
+  - product: M_PICOSG_PD_GEIAP
+    from:
+    - M_PICOSG_LE_GEIAP
+  - product: M_PIS_PD_P
+    from:
+    - M_PIS_LE_P
+  - product: M_PIT_PD_PDI
+    from:
+    - M_PIT_LE_PDI
+  - product: M_PIAJP_PD_P
+    from:
+    - M_PIAJP_LE_P
+- id: C_DONAN
+  question: 'Section 2(80): Definition Of Notification And Notified?'
+  includes:
+  - M_DONAN_LE_ND
+  - M_DONAN_LE_RTI
+  produces:
+  - product: M_DONAN_PD_ND
+    from:
+    - M_DONAN_LE_ND
+  - product: M_DONAN_PD_RTI
+    from:
+    - M_DONAN_LE_RTI
+- id: C_S12_SS4
+  question: 'Section 12(4): which clause applies?'
+  includes:
+  - M_GVTOSR_LE_TOSIRD
+  - M_TOSVI_LE_TOSVID
+  produces:
+  - product: M_GVTOSR_PD_TOSIRD
+    from:
+    - M_GVTOSR_LE_TOSIRD
+  - product: M_TOSVI_PD_TOSVID
+    from:
+    - M_TOSVI_LE_TOSVID
+- id: C_TOSGAIP
+  question: The supplier receives such addition in value, and the date of that receipt fixes the time of supply of the addition?
+    (Section 12(6))
+  includes:
+  - M_TOSGAIP_LE_SRSA
+  produces:
+  - product: M_TOSGAIP_PD_SRSA
+    from:
+    - M_TOSGAIP_LE_SRSA
+- id: C_S12_SS3
+  question: 'Section 12(3): which clause applies?'
+  includes:
+  - M_RCGTID_LE_CCCDA
+  - M_TOSGRRD_LE_RDITOS
+  - M_TOSGRCP_LE_TOSBD
+  - M_TOSGRCP_LE_TOSBD2
+  produces:
+  - product: M_RCGTID_PD_CCCDA
+    from:
+    - M_RCGTID_LE_CCCDA
+  - product: M_TOSGRRD_PD_RDITOS
+    from:
+    - M_TOSGRRD_LE_RDITOS
+  - product: M_TOSGRCP_PD_TOSBD
+    from:
+    - M_TOSGRCP_LE_TOSBD
+  - product: M_TOSGRCP_PD_TOSBD2
+    from:
+    - M_TOSGRCP_LE_TOSBD2
+  exclusive:
+  - M_TOSGRCP_LE_TOSBD
+  - M_TOSGRCP_LE_TOSBD2
+- id: C_FTOSGRB
+  question: 'Section 12(3), proviso: Fallback Time Of Supply Goods Recipient Books?'
+  includes:
+  - M_FTOSGRB_LE_FTA
+  produces:
+  - product: M_FTOSGRB_PD_FTA
+    from:
+    - M_FTOSGRB_LE_FTA
+- id: C_S12_SS2
+  question: 'Section 12(2): which clause applies?'
+  includes:
+  - M_TOSGPD_LE_PDICD
+  - M_TOSGID_LE_TIIID
+  - M_TOSGID_LE_TIS31LD
+  produces:
+  - product: M_TOSGPD_PD_PDICD
+    from:
+    - M_TOSGPD_LE_PDICD
+  - product: M_TOSGID_PD_TIIID
+    from:
+    - M_TOSGID_LE_TIIID
+  - product: M_TOSGID_PD_TIS31LD
+    from:
+    - M_TOSGID_LE_TIS31LD
+  exclusive:
+  - M_TOSGID_LE_TIIID
+  - M_TOSGID_LE_TIS31LD
+- id: C_LTPTOG
+  question: 'Section 12(1): Liability To Pay Tax On Goods?'
+  includes:
+  - M_LTPTOG_LE_GTLAAS
+  produces:
+  - product: M_LTPTOG_PD_GTLAAS
+    from:
+    - M_LTPTOG_LE_GTLAAS
+- id: C_EAOGTOS
+  question: 'Section 12(2), proviso: Excess Amount Of Goods Time Of Supply?'
+  includes:
+  - M_EAOGTOS_LE_ETOS
+  produces:
+  - product: M_EAOGTOS_PD_ETOS
+    from:
+    - M_EAOGTOS_LE_ETOS
+- id: C_S13_SS4
+  question: 'Section 13(4): which clause applies?'
+  includes:
+  - M_VSTOSRD_LE_VRDT
+  - M_TOSSVI_LE_TOSIVID
+  produces:
+  - product: M_VSTOSRD_PD_VRDT
+    from:
+    - M_VSTOSRD_LE_VRDT
+  - product: M_TOSSVI_PD_TOSIVID
+    from:
+    - M_TOSSVI_LE_TOSIVID
+time:
+  law_date: F_DOI

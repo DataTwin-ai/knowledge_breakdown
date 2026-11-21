@@ -24,10 +24,30 @@ COLS = ("instrument", "version_id", "source_mkp", "mkp_id", "akp_id", "akp_eleme
         "model_1", "model_2", "reason", "taxonomy_version", "input_sha256", "python_score")
 
 
+def unique_rows(rows: List[dict]) -> List[dict]:
+    """One row per atom + TSG (the first one kept) - the table's key is (... akp_element, tsg_id, gkp_version)."""
+    seen, out = set(), []
+    for r in rows:
+        k = (r.get("akp_element"), r.get("tsg_id") or "")
+        if k in seen:
+            continue
+        seen.add(k)
+        out.append(r)
+    return out
+
+
 class GkpStore:
-    def __init__(self, conn, schema: str, akp_table: str = "akp", prefix: str = "gkp"):
-        self.conn, self.schema, self.akp_table, self.p = conn, schema, akp_table, prefix
-        self.fact_edges = akp_table.rsplit("_akp", 1)[0] + "_atom_fact"
+    def __init__(self, conn, schema: str, akp_table: str, table: str, cache_table: str, llm_table: str,
+                 coverage_table: str, edge_table: str):
+        """Table names from Config/settings.json gkp (akp_table, table, cache_table, llm_cache_table, coverage_table,
+        atom_fact_table) - none is made here. self.p is the GKP table."""
+        self.conn, self.schema, self.akp_table, self.p = conn, schema, akp_table, table
+        self.cache_t, self.llm_t, self.coverage_t, self.fact_edges = cache_table, llm_table, coverage_table, edge_table
+
+    @classmethod
+    def from_settings(cls, conn, schema: str, s: dict) -> "GkpStore":
+        return cls(conn, schema, s["akp_table"], s["table"], s["cache_table"], s["llm_cache_table"],
+                   s["coverage_table"], s["atom_fact_table"])
 
     def t(self, name: str):
         return sql.SQL("{}.{}").format(sql.Identifier(self.schema), sql.Identifier(name))
@@ -49,7 +69,7 @@ class GkpStore:
                                                "AND table_name=%s"), (self.schema, self.akp_table), fetch=True)}
         if not have:
             raise RuntimeError(f"AKP table {self.akp_table} not found - run AKP first")
-        for col, typ in (("akp_id", "text"), ("same_akp_id", "text"), ("is_latest", "boolean NOT NULL DEFAULT true")):
+        for col, typ in (("akp_id", "text"), ("is_latest", "boolean NOT NULL DEFAULT true")):
             if col not in have:
                 self.run(sql.SQL("ALTER TABLE {} ADD COLUMN {} " + typ).format(self.t(self.akp_table), sql.Identifier(col)))
         self.run(sql.SQL("""CREATE TABLE IF NOT EXISTS {} (instrument text NOT NULL, version_id text NOT NULL,
@@ -82,24 +102,24 @@ class GkpStore:
         self.run(sql.SQL("""CREATE TABLE IF NOT EXISTS {} (instrument text NOT NULL, version_id text NOT NULL,
             source_mkp text NOT NULL, input_sha256 text NOT NULL, results_json jsonb NOT NULL,
             updated_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY (instrument, version_id, source_mkp, input_sha256))""")
-                 .format(self.t(f"{self.p}_cache")))
+                 .format(self.t(self.cache_t)))
         self.run(sql.SQL("""CREATE TABLE IF NOT EXISTS {} (cache_key text PRIMARY KEY, model text, response text,
-            inserted_at timestamptz NOT NULL DEFAULT now())""").format(self.t(f"{self.p}_llm_cache")))
-        self.run(sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS unit_key text").format(self.t(f"{self.p}_llm_cache")))
+            inserted_at timestamptz NOT NULL DEFAULT now())""").format(self.t(self.llm_t)))
+        self.run(sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS unit_key text").format(self.t(self.llm_t)))
         self.run(sql.SQL("""CREATE TABLE IF NOT EXISTS {} (instrument text NOT NULL, version_id text NOT NULL,
             tsg_id text NOT NULL, anchor text NOT NULL, atoms integer NOT NULL, approved integer NOT NULL,
             status text NOT NULL, inserted_at timestamptz NOT NULL DEFAULT now(),
-            PRIMARY KEY (instrument, version_id, tsg_id, anchor))""").format(self.t(f"{self.p}_coverage")))
+            PRIMARY KEY (instrument, version_id, tsg_id, anchor))""").format(self.t(self.coverage_t)))
         self.conn.commit()
 
     # ---------------- caches
     def llm_get(self, key):
-        r = self.run(sql.SQL("SELECT response FROM {} WHERE cache_key=%s").format(self.t(f"{self.p}_llm_cache")), (key,), fetch=True)
+        r = self.run(sql.SQL("SELECT response FROM {} WHERE cache_key=%s").format(self.t(self.llm_t)), (key,), fetch=True)
         return r[0][0] if r else None
 
     def llm_put(self, key, model, response, unit_key: str = ""):
         self.run(sql.SQL("INSERT INTO {} (cache_key, model, response, unit_key) VALUES (%s,%s,%s,%s) ON CONFLICT DO NOTHING")
-                 .format(self.t(f"{self.p}_llm_cache")), (key, model, response, unit_key or None))
+                 .format(self.t(self.llm_t)), (key, model, response, unit_key or None))
         self.conn.commit()
 
     # ---------------- groups given before GKP
@@ -143,7 +163,7 @@ class GkpStore:
     # ---------------- AKP input
     def mkps(self, instrument: str, version: str) -> Dict[str, List[dict]]:
         rows = self.run(sql.SQL("""SELECT source_mkp, mkp_id, ordinal, type, akp_id, concept, results,
-            concept_embedding::text, atom_embedding::text, akp_id, same_akp_id
+            concept_embedding::text, atom_embedding::text, akp_id, CASE WHEN type = 'A_REF' THEN akp_id END
             FROM {} WHERE instrument=%s AND version_id=%s AND validation_status='APPROVED' AND COALESCE(is_latest, true)
             ORDER BY source_mkp, ordinal""").format(self.t(self.akp_table)), (instrument, version), fetch=True)
         out: Dict[str, List[dict]] = {}
@@ -169,9 +189,12 @@ class GkpStore:
 
     # ---------------- memberships already decided (for inheritance and candidate sources)
     def approved_for_akp(self, akp_id: str) -> List[dict]:
-        r = self.run(sql.SQL("""SELECT tg_id, tg_name, tsg_id, tsg_name, reason FROM {}
-            WHERE akp_id=%s AND is_latest AND status='APPROVED' AND tsg_id<>''""").format(self.t(self.p)),
-                     (akp_id,), fetch=True)
+        """The approved TSGs of the ORIGINAL atom (type A) - a SAME atom (A_REF) inherits these. 2026-11-20: every law
+        that reuses an atom has the same akp_id, so reading all rows also read their inherited copies (one TSG twice
+        -> duplicate key). Each TSG once."""
+        r = self.run(sql.SQL("""SELECT DISTINCT ON (tsg_id) tg_id, tg_name, tsg_id, tsg_name, reason FROM {}
+            WHERE akp_id=%s AND akp_type='A' AND is_latest AND status='APPROVED' AND tsg_id<>''
+            ORDER BY tsg_id, inserted_at""").format(self.t(self.p)), (akp_id,), fetch=True)
         return [dict(zip(("tg_id", "tg_name", "tsg_id", "tsg_name", "reason"), x)) for x in r]
 
     def approved_for_provision(self, prefix: str) -> List[dict]:
@@ -259,6 +282,7 @@ class GkpStore:
 
     # ---------------- save one MKP's memberships as the next version
     def save_version(self, instrument, version, source_mkp, rows: List[dict]) -> int:
+        rows = unique_rows(rows)                 # 2026-11-20: never the same atom + TSG twice (the table's key)
         G = self.t(self.p)
         try:
             with self.conn.cursor() as cur:
@@ -285,14 +309,14 @@ class GkpStore:
         sha = hashlib.sha256(json.dumps(pairs, sort_keys=True).encode()).hexdigest()
         self.run(sql.SQL("""INSERT INTO {} (instrument, version_id, source_mkp, input_sha256, results_json)
             VALUES (%s, 'CALIBRATION', %s, %s, %s::jsonb) ON CONFLICT (instrument, version_id, source_mkp, input_sha256)
-            DO UPDATE SET results_json=EXCLUDED.results_json, updated_at=now()""").format(self.t(f"{self.p}_cache")),
+            DO UPDATE SET results_json=EXCLUDED.results_json, updated_at=now()""").format(self.t(self.cache_t)),
                  (instrument, source_mkp, sha, json.dumps({"pairs": pairs})))
         self.conn.commit()
 
     def calibration_rows(self) -> List[list]:
         rows = self.run(sql.SQL("""SELECT DISTINCT ON (instrument, source_mkp) results_json FROM {}
             WHERE version_id='CALIBRATION' ORDER BY instrument, source_mkp, updated_at DESC""")
-                        .format(self.t(f"{self.p}_cache")), fetch=True)
+                        .format(self.t(self.cache_t)), fetch=True)
         return [p for (r,) in rows for p in (r or {}).get("pairs", [])]
 
     # ---------------- coverage: anchor provisions -> did their atoms land in the subgroup?
@@ -310,11 +334,11 @@ class GkpStore:
                 if r[0]:
                     out.append((instrument, version, s["tsg_id"], a, r[0], r[1], "OK" if r[1] else "GAP"))
         with self.conn.cursor() as cur:
-            cur.execute(sql.SQL("DELETE FROM {} WHERE instrument=%s AND version_id=%s").format(self.t(f"{self.p}_coverage")),
+            cur.execute(sql.SQL("DELETE FROM {} WHERE instrument=%s AND version_id=%s").format(self.t(self.coverage_t)),
                         (instrument, version))
             for row in out:
                 cur.execute(sql.SQL("INSERT INTO {} (instrument, version_id, tsg_id, anchor, atoms, approved, status) "
-                                    "VALUES (%s,%s,%s,%s,%s,%s,%s)").format(self.t(f"{self.p}_coverage")), row)
+                                    "VALUES (%s,%s,%s,%s,%s,%s,%s)").format(self.t(self.coverage_t)), row)
         self.conn.commit()
         return out
 
@@ -326,7 +350,7 @@ class GkpStore:
                      .format(self.t(self.p)), fetch=True)
         p = []                          # gkp_tg18_proposals removed (notes section 9): GKP CREATE grows gkp_taxonomy
         c = self.run(sql.SQL("SELECT instrument, version_id, tsg_id, anchor, atoms, approved, status, inserted_at FROM {} "
-                             "ORDER BY status, instrument, tsg_id, anchor").format(self.t(f"{self.p}_coverage")), fetch=True)
+                             "ORDER BY status, instrument, tsg_id, anchor").format(self.t(self.coverage_t)), fetch=True)
         return g, p, c
 
 

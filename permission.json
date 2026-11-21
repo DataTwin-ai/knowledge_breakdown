@@ -25,8 +25,8 @@
     "_about": "Per document on / off by code (e.g. \"CGSTA17\": false). A code not listed follows \"read\" for its kind."
   },
   "scope": {
-    "ask_user_input": true,
-    "default": "FULL"
+    "ask_user_input": false,
+    "default": ["section 37(1)", "section 39(1)"]
   },
   "workers": {
     "_about": "Worker pool: how many units run at the same time, and how many LLM calls each provider may have open at once.",

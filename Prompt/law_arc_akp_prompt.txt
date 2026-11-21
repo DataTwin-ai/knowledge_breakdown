@@ -1,3 +1,4 @@
+PROMPT EDIT 2026-11-19: FACTS - a fact is an attribute with values (one CODE fact for the alternatives of one choice), not a yes/no fact per value; Python FACT SHAPE check.
 PROMPT EDIT 2026-11-16 (2): FACT CONCEPT = the kind of input, 2-3 words, never the name repeated.
 PROMPT EDIT 2026-11-16: FACT CONCEPT added (every TXN FACTS row has a 2- or 3-word CONCEPT, like an A row; Python embeds it to find the same fact across laws).
 PROMPT EDIT 2026-11-15: NAME AND HANDLER FIELDS added (name on every element row -> Python makes the abbreviated id; handler python / light / heavy on every A row; source_kind and, for a NEW fact, new_reason on every FACTS row).
@@ -132,6 +133,12 @@ FACTS - THE FACT NETWORK (MANDATORY)
   EVENT, or another plain noun.
 - A fact is an input, never a legal conclusion: F_SUPPLY_CONSIDERATION (PAID / AGREED / NONE) is a fact;
   "the transaction is a supply" is an outcome (LE / PD), not a fact.
+- A FACT IS AN ATTRIBUTE WITH VALUES, not a yes/no question per value: gender (MALE / FEMALE) is a fact, "is male"
+  + "is female" are not. Alternatives of ONE choice ("other than an Input Service Distributor, a non-resident
+  taxable person and a person paying tax under section 10, 51 or 52") are ONE CODE fact - e.g.
+  F_PERSON_TAX_CATEGORY: options [ISD, NON_RESIDENT, COMPOSITION_S10, TDS_S51, TCS_S52, REGULAR] - and each atom
+  tests its value (rule: "F_PERSON_TAX_CATEGORY = 'ISD'"). Use BOOL only for a real yes / no input (input tax
+  credit availed or not). Python rejects yes/no facts that are values of one attribute (FACT SHAPE).
 - FACTS RESULTS: name; entity; type (BOOL, CODE, AMOUNT, NUMBER, PERCENT, DATE, PERIOD, TEXT, LIST, ID, QUANTITY);
   options for CODE; unit for AMOUNT / PERIOD / QUANTITY; evidence: [documents that prove it];
   derived_from: [F_...] when computed from other facts (age from date of birth); registry: EXISTING or NEW;

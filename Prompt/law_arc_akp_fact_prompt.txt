@@ -1,3 +1,4 @@
+PROMPT EDIT 2026-11-19: CATEGORY - a new category fact of yes/no candidates is NEW (reason starts CATEGORY OF ...), never DERIVED from them.
 PROMPT EDIT 2026-11-16 (2): SAME may give option_map - options worded differently are mapped to the candidate's options, a real new value is mapped to NEW (added to the fact).
 PROMPT EDIT 2026-11-16: concept (2-3 words) on every new fact and candidate; similarity = the higher of name and concept.
 PROMPT EDIT 2026-11-15: new prompt - AKP FACT CHECK (fact flow layer 3, notes section 8).
@@ -29,6 +30,10 @@ DERIVED  the new fact can be worked out from one or more candidates by a plain f
          (year of birth from date of birth; age on a date from date of birth; "supplier and recipient are distinct
          persons" from the two GSTINs / PANs). Give derived_from (candidate ids) and the formula.
 NEW      a different input: no candidate is the same thing. When in doubt between SAME and NEW, choose NEW.
+CATEGORY A fact is an attribute with values (gender: MALE / FEMALE), not a yes/no question per value. A new CODE fact
+         whose options are values that existing yes/no candidates ask one by one ("tax category" vs "is an ISD",
+         "is a non-resident") is the raw input: answer NEW and start the reason with "CATEGORY OF <candidate ids>" -
+         never DERIVED from yes/no facts (the yes/no ones come from the category, not the other way round).
 NEVER SAME
 - a different who: supplier GSTIN is not recipient GSTIN; supplier turnover is not recipient turnover.
 - a different time point or period: turnover of the previous financial year is not turnover of the current year.

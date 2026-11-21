@@ -4,7 +4,8 @@ The models keep working with their own short working ids (A_SALE, G_FORMS, LE_SO
 prompts, the judge, the comparison and the SAME check are unchanged. Before saving, every id is rewritten
 everywhere in the table (ELEMENT, rules, members, expr, feeds, facts ...):
 
-    A / G / LE / PD / OR / CT / TC   <MKP id>_<TYPE>_<acronym>     M_SIAFOS_A_SIAS   (A_REF -> A)
+    A / G / LE / PD / OR / CT / TC   <MKP id>_<TYPE>_<acronym>     M_SIAFOS_A_SIAS
+    A_REF (a SAME atom)               the saved atom's own id       M_LTPTOG_A_SIG    (bug list A)
     FACTS                            F_<acronym of the fact name>  F_FOS             (no MKP prefix)
 
 The acronym comes from the row's `name` (3-7 words) when the model gave one, else from the words of the model's
@@ -85,7 +86,9 @@ def abbreviate(rows: List[dict], mkp_id: str, known_facts: Optional[Dict[str, di
         old = r["ELEMENT"]
         if not kind or old in mapping:
             continue
-        if old.startswith(prefix) and kp_ids.kind_of(old) == kind and old not in used:
+        if r["TYPE"] == "A_REF" and r.get("SAME_AKP_ID"):
+            new = r["SAME_AKP_ID"]                               # SAME atom: this law uses the saved atom's id
+        elif old.startswith(prefix) and kp_ids.kind_of(old) == kind and old not in used:
             new = old                                            # already abbreviated (re-save)
         elif kind == "LK":                                         # a link is named by its relation: _LK_AMENDS
             new = kp_ids.with_number(f"{mkp_id}_LK_{_link_tail(r)}", used)
@@ -154,8 +157,10 @@ def check(rows: List[dict], mkp_id: str) -> List[str]:
             continue
         el = r["ELEMENT"]
         errs += [f"ID: {e}" for e in kp_ids.check(el, kind)]
-        if kind != "F" and not el.startswith(mkp_id + "_"):
-            errs.append(f"ID: {el} does not start with its MKP id {mkp_id}")
+        if kind != "F" and not el.startswith(mkp_id + "_") and r["TYPE"] != "A_REF":
+            errs.append(f"ID: {el} does not start with its MKP id {mkp_id}")   # an A_REF has the saved atom's id
+        if r["TYPE"] == "A_REF" and r.get("SAME_AKP_ID") and el != r["SAME_AKP_ID"]:
+            errs.append(f"ID: SAME atom {el} must use the saved atom's id {r['SAME_AKP_ID']}")
         if el in seen and seen[el] != r["TYPE"]:
             errs.append(f"ID: {el} used by a {seen[el]} and a {r['TYPE']} row")
         seen.setdefault(el, r["TYPE"])

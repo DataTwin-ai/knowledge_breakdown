@@ -146,8 +146,9 @@ def db(monkeypatch, tmp_path):
     cfg["relationship"] = {"table": "kp_relation", "page": str(tmp_path / "fact_network.html")}
     cfg["governance_master"] = {**cfg["governance_master"], "tables": {**cfg["governance_master"].get("tables", {}),
                                                                          "fact": "akp_fact"}}
-    for k, t in (("akp", "akp"), ("gkp", "gkp")):
-        cfg[k] = {**cfg[k], ("table" if k == "akp" else "table_prefix"): t}
+    cfg["akp"] = {**cfg["akp"], "table": "akp", "fact_table": "akp_fact", "atom_fact_table": "akp_atom_fact",
+                  "time_fact_table": "akp_time_fact", "cache_table": "akp_cache", "llm_cache_table": "akp_llm_cache"}
+    cfg["gkp"] = {**cfg["gkp"], "table": "gkp", "cache_table": "gkp_cache", "llm_cache_table": "gkp_llm_cache"}
     cfg["governance_master"]["table"] = "governance_master"
     yield c, cfg, tmp_path
     with c.cursor() as cur:

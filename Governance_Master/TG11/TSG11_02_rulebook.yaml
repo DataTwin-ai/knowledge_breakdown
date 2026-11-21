@@ -1,0 +1,217 @@
+# GOVERNANCE MASTER TSG11_02 GSTR-3B (TG11 Returns & Reconciliation)
+# LAW ARC - 1 laws - status NEEDS_REVIEW
+name: TSG11_02 GSTR-3B - GOVERNANCE MASTER rulebook
+version: TSG11_02
+facts:
+  F_PTC:
+    name: Person Tax Category
+    type: CODE
+    options:
+    - COMPOSITION_S10
+    - ISD
+    - NON_RESIDENT
+    - REGULAR
+    - TCS_S52
+    - TDS_S51
+    - UNKNOWN
+    tier: T0
+  F_RPB2:
+    name: Return Period Basis
+    type: CODE
+    options:
+    - CALENDAR_MONTH_OR_PART
+    - OTHER
+    - UNKNOWN
+    tier: T0
+  F_RFM:
+    name: Return Filing Mode
+    type: CODE
+    options:
+    - ELECTRONIC
+    - NON_ELECTRONIC
+    - UNKNOWN
+    tier: T1
+  F_RISR:
+    name: Return Inward Supplies Reported
+    type: BOOLEAN
+    tier: T0
+  F_ROSR:
+    name: Return Outward Supplies Reported
+    type: BOOLEAN
+    tier: T0
+  F_RICAR:
+    name: Return Input Credit Availed Reported
+    type: BOOLEAN
+    tier: T0
+  F_RTPR:
+    name: Return Tax Payable Reported
+    type: BOOLEAN
+    tier: T0
+  F_RTPR2:
+    name: Return Tax Paid Reported
+    type: BOOLEAN
+    tier: T0
+  F_ROPD:
+    name: Return Other Particulars Description
+    type: TEXT
+    tier: T0
+  F_RFAM:
+    name: Return Form And Manner
+    type: TEXT
+    tier: T0
+  F_RDADD:
+    name: Return Days After Due Date
+    type: AMOUNT
+    tier: T1
+  F_RPS:
+    name: Registered Person Status
+    type: CODE
+    options:
+    - NOT_REGISTERED
+    - REGISTERED
+    - UNKNOWN
+    tier: T0
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_FORBRP_A_PIISD:
+    statement: 'The person is an Input Service Distributor (an excluded category: the duty applies to a registered person
+      other than an Input Service Distributor)'
+    order: LOW
+    rule: F_PTC = 'ISD'
+    handler: python
+  M_FORBRP_A_PINTP:
+    statement: The person is a non-resident taxable person (an excluded category)
+    order: LOW
+    rule: F_PTC = 'NON_RESIDENT'
+    handler: python
+  M_FORBRP_A_PPTUS10:
+    statement: The person is paying tax under the provisions of section 10 (an excluded category)
+    order: LOW
+    rule: F_PTC = 'COMPOSITION_S10'
+    handler: python
+  M_FORBRP_A_PPTUS51:
+    statement: The person is paying tax under the provisions of section 51 (an excluded category)
+    order: LOW
+    rule: F_PTC = 'TDS_S51'
+    handler: python
+  M_FORBRP_A_PPTUS52:
+    statement: The person is paying tax under the provisions of section 52 (an excluded category)
+    order: LOW
+    rule: F_PTC = 'TCS_S52'
+    handler: python
+  M_FORBRP_A_RFCMOP:
+    statement: The return is furnished for every calendar month or part thereof
+    order: LOW
+    rule: F_RPB2 = 'CALENDAR_MONTH_OR_PART'
+    handler: python
+  M_FORBRP_A_RIFE:
+    statement: The return is furnished electronically
+    order: LOW
+    rule: F_RFM = 'ELECTRONIC'
+    handler: python
+  M_FORBRP_A_RRIS:
+    statement: The return reports inward supplies of goods or services or both
+    order: LOW
+    rule: F_RISR = TRUE
+    handler: python
+  M_FORBRP_A_RROS:
+    statement: The return reports outward supplies of goods or services or both
+    order: LOW
+    rule: F_ROSR = TRUE
+    handler: python
+  M_FORBRP_A_RRICA:
+    statement: The return reports input tax credit availed
+    order: LOW
+    rule: F_RICAR = TRUE
+    handler: python
+  M_FORBRP_A_RRTP:
+    statement: The return reports tax payable
+    order: LOW
+    rule: F_RTPR = TRUE
+    handler: python
+  M_FORBRP_A_RRTP2:
+    statement: The return reports tax paid
+    order: LOW
+    rule: F_RTPR2 = TRUE
+    handler: python
+  M_FORBRP_A_RHOPP:
+    statement: The return contains such other particulars as may be prescribed
+    order: HIGH
+    interpretation: Does the return include the other particulars that are prescribed for the return?
+    grounding:
+    - F_ROPD
+    handler: light
+  M_FORBRP_A_RIPFM:
+    statement: The return is furnished in such form and manner as may be prescribed
+    order: HIGH
+    interpretation: Does the return description show it was furnished in the form and manner prescribed?
+    grounding:
+    - F_RFAM
+    handler: light
+  M_FORBRP_A_RFWPT:
+    statement: The return is furnished within such time as may be prescribed (the filing date is not later than the prescribed
+      due date, so the number of days filed after the due date is zero or less)
+    order: LOW
+    rule: F_RDADD <= 0
+    handler: python
+  M_ROFOSD_A_PIRP:
+    statement: The person furnishing the details of outward supplies is a registered person.
+    order: LOW
+    rule: F_RPS = 'REGISTERED'
+    handler: python
+groups:
+  M_FORBRP_G_EPC:
+    name: Excluded Person Categories
+    logic: ANY
+    members:
+    - M_FORBRP_A_PIISD
+    - M_FORBRP_A_PINTP
+    - M_FORBRP_A_PPTUS10
+    - M_FORBRP_A_PPTUS51
+    - M_FORBRP_A_PPTUS52
+    description: Any one of the listed categories takes the person outside the return duty.
+  M_FORBRP_G_RCP:
+    name: Return Content Particulars
+    logic: ALL
+    members:
+    - M_FORBRP_A_RRIS
+    - M_FORBRP_A_RROS
+    - M_FORBRP_A_RRICA
+    - M_FORBRP_A_RRTP
+    - M_FORBRP_A_RRTP2
+    - M_FORBRP_A_RHOPP
+    description: The return must carry all of the listed particulars.
+outcomes:
+  M_FORBRP_LE_MRDA:
+    outcome: RETURN_DUTY_APPLIES
+    expr: M_ROFOSD_A_PIRP AND NOT M_FORBRP_G_EPC
+    module: M_FORBRP
+    description: The duty to furnish the return applies to a registered person who is not in an excluded category.
+  M_FORBRP_LE_RFAR:
+    outcome: RETURN_FILED_AS_REQUIRED
+    expr: M_FORBRP_A_RFCMOP AND M_FORBRP_A_RIFE AND M_FORBRP_G_RCP AND M_FORBRP_A_RIPFM AND M_FORBRP_A_RFWPT
+    module: M_FORBRP
+    description: The return meets the period, electronic mode, content, form and manner, and time requirements.
+products:
+  M_FORBRP_PD_MRDA:
+    statement: The duty to furnish the return applies to a registered person who is not in an excluded category.
+  M_FORBRP_PD_RFAR:
+    statement: The return meets the period, electronic mode, content, form and manner, and time requirements.
+compounds:
+- id: C_FORBRP
+  question: 'Section 39(1): Furnishing Of Returns By Registered Person?'
+  includes:
+  - M_FORBRP_LE_MRDA
+  - M_FORBRP_LE_RFAR
+  produces:
+  - product: M_FORBRP_PD_MRDA
+    from:
+    - M_FORBRP_LE_MRDA
+  - product: M_FORBRP_PD_RFAR
+    from:
+    - M_FORBRP_LE_RFAR
+time:
+  law_date: F_DOI

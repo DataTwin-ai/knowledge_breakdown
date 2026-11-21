@@ -26,10 +26,8 @@ from kp_console import flow
 
 
 def _tables(cfg: dict) -> dict:
-    t = cfg["governance_master"]["tables"]
-    fact = t.get("fact", "akp_fact")
-    return {"fact": fact, "atom_fact": fact.replace("_fact", "_atom_fact") if fact.endswith("_fact") else fact + "_edge",
-            "akp": t.get("akp", "akp"), "gkp": t.get("gkp", "gkp")}
+    t = cfg["governance_master"]["tables"]       # Config/settings.json (kp_settings.check_tables)
+    return {"fact": t["fact"], "atom_fact": t["atom_fact"], "akp": t["akp"], "gkp": t["gkp"]}
 
 
 def _kinds(cfg: dict) -> dict:

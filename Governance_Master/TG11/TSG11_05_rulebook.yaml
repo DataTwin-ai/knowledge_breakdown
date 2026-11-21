@@ -1,0 +1,65 @@
+# GOVERNANCE MASTER TSG11_05 Amendments to returns (TG11 Returns & Reconciliation)
+# LAW ARC - 1 laws - status APPROVED
+name: TSG11_05 Amendments to returns - GOVERNANCE MASTER rulebook
+version: TSG11_05
+facts:
+  F_NED:
+    name: Notified Extension Description
+    type: TEXT
+    tier: T1
+  F_NA:
+    name: Notifying Authority
+    type: CODE
+    options:
+    - COMMISSIONER
+    - OTHER
+    - STATE_COMMISSIONER
+    - UNKNOWN
+    - UT_COMMISSIONER
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_DNOTLE_A_NIETL:
+    statement: The notified instrument is an extension of a time limit
+    order: HIGH
+    interpretation: Does the notified instrument extend a time limit, rather than some other matter?
+    grounding:
+    - F_NED
+    handler: light
+  M_DNOTLE_A_NBSOUC:
+    statement: The extension of time limit was notified by the Commissioner of State tax or by the Commissioner of Union territory
+      tax
+    order: LOW
+    rule: F_NA IN ['STATE_COMMISSIONER', 'UT_COMMISSIONER']
+    handler: python
+groups:
+  M_DNOTLE_G_ENC:
+    name: Extension Notification Conditions
+    logic: ALL
+    members:
+    - M_DNOTLE_A_NIETL
+    - M_DNOTLE_A_NBSOUC
+    description: The extension must be an extension of time limit and must be notified by a State or UT Commissioner
+outcomes:
+  M_DNOTLE_LE_DNBC:
+    outcome: DEEMED_NOTIFIED_BY_COMMISSIONER
+    expr: M_DNOTLE_G_ENC
+    module: M_DNOTLE
+    description: The extension is deemed notified by the Commissioner when both conditions hold
+products:
+  M_DNOTLE_PD_DNBC:
+    statement: The extension is deemed notified by the Commissioner when both conditions hold
+compounds:
+- id: C_DNOTLE
+  question: 'Section 37(1), third proviso: Deemed Notification Of Time Limit Extension?'
+  includes:
+  - M_DNOTLE_LE_DNBC
+  produces:
+  - product: M_DNOTLE_PD_DNBC
+    from:
+    - M_DNOTLE_LE_DNBC
+time:
+  law_date: F_DOI

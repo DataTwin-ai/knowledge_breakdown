@@ -74,7 +74,7 @@ def validate_governance_master_settings(raw: dict) -> dict:
         from kp_console import say
         say(f"  GOVERNANCE MASTER : law_as_on {s['law_as_on']} is set - laws not in force that day are left out "
             "(empty = the invoice date decides, recommended)")
-    for k in ("akp", "fact", "gkp", "time_fact", "mkp", "ikp"):
+    for k in ("akp", "fact", "atom_fact", "gkp", "time_fact", "mkp", "ikp", "ref_link"):
         if k not in s["tables"]:
             raise KeyError(f"Config/settings.json governance_master.tables.{k} is required")
     return s
@@ -285,8 +285,29 @@ def build_many(tsgs: List[str], permission: Optional[dict] = None, conn=None) ->
             conn.close()
 
 
+def _again_if_db_dropped(fn, *args):
+    """Bug list D18: the database connection dropped (or the database could not be reached) while the governance
+    masters were built -> wait until it answers, then build once more with a new connection (a build that already
+    finished is saved; an unchanged governance master is not saved again)."""
+    from db_insert import is_connection_lost, is_db_unreachable, unreachable_wait, wait_for_db
+    try:
+        return fn(*args)
+    except Exception as exc:
+        if not (is_connection_lost(exc) or is_db_unreachable(exc)):
+            raise
+        say(f"GOVERNANCE MASTER : database connection lost ({str(exc).splitlines()[0][:120]}) - trying again")
+        total, every = unreachable_wait()
+        if not wait_for_db(total, every, note=say):
+            raise
+        return fn(*args)
+
+
 def run_for_mkps(source_mkps: List[str], permission: Optional[dict] = None) -> List[dict]:
     """After GKP: every TSG the atoms of these MKPs were grouped in (no question asked)."""
+    return _again_if_db_dropped(_run_for_mkps, source_mkps, permission)
+
+
+def _run_for_mkps(source_mkps: List[str], permission: Optional[dict] = None) -> List[dict]:
     permission = permission or _permission()
     s = validate_governance_master_settings(permission.get("governance_master", {}))
     if not s["enabled"] or not source_mkps:
@@ -311,6 +332,10 @@ def run_for_mkps(source_mkps: List[str], permission: Optional[dict] = None) -> L
 
 def main_governance_master(tsgs: Optional[List[str]] = None, all_tsgs: bool = False) -> List[dict]:
     """Alone: the listed TSGs, or every TSG that has atoms (--all)."""
+    return _again_if_db_dropped(_main_governance_master, tsgs, all_tsgs)
+
+
+def _main_governance_master(tsgs: Optional[List[str]] = None, all_tsgs: bool = False) -> List[dict]:
     permission = _permission()
     s = validate_governance_master_settings(permission.get("governance_master", {}))
     from db_insert import get_connection, get_db_schema

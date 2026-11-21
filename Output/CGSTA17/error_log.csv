@@ -51,3 +51,297 @@
 2026-11-17 10:42:47,CGSTA17,CGSTA17,IKP,,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Connection refused (0x0000274D/10061) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
 2026-11-17 10:43:25,CGSTA17,CGSTA17,IKP,,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Connection refused (0x0000274D/10061) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
 2026-11-17 11:02:52,CGSTA17,CGSTA17,IKP,,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Connection refused (0x0000274D/10061) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 12:39:05,CGSTA17,CGSTA17_SCHIII_EN3_Cc#TEXT,AKP,W5,RuntimeError: Standard Judge output is not parseable: Atom needs family in RESULTS: A_DUTIES_PERFORMED,0,FAILED
+2026-11-17 12:39:09,CGSTA17,CGSTA17_SCHIII_EN3_Cc,AKP,W5,comparison FALSE for CGSTA17_SCHIII_EN3_Cc#TEXT (other MKPs of the unit saved),0,FAILED
+2026-11-17 13:18:32,CGSTA17,CGSTA17_S2_C4,MKP_GATE,W3,"GateError: MKP GATE: judge row is not seven columns: C_CGSTA17_S2|MKP|CGSTA17_S2_C4#TEXT|concept: ""Adjudicating Authority Definition""; citation: ""Section || judge row is not seven columns: C_CGSTA17_S2|MKP|CGSTA17_S2_C4#AMD1|concept: ""Amendment To Adjudicating Authority Board""; citation: || judge row is not seven columns: C_CGSTA17_S2|MKP|CGSTA17_S2_C4#AMD2|concept: ""Amendment To Adjudicating Authority Appellate List""; c",0,FAILED
+2026-11-17 13:38:46,CGSTA17,CGSTA17_S2_C18_SCa,MKP_GATE,W7,"GateError: MKP GATE: judge row is not seven columns: C_CGSTA17_S2|MKP|CGSTA17_S2_C18_SCa#TEXT|concept: ""Nature Of Goods Or Services Factor""; citation: ""S",0,FAILED
+2026-11-17 13:41:22,CGSTA17,CGSTA17_S2_C18_SCc,MKP_GATE,W7,"GateError: MKP GATE: judge row is not seven columns: C_CGSTA17_S2|MKP|CGSTA17_S2_C18_SCc#AMD1|concept: ""Omission Of Business Vertical Customer Type Facto",0,FAILED
+2026-11-17 13:43:09,CGSTA17,CGSTA17_S2_C18_SCe,MKP_GATE,W4,GateError: MKP GATE: MKP outside the selection: CGSTA17_S2_C18#AMD1,0,FAILED
+2026-11-17 16:04:06,CGSTA17,CGSTA17_S2_C76#TEXT,AKP,W5,"{""verdict"": ""FALSE"", ""reconstructed_mkp"": ""(not compared - Python checks failed)"", ""missing"": [], ""added_or_changed"": [], ""logic_problems"": [""F_DCS: fact id must be F_<ENTITY>_<ATTRIBUTE> in capitals""], ""same_matches"": [], ""references"": []}",0,FAILED
+2026-11-17 16:04:11,CGSTA17,CGSTA17_S2_C76,AKP,W5,comparison FALSE for CGSTA17_S2_C76#TEXT (other MKPs of the unit saved),0,FAILED
+2026-11-17 17:08:53,CGSTA17,CGSTA17_S2_C107#TEXT,AKP,W1,"{""verdict"": ""FALSE"", ""reconstructed_mkp"": ""(not compared - Python checks failed)"", ""missing"": [], ""added_or_changed"": [], ""logic_problems"": [""F_DCS: fact id must be F_<ENTITY>_<ATTRIBUTE> in capitals""], ""same_matches"": [], ""references"": []}",0,FAILED
+2026-11-17 17:09:00,CGSTA17,CGSTA17_S2_C107,AKP,W1,comparison FALSE for CGSTA17_S2_C107#TEXT (other MKPs of the unit saved),0,FAILED
+2026-11-17 17:20:48,CGSTA17,CGSTA17_S2_C112#TEXT,AKP,W8,"{""verdict"": ""FALSE"", ""reconstructed_mkp"": ""(not compared - Python checks failed)"", ""missing"": [], ""added_or_changed"": [], ""logic_problems"": [""F_DCS: fact id must be F_<ENTITY>_<ATTRIBUTE> in capitals""], ""same_matches"": [], ""references"": []}",0,FAILED
+2026-11-17 17:21:09,CGSTA17,CGSTA17_S2_C112,AKP,W8,comparison FALSE for CGSTA17_S2_C112#TEXT (other MKPs of the unit saved),0,FAILED
+2026-11-17 18:54:36,CGSTA17,CGSTA17_S2_C18_SCe#TEXT,AKP,W3,"RuntimeError: Standard Judge output is not parseable: Expected five columns: TC|TC1|NA|name: Regulatory environment applies; facts/products: F_COMPONENT_REGULATORY_APPLICABLE = TRUE, F_COMPONENT_REGULATORY_NATURE = banking; given_atoms:",0,FAILED
+2026-11-17 18:54:42,CGSTA17,CGSTA17_S2_C18_SCe,AKP,W3,comparison FALSE for CGSTA17_S2_C18_SCe#TEXT (other MKPs of the unit saved),0,FAILED
+2026-11-17 18:54:49,CGSTA17,CGSTA17_S2_C4,ALL,W4,finished on a later run,0,DONE
+2026-11-17 18:55:58,CGSTA17,CGSTA17_S2_C18_SCa,ALL,W8,finished on a later run,0,DONE
+2026-11-17 18:56:36,CGSTA17,CGSTA17_S2_C18_SCc,ALL,W1,finished on a later run,0,DONE
+2026-11-17 19:25:06,CGSTA17,CGSTA17_S2_C64#TEXT,AKP,W1,RuntimeError: Standard Judge output is not parseable: Atom needs family in RESULTS: A_CTX_NOT_OVERRIDDEN,0,FAILED
+2026-11-17 19:25:16,CGSTA17,CGSTA17_S2_C64,AKP,W1,comparison FALSE for CGSTA17_S2_C64#TEXT (other MKPs of the unit saved),0,FAILED
+2026-11-17 19:31:11,CGSTA17,CGSTA17_S2_C77,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:11,CGSTA17,CGSTA17_S2_C75,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:11,CGSTA17,CGSTA17_S2_C76,RUN,W8,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:11,CGSTA17,CGSTA17_S2_C79,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:11,CGSTA17,CGSTA17_S2_C78,RUN,W4,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:11,CGSTA17,CGSTA17_S2_C81,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:11,CGSTA17,CGSTA17_S2_C82,RUN,W8,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:12,CGSTA17,CGSTA17_S2_C83,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:12,CGSTA17,CGSTA17_S2_C84_SCa,RUN,W4,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:12,CGSTA17,CGSTA17_S2_C84_SCb,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:12,CGSTA17,CGSTA17_S2_C84_SCc,RUN,W8,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:12,CGSTA17,CGSTA17_S2_C84_SCd,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:12,CGSTA17,CGSTA17_S2_C84_SCf,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:12,CGSTA17,CGSTA17_S2_C84_SCe,RUN,W4,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C84_SCg,RUN,W8,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C84_SCh,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C84_SCj,RUN,W4,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C84_SCi,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C84_SCl,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C84_SCk,RUN,W8,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C84_SCm,RUN,W4,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C84_SCn,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C85_SCb,RUN,W8,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C85_SCa,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C85_SCc,RUN,W4,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C86,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C87,RUN,W8,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C89,RUN,W4,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C88,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C90,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C91,RUN,W8,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C93_SCb,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C92,RUN,W4,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C93_SCa,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C93_SCc,RUN,W8,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C94,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C80,RUN,W3,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C96_SCa,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C95,RUN,W4,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C96_SCb,RUN,W8,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C97,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C98,RUN,W3,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C100,RUN,W4,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C101,RUN,W8,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:13,CGSTA17,CGSTA17_S2_C99,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C102,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C102_E1,RUN,W3,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C103,RUN,W4,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C104,RUN,W8,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C105,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C106,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C108,RUN,W4,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C107,RUN,W3,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C109,RUN,W8,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C110,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C112,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C111,RUN,W4,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C113_SCa,RUN,W3,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C113_SCb,RUN,W8,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C114_SCa,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C114_SCb,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C114_SCe,RUN,W8,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C114_SCd,RUN,W3,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C114_SCc,RUN,W4,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C114_SCf,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C116,RUN,W3,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_E1,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C115,RUN,W8,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C117,RUN,W4,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C118,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C120,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C119,RUN,W3,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S8_Ca,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C121,RUN,W8,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S8,RUN,W4,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C45,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C33,RUN,W3,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S8_Cb,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C48,RUN,W4,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C47,RUN,W8,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C31_SCb,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C49_SCi,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C31_SCa,RUN,W3,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C32,RUN,W4,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C50,RUN,W8,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C49_SCii,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C59,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C62_SCa,RUN,W3,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C62_SCc,RUN,W4,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C61,RUN,W8,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C62_SCd,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C62_SCb,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C74,RUN,W4,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C73,RUN,W3,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C72,RUN,W8,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C68,RUN,W7,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:31:14,CGSTA17,CGSTA17_S2_C69_SCc,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Network is unreachable (0x00002743/10051) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:32:48,CGSTA17,CGSTA17_S2_C67,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: No route to host (0x00002751/10065) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:32:48,CGSTA17,CGSTA17_S2_C62_SCe,RUN,W2,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: No route to host (0x00002751/10065) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 19:32:50,CGSTA17,CGSTA17_S2_C69_SCb,RUN,W6,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: No route to host (0x00002751/10065) Is the server running on that host and accepting TCP/IP connections?",1,FAILED
+2026-11-17 21:04:14,CGSTA17,CGSTA17_S2_C18_SCe#TEXT,AKP,W3,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-17 21:04:26,CGSTA17,CGSTA17_S2_C76#TEXT,AKP,W4,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-17 21:04:29,CGSTA17,CGSTA17_S2_C77,ALL,W8,finished on a later run,0,DONE
+2026-11-18 11:04:19,CGSTA17,CGSTA17_S2_C75,ALL,W8,finished on a later run,0,DONE
+2026-11-18 11:05:32,CGSTA17,CGSTA17_S2_C79,ALL,W8,finished on a later run,0,DONE
+2026-11-18 11:06:13,CGSTA17,CGSTA17_S2_C78,ALL,W8,finished on a later run,0,DONE
+2026-11-18 11:06:30,CGSTA17,CGSTA17_S2_C18_SCe,ALL,W3,finished on a later run,0,DONE
+2026-11-18 11:06:36,CGSTA17,CGSTA17_S2_C81,ALL,W8,finished on a later run,0,DONE
+2026-11-18 11:07:56,CGSTA17,CGSTA17_S2_C83,ALL,W8,finished on a later run,0,DONE
+2026-11-18 11:07:58,CGSTA17,CGSTA17_S2_C82,ALL,W3,finished on a later run,0,DONE
+2026-11-18 11:08:18,CGSTA17,CGSTA17_S2_C84_SCa,ALL,W8,finished on a later run,0,DONE
+2026-11-18 11:08:25,CGSTA17,CGSTA17_S2_C64,ALL,W7,finished on a later run,0,DONE
+2026-11-18 11:08:38,CGSTA17,CGSTA17_S2_C84_SCb,ALL,W3,finished on a later run,0,DONE
+2026-11-18 11:08:45,CGSTA17,CGSTA17_S2_C84_SCc,ALL,W8,finished on a later run,0,DONE
+2026-11-18 11:08:46,CGSTA17,CGSTA17_S2_C84_SCd,ALL,W7,finished on a later run,0,DONE
+2026-11-18 11:08:57,CGSTA17,CGSTA17_S2_C84_SCf,ALL,W3,finished on a later run,0,DONE
+2026-11-18 11:09:10,CGSTA17,CGSTA17_S2_C84_SCg,ALL,W7,finished on a later run,0,DONE
+2026-11-18 11:09:14,CGSTA17,CGSTA17_S2_C84_SCe,ALL,W8,finished on a later run,0,DONE
+2026-11-18 11:09:17,CGSTA17,CGSTA17_S2_C76,ALL,W4,finished on a later run,0,DONE
+2026-11-18 11:09:20,CGSTA17,CGSTA17_S2_C84_SCh,ALL,W3,finished on a later run,0,DONE
+2026-11-18 11:09:28,CGSTA17,CGSTA17_S2_C84_SCj,ALL,W7,finished on a later run,0,DONE
+2026-11-18 11:09:35,CGSTA17,CGSTA17_S2_C84_SCl,ALL,W4,finished on a later run,0,DONE
+2026-11-18 11:09:40,CGSTA17,CGSTA17_S2_C84_SCk,ALL,W3,finished on a later run,0,DONE
+2026-11-18 11:09:42,CGSTA17,CGSTA17_S2_C107,ALL,W5,finished on a later run,0,DONE
+2026-11-18 11:09:46,CGSTA17,CGSTA17_S2_C84_SCi,ALL,W8,finished on a later run,0,DONE
+2026-11-18 11:09:59,CGSTA17,CGSTA17_S2_C85_SCb,ALL,W3,finished on a later run,0,DONE
+2026-11-18 11:10:20,CGSTA17,CGSTA17_S2_C84_SCm,ALL,W7,finished on a later run,0,DONE
+2026-11-18 11:10:33,CGSTA17,CGSTA17_S2_C84_SCn,ALL,W4,finished on a later run,0,DONE
+2026-11-18 11:12:02,CGSTA17,CGSTA17_SCHIII_EN3_Cc,ALL,W2,finished on a later run,0,DONE
+2026-11-18 11:13:07,CGSTA17,CGSTA17_SCHI_EN4,ALL,W1,finished on a later run,0,DONE
+2026-11-18 11:14:03,CGSTA17,CGSTA17_S2_C90,ALL,W1,finished on a later run,0,DONE
+2026-11-18 11:14:22,CGSTA17,CGSTA17_S2_C91,ALL,W1,finished on a later run,0,DONE
+2026-11-18 11:14:38,CGSTA17,CGSTA17_S2_C86,ALL,W3,finished on a later run,0,DONE
+2026-11-18 11:14:40,CGSTA17,CGSTA17_S2_C93_SCb,ALL,W1,finished on a later run,0,DONE
+2026-11-18 11:14:55,CGSTA17,CGSTA17_S2_C87,ALL,W7,finished on a later run,0,DONE
+2026-11-18 11:14:57,CGSTA17,CGSTA17_S2_C92,ALL,W3,finished on a later run,0,DONE
+2026-11-18 11:15:00,CGSTA17,CGSTA17_S2_C93_SCa,ALL,W1,finished on a later run,0,DONE
+2026-11-18 11:15:14,CGSTA17,CGSTA17_S2_C112,ALL,W6,finished on a later run,0,DONE
+2026-11-18 11:15:16,CGSTA17,CGSTA17_S2_C93_SCc,ALL,W7,finished on a later run,0,DONE
+2026-11-18 11:15:18,CGSTA17,CGSTA17_S2_C94,ALL,W3,finished on a later run,0,DONE
+2026-11-18 11:15:32,CGSTA17,CGSTA17_S2_C96_SCa,ALL,W6,finished on a later run,0,DONE
+2026-11-18 11:15:35,CGSTA17,CGSTA17_S2_C95,ALL,W7,finished on a later run,0,DONE
+2026-11-18 11:15:36,CGSTA17,CGSTA17_S2_C96_SCb,ALL,W3,finished on a later run,0,DONE
+2026-11-18 11:15:38,CGSTA17,CGSTA17_S2_C80,ALL,W1,finished on a later run,0,DONE
+2026-11-18 11:15:50,CGSTA17,CGSTA17_S2_C97,ALL,W6,finished on a later run,0,DONE
+2026-11-18 11:15:55,CGSTA17,CGSTA17_S2_C101,ALL,W1,finished on a later run,0,DONE
+2026-11-18 11:15:59,CGSTA17,CGSTA17_S2_C89,ALL,W4,finished on a later run,0,DONE
+2026-11-18 11:16:02,CGSTA17,CGSTA17_S2_C98,ALL,W7,finished on a later run,0,DONE
+2026-11-18 11:16:04,CGSTA17,CGSTA17_S2_C100,ALL,W3,finished on a later run,0,DONE
+2026-11-18 11:16:07,CGSTA17,CGSTA17_S2_C99,ALL,W6,finished on a later run,0,DONE
+2026-11-18 11:16:23,CGSTA17,CGSTA17_S2_C104,ALL,W3,finished on a later run,0,DONE
+2026-11-18 11:16:24,CGSTA17,CGSTA17_S2_C102,ALL,W1,finished on a later run,0,DONE
+2026-11-18 11:16:25,CGSTA17,CGSTA17_S2_C102_E1,ALL,W4,finished on a later run,0,DONE
+2026-11-18 11:16:26,CGSTA17,CGSTA17_S2_C105,ALL,W6,finished on a later run,0,DONE
+2026-11-18 11:16:37,CGSTA17,CGSTA17_S2_C103,ALL,W7,finished on a later run,0,DONE
+2026-11-18 11:16:43,CGSTA17,CGSTA17_S2_C108,ALL,W1,finished on a later run,0,DONE
+2026-11-18 11:16:46,CGSTA17,CGSTA17_S2_C110,ALL,W6,finished on a later run,0,DONE
+2026-11-18 11:16:49,CGSTA17,CGSTA17_S2_C106,ALL,W3,finished on a later run,0,DONE
+2026-11-18 11:16:50,CGSTA17,CGSTA17_S2_C109,ALL,W4,finished on a later run,0,DONE
+2026-11-18 11:16:59,CGSTA17,CGSTA17_S2_C111,ALL,W7,finished on a later run,0,DONE
+2026-11-18 11:17:01,CGSTA17,CGSTA17_S2_C113_SCa,ALL,W1,finished on a later run,0,DONE
+2026-11-18 11:17:05,CGSTA17,CGSTA17_S2_C113_SCb,ALL,W6,finished on a later run,0,DONE
+2026-11-18 11:17:10,CGSTA17,CGSTA17_S2_C114_SCa,ALL,W3,finished on a later run,0,DONE
+2026-11-18 11:17:12,CGSTA17,CGSTA17_S2_C114_SCb,ALL,W4,finished on a later run,0,DONE
+2026-11-18 11:17:19,CGSTA17,CGSTA17_S2_C114_SCe,ALL,W7,finished on a later run,0,DONE
+2026-11-18 11:17:27,CGSTA17,CGSTA17_S2_C114_SCf,ALL,W3,finished on a later run,0,DONE
+2026-11-18 11:17:36,CGSTA17,CGSTA17_S2_E1,ALL,W7,finished on a later run,0,DONE
+2026-11-18 11:17:48,CGSTA17,CGSTA17_S2_C115,ALL,W3,finished on a later run,0,DONE
+2026-11-18 11:17:51,CGSTA17,CGSTA17_S2_C116,ALL,W4,finished on a later run,0,DONE
+2026-11-18 11:18:01,CGSTA17,CGSTA17_S2_C114_SCc,ALL,W6,finished on a later run,0,DONE
+2026-11-18 11:18:24,CGSTA17,CGSTA17_S2_C114_SCd,ALL,W1,finished on a later run,0,DONE
+2026-11-18 11:18:26,CGSTA17,CGSTA17_S2_C117,ALL,W7,finished on a later run,0,DONE
+2026-11-18 11:18:54,CGSTA17,CGSTA17_S2_C85_SCa,ALL,W5,finished on a later run,0,DONE
+2026-11-18 11:19:12,CGSTA17,CGSTA17_S8_Ca,ALL,W1,finished on a later run,0,DONE
+2026-11-18 11:19:17,CGSTA17,CGSTA17_S2_C85_SCc,ALL,W8,finished on a later run,0,DONE
+2026-11-18 11:20:12,CGSTA17,CGSTA17_S2_C119,ALL,W6,finished on a later run,0,DONE
+2026-11-18 11:20:36,CGSTA17,CGSTA17_S2_C118,ALL,W3,finished on a later run,0,DONE
+2026-11-18 11:21:28,CGSTA17,CGSTA17_S2_C88,ALL,W2,finished on a later run,0,DONE
+2026-11-18 11:25:01,CGSTA17,CGSTA17_S2_C121,ALL,W7,finished on a later run,0,DONE
+2026-11-18 11:26:30,CGSTA17,CGSTA17_S2_C120,ALL,W4,finished on a later run,0,DONE
+2026-11-18 11:27:25,CGSTA17,CGSTA17_S2_C31_SCb,ALL,W7,finished on a later run,0,DONE
+2026-11-18 11:29:34,CGSTA17,CGSTA17_S2_C48,ALL,W3,finished on a later run,0,DONE
+2026-11-18 11:30:32,CGSTA17,CGSTA17_S2_C47,ALL,W2,finished on a later run,0,DONE
+2026-11-18 11:30:40,CGSTA17,CGSTA17_S2_C33,ALL,W8,finished on a later run,0,DONE
+2026-11-18 11:30:48,CGSTA17,CGSTA17_S2_C31_SCa,ALL,W7,finished on a later run,0,DONE
+2026-11-18 11:30:51,CGSTA17,CGSTA17_S8_Cb,ALL,W6,finished on a later run,0,DONE
+2026-11-18 11:32:26,CGSTA17,CGSTA17_S2_C49_SCi,ALL,W4,finished on a later run,0,DONE
+2026-11-18 11:32:40,CGSTA17,CGSTA17_S2_C45,ALL,W1,finished on a later run,0,DONE
+2026-11-18 11:33:24,CGSTA17,CGSTA17_S2_C62_SCa,ALL,W6,finished on a later run,0,DONE
+2026-11-18 11:35:18,CGSTA17,CGSTA17_S2_C32,ALL,W3,finished on a later run,0,DONE
+2026-11-18 11:36:18,CGSTA17,CGSTA17_S8,ALL,W5,finished on a later run,0,DONE
+2026-11-18 11:36:37,CGSTA17,CGSTA17_S2_C74,ALL,W5,finished on a later run,0,DONE
+2026-11-18 11:36:57,CGSTA17,CGSTA17_S2_C73,ALL,W5,finished on a later run,0,DONE
+2026-11-18 11:37:14,CGSTA17,CGSTA17_S2_C72,ALL,W5,finished on a later run,0,DONE
+2026-11-18 11:37:37,CGSTA17,CGSTA17_S2_C49_SCii,ALL,W8,finished on a later run,0,DONE
+2026-11-18 11:38:37,CGSTA17,CGSTA17_S2_C68,ALL,W5,finished on a later run,0,DONE
+2026-11-18 11:38:39,CGSTA17,CGSTA17_S2_C59,ALL,W7,finished on a later run,0,DONE
+2026-11-18 11:39:42,CGSTA17,CGSTA17_S2_C50,ALL,W2,finished on a later run,0,DONE
+2026-11-18 11:40:57,CGSTA17,CGSTA17_S2_C69_SCb,ALL,W2,finished on a later run,0,DONE
+2026-11-18 11:41:41,CGSTA17,CGSTA17_S2_C67,ALL,W5,finished on a later run,0,DONE
+2026-11-18 11:41:53,CGSTA17,CGSTA17_S2_C62_SCc,ALL,W4,finished on a later run,0,DONE
+2026-11-18 11:42:00,CGSTA17,CGSTA17_S2_C62_SCd,ALL,W6,finished on a later run,0,DONE
+2026-11-18 11:42:52,CGSTA17,CGSTA17_S2_C62_SCe,ALL,W7,finished on a later run,0,DONE
+2026-11-18 11:44:05,CGSTA17,CGSTA17_S2_C61,ALL,W1,finished on a later run,0,DONE
+2026-11-18 11:46:19,CGSTA17,CGSTA17_S2_C62_SCb,ALL,W3,finished on a later run,0,DONE
+2026-11-18 11:46:20,CGSTA17,CGSTA17_S2_C69_SCc,ALL,W8,finished on a later run,0,DONE
+2026-11-18 11:47:15,CGSTA17,CGSTA17_S13_SS5_Ca,ALL,W3,finished on a later run,0,DONE
+2026-11-18 11:50:55,CGSTA17,CGSTA17_S13_SS5_Cb,ALL,W5,finished on a later run,0,DONE
+2026-11-18 11:52:28,CGSTA17,CGSTA17_S13_SS6,ALL,W6,finished on a later run,0,DONE
+2026-11-18 11:58:03,CGSTA17,CGSTA17_S13_SS3_P2,ALL,W8,finished on a later run,0,DONE
+2026-11-18 12:10:01,CGSTA17,CGSTA17,MKP_GATE,W8,"GateError: MKP GATE: judge row is not seven columns: C_CGSTA17|MKP|CGSTA17_S3_P1#TEXT|concept: ""Deemed Appointment Of Excise Officers""; citation: ""Sectio",0,SPLIT
+2026-11-18 12:18:15,CGSTA17,CGSTA17_CHVIII,MKP_GATE,W8,"GateError: MKP GATE: judge row is not seven columns: C_CGSTA17_CHVIII|MKP|CGSTA17_S35_SS5#AMD1|NONE|NONE|concept: ""Amendment Inserting Audit Exemption Pr",0,SPLIT
+2026-11-18 12:18:18,CGSTA17,CGSTA17_S35,MKP,W8,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:18:21,CGSTA17,CGSTA17_S36,MKP,W8,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:18:28,CGSTA17,CGSTA17_CHIX,MKP,W8,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:18:35,CGSTA17,CGSTA17_CHX,MKP,W8,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:18:41,CGSTA17,CGSTA17_CHXI,MKP,W8,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:18:45,CGSTA17,CGSTA17_CHXII,MKP,W8,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:18:48,CGSTA17,CGSTA17_CHXIII,MKP,W8,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:18:54,CGSTA17,CGSTA17_CHXIV,MKP,W8,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:19:02,CGSTA17,CGSTA17_CHXV,MKP,W8,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:19:07,CGSTA17,CGSTA17_CHXVI,MKP,W8,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:19:12,CGSTA17,CGSTA17_CHXVII,MKP,W8,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:19:18,CGSTA17,CGSTA17_CHII,MKP_GATE,W5,"GateError: MKP GATE: judge row is not seven columns: C_CGSTA17_CHII|MKP|CGSTA17_S5#TEXT|concept: ""Powers Of Officers Under GST Heading""; citation: ""Secti",0,SPLIT
+2026-11-18 12:19:22,CGSTA17,CGSTA17_S3,MKP,W5,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:19:25,CGSTA17,CGSTA17_CHXVIII,MKP,W8,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:19:25,CGSTA17,CGSTA17_S4,MKP,W5,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:19:28,CGSTA17,CGSTA17_S6,MKP,W5,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:19:29,CGSTA17,CGSTA17_S5,MKP,W8,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:19:43,CGSTA17,CGSTA17_CHXX,MKP,W8,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:19:43,CGSTA17,CGSTA17_CHXIX,MKP,W5,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:19:54,CGSTA17,CGSTA17_CHXXI,MKP,W8,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:20:14,CGSTA17,CGSTA17_CHIV,MKP_GATE,W2,"GateError: MKP GATE: judge row is not seven columns: C_CGSTA17_CHIV|MKP|CGSTA17_S15_SS2_Cd#TEXT|concept: ""Value Includes Interest For Delayed Payment""; c",0,SPLIT
+2026-11-18 12:21:19,CGSTA17,CGSTA17_SCHIII,GKP,W3,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:21:22,CGSTA17,CGSTA17_S14,MKP,W3,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:21:26,CGSTA17,CGSTA17_S15,MKP,W3,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:21:30,CGSTA17,CGSTA17_S12,GKP,W2,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:21:52,CGSTA17,CGSTA17_SCHII,GKP,W8,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-18 12:22:02,CGSTA17,CGSTA17_S13,GKP,W5,RuntimeError: cannot schedule new futures after interpreter shutdown,0,FAILED
+2026-11-19 11:15:11,CGSTA17,CGSTA17_S10,MKP_GATE,W1,"GateError: MKP GATE: judge row is not seven columns: C_CGSTA17_S10|MKP|CGSTA17_S10_SS2_Cd#TEXT|concept: ""Ineligibility For E-Commerce Supply""; citation:",0,SPLIT
+2026-11-19 15:50:37,CGSTA17,CGSTA17,IKP,,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Connection timed out (0x0000274C/10060) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-19 17:47:20,CGSTA17,CGSTA17,IKP,,"OperationalError: connection to server at ""54.173.235.129"", port 5432 failed: Connection timed out (0x0000274C/10060) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-20 11:26:39,CGSTA17,CGSTA17_S39_SS1,RUN,W5,"UniqueViolation: duplicate key value violates unique constraint ""gkp_new_pkey"" DETAIL: Key (instrument, version_id, source_mkp, akp_element, tsg_id, gkp_version)=(CGSTA17, V_1FF27CAAF1293DA6, CGSTA17_S39_SS1#TEXT, M_ROFOSD_A_PIRP, TSG11_01, 1) already exists.",1,FAILED
+2026-11-20 11:30:13,CGSTA17,CGSTA17_S37_SS1,RUN,W1,"UniqueViolation: duplicate key value violates unique constraint ""gkp_new_pkey"" DETAIL: Key (instrument, version_id, source_mkp, akp_element, tsg_id, gkp_version)=(CGSTA17, V_1FF27CAAF1293DA6, CGSTA17_S37_SS1#TEXT, M_ROFOSD_A_PIRP, TSG11_01, 1) already exists.",0,FAILED
+2026-11-20 12:13:46,CGSTA17,CGSTA17_S39_SS1,ALL,W4,finished on a later run,0,DONE
+2026-11-20 12:16:38,CGSTA17,CGSTA17_S37_SS1,ALL,W1,finished on a later run,0,DONE
+2026-11-20 13:21:12,CGSTA17,CGSTA17,IKP,,"OperationalError: connection to server at ""32.201.165.32"", port 5432 failed: Connection refused (0x0000274D/10061) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-20 13:43:25,CGSTA17,CGSTA17,IKP,,"OperationalError: connection to server at ""32.201.165.32"", port 5432 failed: Connection refused (0x0000274D/10061) Is the server running on that host and accepting TCP/IP connections?",0,FAILED
+2026-11-20 15:37:31,CGSTA17,CGSTA17,IKP,,"OperationalError: connection to server at ""32.201.165.32"", port 5432 failed: FATAL: password authentication failed for user ""darp_admin""",0,FAILED
+2026-11-20 15:39:57,CGSTA17,CGSTA17,IKP,,"OperationalError: connection to server at ""32.201.165.32"", port 5432 failed: FATAL: password authentication failed for user ""subash""",0,FAILED
+2026-11-20 15:40:48,CGSTA17,CGSTA17,IKP,,InsufficientPrivilege: permission denied for database darp,0,FAILED
+2026-11-20 15:40:51,CGSTA17,CGSTA17,MKP_LOAD,,"UndefinedTable: relation ""knowledge_breakdown.ikp_versions"" does not exist LINE 1: ...ELECT version_no, pdf_sha256, parser_version FROM ""knowledge... ^",0,FAILED
+2026-11-20 15:50:29,CGSTA17,CGSTA17,IKP,,InsufficientPrivilege: permission denied for database darp,0,FAILED
+2026-11-20 15:50:32,CGSTA17,CGSTA17,MKP_LOAD,,"UndefinedTable: relation ""knowledge_breakdown.ikp_versions"" does not exist LINE 1: ...ELECT version_no, pdf_sha256, parser_version FROM ""knowledge... ^",0,FAILED
+2026-11-20 16:05:19,CGSTA17,CGSTA17,IKP,,"InsufficientPrivilege: must be owner of view v_molecule_elements CONTEXT: SQL statement ""DROP VIEW IF EXISTS knowledge_breakdown.v_molecule_elements CASCADE"" PL/pgSQL function inline_code_block line 9 at EXECUTE",0,FAILED
+2026-11-20 16:12:32,CGSTA17,CGSTA17,IKP,,"OperationalError: connection to server at ""32.201.165.32"", port 5432 failed: FATAL: password authentication failed for user ""darp_admin""",0,FAILED
+2026-11-20 16:17:10,CGSTA17,CGSTA17,IKP,,"InsufficientPrivilege: must be owner of view v_molecule_elements CONTEXT: SQL statement ""DROP VIEW IF EXISTS knowledge_breakdown.v_molecule_elements CASCADE"" PL/pgSQL function inline_code_block line 9 at EXECUTE",0,FAILED
+2026-11-20 16:23:18,CGSTA17,CGSTA17,IKP,,InsufficientPrivilege: permission denied for database law_validation,0,FAILED
+2026-11-20 16:23:34,CGSTA17,CGSTA17,MKP_LOAD,,InsufficientPrivilege: permission denied for database law_validation,0,FAILED
+2026-11-20 16:54:52,CGSTA17,CGSTA17_S37_SS1_P1,RUN,W2,"OperationalError: connection to server at ""32.201.165.32"", port 5432 failed: FATAL: too many connections for role ""subash""",0,FAILED
+2026-11-20 16:54:52,CGSTA17,CGSTA17_S39_SS1_P1,RUN,W6,"OperationalError: connection to server at ""32.201.165.32"", port 5432 failed: FATAL: too many connections for role ""subash""",0,FAILED
+2026-11-20 16:54:52,CGSTA17,CGSTA17_S39_SS1,RUN,W7,"OperationalError: connection to server at ""32.201.165.32"", port 5432 failed: FATAL: too many connections for role ""subash""",0,FAILED
+2026-11-20 16:54:58,CGSTA17,CGSTA17_S37_SS1_P2,RUN,W3,"OperationalError: connection to server at ""32.201.165.32"", port 5432 failed: FATAL: too many connections for role ""subash""",0,FAILED
+2026-11-20 16:54:59,CGSTA17,CGSTA17_S37_SS1_P3,RUN,W4,"OperationalError: connection to server at ""32.201.165.32"", port 5432 failed: FATAL: too many connections for role ""subash""",0,FAILED
+2026-11-20 16:55:02,CGSTA17,CGSTA17_S37_SS1,RUN,W1,"OperationalError: connection to server at ""32.201.165.32"", port 5432 failed: FATAL: too many connections for role ""subash""",0,FAILED
+2026-11-20 17:27:26,CGSTA17,CGSTA17,MKP_LOAD,,"UndefinedObject: type ""vector"" does not exist LINE 1: ... type text, element text, results text, embedding vector, ve... ^",0,FAILED
+2026-11-20 19:08:56,CGSTA17,CGSTA17,IKP,,"OperationalError: connection to server at ""32.201.165.32"", port 5432 failed: FATAL: password authentication failed for user ""darp_admin""",0,FAILED
+2026-11-20 19:44:29,CGSTA17,CGSTA17,MKP_LOAD,,"UndefinedObject: type ""vector"" does not exist LINE 1: ... type text, element text, results text, embedding vector, ve... ^",0,FAILED
+2026-11-20 19:49:23,CGSTA17,CGSTA17,MKP_LOAD,,"UndefinedObject: type ""vector"" does not exist LINE 1: ... type text, element text, results text, embedding vector, ve... ^",0,FAILED
+2026-11-21 13:13:31,CGSTA17,CGSTA17_S37_SS1_P3,ALL,W3,finished on a later run,0,DONE
+2026-11-21 13:21:42,CGSTA17,CGSTA17_S37_SS1_P1,ALL,W2,finished on a later run,0,DONE
+2026-11-21 13:28:13,CGSTA17,CGSTA17_S37_SS1_P2,ALL,W3,finished on a later run,0,DONE
+2026-11-21 13:32:26,CGSTA17,CGSTA17_S37_SS1,ALL,W1,finished on a later run,0,DONE
+2026-11-21 13:34:13,CGSTA17,CGSTA17_S39_SS1_P1,ALL,W6,finished on a later run,0,DONE
+2026-11-21 13:34:36,CGSTA17,CGSTA17_S39_SS1,ALL,W5,finished on a later run,0,DONE
