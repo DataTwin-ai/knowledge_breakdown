@@ -26,7 +26,7 @@
   },
   "scope": {
     "ask_user_input": false,
-    "default": ["section 37(1)", "section 39(1)"]
+    "default": ["section 7(2)"]
   },
   "workers": {
     "_about": "Worker pool: how many units run at the same time, and how many LLM calls each provider may have open at once.",

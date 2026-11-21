@@ -37,6 +37,8 @@ class Snapshot:
     definitions: List[dict] = field(default_factory=list)
     # bug list C1: outside-document parts a law needs (mkp_ref.source_key) - the citing atom is wired to them
     references: List[dict] = field(default_factory=list)
+    # 2026-11-21: self references (mkp_ref scope SELF): the words a law used ("sub-section (1)") and the key they mean
+    self_refs: List[dict] = field(default_factory=list)
 
     def digest(self) -> str:
         return hashlib.sha256(json.dumps(asdict(self), sort_keys=True, default=str).encode("utf-8")).hexdigest()
@@ -123,5 +125,11 @@ def from_db(conn, schema: str, tables: Dict[str, str], instruments: List[str]) -
             conn, sql.SQL("SELECT mkp_element, ref_id, mention, relation, source_key FROM {} WHERE scope='CROSS' "
                           "AND COALESCE(source_key, '') <> ''").format(_t(schema, tables["ref_link"])))]
     except Exception:                                    # no reference table yet
+        conn.rollback()
+    try:                                                 # 2026-11-21: "sub-section (1)" -> CGSTA17_S7_SS1 (overrides)
+        s.self_refs = [dict(zip(("source_mkp", "mention", "target_key"), r)) for r in _rows(
+            conn, sql.SQL("SELECT mkp_element, mention, target_key FROM {} WHERE scope='SELF' "
+                          "AND COALESCE(target_key, '') <> ''").format(_t(schema, tables["ref_link"])))]
+    except Exception:
         conn.rollback()
     return s

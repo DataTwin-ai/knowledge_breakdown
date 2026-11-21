@@ -3,45 +3,54 @@
 name: TSG05_05 Tax period & reporting period - GOVERNANCE MASTER rulebook
 version: TSG05_05
 facts:
-  F_NCD2:
-    name: Notified Class Description
+  F_MATP:
+    name: Months After Tax Period
+    type: AMOUNT
+    tier: T1
+  F_NRB:
+    name: Notification Recommending Body
+    type: CODE
+    options:
+    - COUNCIL
+    - OTHER
+    - NONE_STATED
+    tier: T1
+  F_NCD:
+    name: Notification Class Description
     type: TEXT
     tier: T1
   F_PPD:
-    name: Person Profile Data
+    name: Person Profile Details
     type: TEXT
-    tier: T1
-  F_RPB:
-    name: Return Period Basis
+    tier: T0
+  F_NRFF:
+    name: Notified Return Filing Frequency
     type: CODE
     options:
-    - QUARTER_OR_PART
+    - QUARTERLY
+    - MONTHLY
     - OTHER
-    - UNKNOWN
     tier: T1
-  F_NCT:
-    name: Notified Conditions Text
-    type: TEXT
-    tier: T1
-  F_NOCR:
-    name: Notification On Council Recommendation
+  F_NSAC:
+    name: Notification Specifies Any Condition
     type: BOOLEAN
     tier: T1
-  F_RPS:
-    name: Registered Person Status
-    type: CODE
-    options:
-    - NOT_REGISTERED
-    - REGISTERED
-    - UNKNOWN
+  F_CTIN:
+    name: Conditions Text In Notification
+    type: TEXT
+    tier: T1
+  F_PCR:
+    name: Person Compliance Records
+    type: TEXT
     tier: T0
-  F_RPB2:
-    name: Return Period Basis
+  F_PRS:
+    name: Person Registration Status
     type: CODE
     options:
-    - CALENDAR_MONTH_OR_PART
-    - OTHER
-    - UNKNOWN
+    - CANCELLED
+    - REGISTERED
+    - SUSPENDED
+    - UNREGISTERED
     tier: T0
   F_TPOR:
     name: Tax Period Of Return
@@ -52,134 +61,140 @@ facts:
     type: DATE
     tier: T0
 predicates:
-  M_GPTNQR_A_GNCOP:
-    statement: The Government has exercised its power (may) to notify a certain class of registered persons
+  M_FODRP_A_FISM:
+    statement: The details are furnished during the month succeeding the tax period
     order: LOW
-    rule: F_NCD2 IS_SET
+    rule: F_MATP = 1
     handler: python
-  M_GPTNQR_A_PFWNC:
-    statement: The person falls within the certain class of registered persons notified by the Government
-    order: HIGH
-    interpretation: Does the person, as shown by the profile data, fall within the class description given in the notification?
-      Only the notified class is covered, not all registered persons.
-    grounding:
-    - F_NCD2
-    - F_PPD
-    handler: light
-  M_GPTNQR_A_NPQR:
-    statement: The notified class shall furnish a return for every quarter or part thereof
+  M_GPTNQR_A_NOCR:
+    statement: The Government's notification of the class of registered persons is made on the recommendations of the Council
     order: LOW
-    rule: F_RPB = 'QUARTER_OR_PART'
+    rule: F_NRB = 'COUNCIL'
     handler: python
-  M_GPTNQR_A_NCAS:
-    statement: The person satisfies such conditions and restrictions, if any, as are specified in the notification, to which
-      the quarterly return requirement is subject
+  M_GPTNQR_A_PINC:
+    statement: The person belongs to a certain class of registered persons notified by the Government
     order: HIGH
-    interpretation: Read the conditions and restrictions text of the notification. If it specifies none, nothing needs to
-      be met. Otherwise, do the person's records show that the person meets each condition and restriction listed?
+    interpretation: Does the description of the class in the notification cover this person, given the person's registration
+      and return profile details?
     grounding:
-    - F_NCT
+    - F_NCD
     - F_PPD
     handler: heavy
-  M_NRCCOS_A_NOCR:
-    statement: The Government specifies the category of supply by notification issued on the recommendations of the Council
+  M_GPTNQR_A_NREQ:
+    statement: The notified persons shall furnish a return for every quarter or part thereof
     order: LOW
-    rule: F_NOCR = TRUE
+    rule: F_NRFF = 'QUARTERLY'
     handler: python
-  M_ROFOSD_A_PIRP:
-    statement: The person furnishing the details of outward supplies is a registered person.
+  M_GPTNQR_A_NNCS:
+    statement: The notification specifies no condition or restriction on the quarterly return obligation
     order: LOW
-    rule: F_RPS = 'REGISTERED'
+    rule: F_NSAC = FALSE
     handler: python
-  M_FORBRP_A_RFCMOP:
-    statement: The return is furnished for every calendar month or part thereof
-    order: LOW
-    rule: F_RPB2 = 'CALENDAR_MONTH_OR_PART'
-    handler: python
-  M_FOSD_A_SEDTP:
-    statement: The outward supplies were effected during a tax period and the details relate to that tax period
+  M_GPTNQR_A_NCSBP:
+    statement: The quarterly return obligation is subject to such conditions and restrictions as may be specified in the notification,
+      and the person satisfies each condition and restriction so specified
     order: HIGH
-    interpretation: Were the outward supplies furnished effected during the tax period to which the furnished details relate?
+    interpretation: Weighing the conditions and restrictions as written in the notification against the person's records,
+      is each specified condition and restriction satisfied by this person?
+    grounding:
+    - F_CTIN
+    - F_PCR
+    handler: heavy
+  M_FODRP_A_FIRP:
+    statement: The person furnishing the details is a registered person
+    order: LOW
+    rule: F_PRS = 'REGISTERED'
+    handler: python
+  M_RPFMR_A_RCCMOP:
+    statement: The return is furnished for every calendar month or part thereof
+    order: HIGH
+    interpretation: Does the tax period of the return cover a calendar month or a part of a calendar month?
     grounding:
     - F_TPOR
     handler: light
 groups:
-  M_GPTNQR_G_VNOC:
-    name: Valid Notification Of Class
+  M_GPTNQR_G_RPINC:
+    name: Registered Person In Notified Class
     logic: ALL
     members:
-    - M_GPTNQR_A_GNCOP
-    - M_NRCCOS_A_NOCR
-    description: The Government has notified a class of registered persons and the notification was made on the recommendations
-      of the Council.
+    - M_FODRP_A_FIRP
+    - M_GPTNQR_A_PINC
+    description: The person must be a registered person and must belong to the class notified by the Government.
+  M_GPTNQR_G_NCSOA:
+    name: Notified Conditions Satisfied Or Absent
+    logic: ANY
+    members:
+    - M_GPTNQR_A_NNCS
+    - M_GPTNQR_A_NCSBP
+    description: Either the notification specifies no condition or restriction, or the person satisfies the conditions and
+      restrictions the notification specifies.
 outcomes:
-  M_GPTNQR_LE_QROA:
-    outcome: QUARTERLY_RETURN_OBLIGATION_ARISES
-    expr: M_GPTNQR_G_VNOC AND M_ROFOSD_A_PIRP AND M_GPTNQR_A_PFWNC AND M_GPTNQR_A_NPQR AND M_GPTNQR_A_NCAS
+  M_FODRP_LE_FISM:
+    outcome: FURNISHED_IN_SUCCEEDING_MONTH
+    expr: M_FODRP_A_FISM
+    module: M_FODRP
+    description: The details are furnished during the month succeeding the tax period (Section 37(1), proviso, part of the
+      law)
+  M_GPTNQR_LE_QRR:
+    outcome: QUARTERLY_RETURN_REQUIRED
+    expr: M_GPTNQR_A_NOCR AND M_GPTNQR_G_RPINC AND M_GPTNQR_A_NREQ AND M_GPTNQR_G_NCSOA
     module: M_GPTNQR
-    description: A registered person in a class notified by the Government on the Council's recommendation must furnish a
-      return for every quarter or part thereof, subject to the conditions and restrictions specified in the notification.
-  M_GPTNQR_LE_PFWNC:
-    outcome: TAXABLE_PERSON_IN_NOTIFIED_CLASS
-    expr: M_GPTNQR_A_PFWNC
-    module: M_CEOFTL
-    description: The person falls within the certain class of registered persons notified by the Government (Section 37(1),
-      second proviso, part of the law)
-  M_FORBRP_LE_RFCMOP:
-    outcome: RETURN_FOR_CALENDAR_MONTH_OR_PART
-    expr: M_FORBRP_A_RFCMOP
-    module: M_FORBRP
+    description: A registered person in a class notified on Council recommendation must furnish a return for every quarter
+      or part thereof, subject to the notified conditions and restrictions.
+  M_RPFMR_LE_RCCMOP:
+    outcome: RETURN_COVERS_CALENDAR_MONTH_OR_PART
+    expr: M_RPFMR_A_RCCMOP
+    module: M_RPFMR
     description: The return is furnished for every calendar month or part thereof (Section 39(1), part of the law)
-  M_FOSD_LE_SEDTP:
-    outcome: SUPPLIES_EFFECTED_DURING_TAX_PERIOD
-    expr: M_FOSD_A_SEDTP
-    module: M_FOSD
-    description: The outward supplies were effected during a tax period and the details relate to that tax period (Section
-      37(1), part of the law)
+  M_GPTNQR_LE_NOCR:
+    outcome: NOTIFIED_ON_COUNCIL_RECOMMENDATION
+    expr: M_GPTNQR_A_NOCR
+    module: M_NGANGNS
+    description: The Government's notification of the class of registered persons is made on the recommendations of the Council
+      (Section 7(2), part of the law)
 products:
-  M_GPTNQR_PD_QROA:
-    statement: A registered person in a class notified by the Government on the Council's recommendation must furnish a return
-      for every quarter or part thereof, subject to the conditions and restrictions specified in the notification.
-  M_GPTNQR_PD_PFWNC:
-    statement: The taxable person falls within the class of taxable persons specified in the notification for which the time
-      limit is extended
-  M_FORBRP_PD_RFCMOP:
+  M_FODRP_PD_FISM:
+    statement: The details are furnished during the month succeeding the tax period
+  M_GPTNQR_PD_QRR:
+    statement: A registered person in a class notified on Council recommendation must furnish a return for every quarter or
+      part thereof, subject to the notified conditions and restrictions.
+  M_RPFMR_PD_RCCMOP:
     statement: The return is furnished for every calendar month or part thereof
-  M_FOSD_PD_SEDTP:
-    statement: The outward supplies were effected during a tax period and the details relate to that tax period
+  M_GPTNQR_PD_NOCR:
+    statement: The notification is made by the Government on the recommendations of the Council.
 compounds:
+- id: C_FODRP
+  question: The details are furnished during the month succeeding the tax period? (Section 37(1), proviso)
+  includes:
+  - M_FODRP_LE_FISM
+  produces:
+  - product: M_FODRP_PD_FISM
+    from:
+    - M_FODRP_LE_FISM
 - id: C_GPTNQR
   question: 'Section 39(1), proviso: Government Power To Notify Quarterly Returns?'
   includes:
-  - M_GPTNQR_LE_QROA
+  - M_GPTNQR_LE_QRR
   produces:
-  - product: M_GPTNQR_PD_QROA
+  - product: M_GPTNQR_PD_QRR
     from:
-    - M_GPTNQR_LE_QROA
-- id: C_CEOFTL
-  question: The person falls within the certain class of registered persons notified by the Government? (Section 37(1), second
-    proviso)
-  includes:
-  - M_GPTNQR_LE_PFWNC
-  produces:
-  - product: M_GPTNQR_PD_PFWNC
-    from:
-    - M_GPTNQR_LE_PFWNC
-- id: C_FORBRP
+    - M_GPTNQR_LE_QRR
+- id: C_RPFMR
   question: The return is furnished for every calendar month or part thereof? (Section 39(1))
   includes:
-  - M_FORBRP_LE_RFCMOP
+  - M_RPFMR_LE_RCCMOP
   produces:
-  - product: M_FORBRP_PD_RFCMOP
+  - product: M_RPFMR_PD_RCCMOP
     from:
-    - M_FORBRP_LE_RFCMOP
-- id: C_FOSD
-  question: The outward supplies were effected during a tax period and the details relate to that tax period? (Section 37(1))
+    - M_RPFMR_LE_RCCMOP
+- id: C_NGANGNS
+  question: The Government's notification of the class of registered persons is made on the recommendations of the Council?
+    (Section 7(2))
   includes:
-  - M_FOSD_LE_SEDTP
+  - M_GPTNQR_LE_NOCR
   produces:
-  - product: M_FOSD_PD_SEDTP
+  - product: M_GPTNQR_PD_NOCR
     from:
-    - M_FOSD_LE_SEDTP
+    - M_GPTNQR_LE_NOCR
 time:
   law_date: F_DOI

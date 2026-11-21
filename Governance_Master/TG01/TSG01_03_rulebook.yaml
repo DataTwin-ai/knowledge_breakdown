@@ -1,0 +1,926 @@
+# GOVERNANCE MASTER TSG01_03 Neither supply (Schedule III) (TG01 Supply & Taxability)
+# LAW ARC - 16 laws - status APPROVED
+name: TSG01_03 Neither supply (Schedule III) - GOVERNANCE MASTER rulebook
+version: TSG01_03
+facts:
+  F_AUT:
+    name: Activity Undertaker Type
+    type: CODE
+    options:
+    - CENTRAL_GOVT
+    - STATE_GOVT
+    - LOCAL_AUTHORITY
+    - OTHER
+    tier: T1
+  F_DOTA:
+    name: Description Of The Activity
+    type: TEXT
+    tier: T1
+  F_ACBN:
+    name: Activity Covered By Notification
+    type: BOOLEAN
+    tier: T1
+  F_NRB:
+    name: Notification Recommending Body
+    type: CODE
+    options:
+    - COUNCIL
+    - OTHER
+    - NONE_STATED
+    tier: T1
+  F_PSS:
+    name: Property Sale Subject
+    type: CODE
+    options:
+    - LAND
+    - BUILDING
+    - LAND_AND_BUILDING
+    - OTHER
+    tier: T1
+  F_DOAOT:
+    name: Description Of Activity Or Transaction
+    type: TEXT
+    tier: T1
+  F_PRR:
+    name: Provider Recipient Relation
+    type: CODE
+    options:
+    - EMPLOYEE_EMPLOYER
+    - CONTRACTOR_CLIENT
+    - RELATED_PERSONS
+    - DISTINCT_PERSONS
+    - OTHER
+    tier: T1
+  F_SKOT:
+    name: Supply Kind Of Transaction
+    type: CODE
+    options:
+    - BOTH
+    - GOODS
+    - SERVICES
+    tier: T1
+  F_SEC:
+    name: Service Employment Context
+    type: CODE
+    options:
+    - IN_COURSE_OF_EMPLOYMENT
+    - IN_RELATION_TO_EMPLOYMENT
+    - NOT_RELATED_TO_EMPLOYMENT
+    tier: T1
+  F_PBR:
+    name: Person Body Role
+    type: CODE
+    options:
+    - CHAIRPERSON
+    - MEMBER
+    - DIRECTOR
+    - OTHER
+    tier: T1
+  F_BEA:
+    name: Body Establishing Authority
+    type: CODE
+    options:
+    - CENTRAL_GOVT
+    - STATE_GOVT
+    - LOCAL_AUTHORITY
+    - OTHER
+    tier: T1
+  F_PDEBC:
+    name: Person Deemed Employee Before Commencement
+    type: BOOLEAN
+    tier: T1
+  F_PEO:
+    name: Person Elected Office
+    type: CODE
+    options:
+    - MP
+    - STATE_LEGISLATURE_MEMBER
+    - PANCHAYAT_MEMBER
+    - MUNICIPAL_MEMBER
+    - OTHER_LOCAL_AUTHORITY_MEMBER
+    - NONE
+    tier: T1
+  F_PBT:
+    name: Provider Body Type
+    type: CODE
+    options:
+    - COURT
+    - TRIBUNAL
+    - OTHER
+    tier: T0
+  F_EL:
+    name: Establishing Law
+    type: TEXT
+    tier: T1
+  F_GWS:
+    name: Goods Warehousing Status
+    type: CODE
+    options:
+    - NOT_WAREHOUSED
+    - OTHER
+    - WAREHOUSED
+    tier: T0
+  F_HCS:
+    name: Home Clearance Status
+    type: CODE
+    options:
+    - BEFORE_CLEARANCE
+    - CLEARED_FOR_HOME_CONSUMPTION
+    - OTHER
+    tier: T1
+  F_PPH:
+    name: Person Post Held
+    type: CODE
+    options:
+    - CONSTITUTIONAL_POST
+    - OTHER_POST
+    - NONE
+    tier: T1
+  F_BD:
+    name: Body Designation
+    type: CODE
+    options:
+    - DISTRICT_COURT
+    - HIGH_COURT
+    - SUPREME_COURT
+    - OTHER_COURT
+    - TRIBUNAL
+    - OTHER_BODY
+    tier: T1
+  F_FOS:
+    name: Form Of Supply
+    type: CODE
+    options:
+    - SALE
+    - TRANSFER
+    - BARTER
+    - EXCHANGE
+    - LICENCE
+    - RENTAL
+    - LEASE
+    - DISPOSAL
+    - OTHER
+    tier: T1
+  F_SCS:
+    name: Supply Consideration Status
+    type: CODE
+    options:
+    - AGREED
+    - NONE
+    - PAID
+    tier: T1
+  F_SOOT:
+    name: Supply Origin Of Transaction
+    type: CODE
+    options:
+    - IMPORT
+    - DOMESTIC
+    - EXPORT
+    tier: T1
+  F_SCT:
+    name: Supply Consideration Type
+    type: CODE
+    options:
+    - MONEY
+    - NON_MONEY
+    - NONE
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_DOCFP2_A_BIDC:
+    statement: The body is a District Court, which the term court includes for the purposes of paragraph 2 of Schedule III
+    order: LOW
+    rule: F_BD = 'DISTRICT_COURT'
+    handler: python
+    valid_from: '2019-02-01'
+  M_DOCFP2_A_BIHC:
+    statement: The body is a High Court, which the term court includes for the purposes of paragraph 2 of Schedule III
+    order: LOW
+    rule: F_BD = 'HIGH_COURT'
+    handler: python
+    valid_from: '2019-02-01'
+  M_DOCFP2_A_BISC:
+    statement: The body is a Supreme Court, which the term court includes for the purposes of paragraph 2 of Schedule III
+    order: LOW
+    rule: F_BD = 'SUPREME_COURT'
+    handler: python
+    valid_from: '2019-02-01'
+  M_DOCFP2_A_BIOC:
+    statement: The body is a court other than a District Court, High Court or Supreme Court, which the open word includes
+      brings within the term court for the purposes of paragraph 2 of Schedule III
+    order: HIGH
+    interpretation: Is the body a court in its own right, other than a District Court, High Court or Supreme Court, so that
+      the open word includes brings it within the term court for paragraph 2 of Schedule III? This Explanation does not decide
+      whether a tribunal or other body is a court
+    grounding:
+    - F_BD
+    handler: heavy
+    valid_from: '2019-02-01'
+  M_MOWG_A_WGCM:
+    statement: For the purposes of paragraph 8 the expression 'warehoused goods' shall have the same meaning as assigned to
+      it in the Customs Act, 1962
+    order: HIGH
+    interpretation: Do the goods fall within the meaning of warehoused goods assigned in the Customs Act, 1962, given their
+      recorded warehousing status?
+    grounding:
+    - F_GWS
+    handler: heavy
+  M_NGANGNS_A_UBGB:
+    statement: The activity or transaction is undertaken by the Central Government, a State Government or any local authority.
+    order: LOW
+    rule: F_AUT IN ['CENTRAL_GOVT', 'STATE_GOVT', 'LOCAL_AUTHORITY']
+    handler: python
+  M_NGANGNS_A_EAPA:
+    statement: The Central Government, State Government or local authority is engaged in the activity or transaction as a
+      public authority.
+    order: HIGH
+    if_false: the activity is carried on other than as a public authority
+    interpretation: On the description of the activity, is the government body engaged in it as a public authority, rather
+      than in an ordinary commercial or private capacity?
+    grounding:
+    - F_DOTA
+    handler: heavy
+  M_NGANGNS_A_AINBG:
+    statement: The activity or transaction is one that may be notified by the Government and has been so notified.
+    order: LOW
+    rule: F_ACBN = TRUE
+    handler: python
+  M_GPTNQR_A_NOCR:
+    statement: The Government's notification of the class of registered persons is made on the recommendations of the Council
+    order: LOW
+    rule: F_NRB = 'COUNCIL'
+    handler: python
+  M_FBCMS_A_AIFS:
+    statement: The activity is a service of funeral, including transportation of the deceased.
+    order: HIGH
+    interpretation: Does the described activity constitute a service of funeral, with transportation of the deceased as part
+      of that service?
+    grounding:
+    - F_DOTA
+    handler: heavy
+  M_FBCMS_A_AIBS:
+    statement: The activity is a service of burial, including transportation of the deceased.
+    order: HIGH
+    interpretation: Does the described activity constitute a service of burial, with transportation of the deceased as part
+      of that service?
+    grounding:
+    - F_DOTA
+    handler: heavy
+  M_FBCMS_A_AICS:
+    statement: The activity is a service of crematorium, including transportation of the deceased.
+    order: HIGH
+    interpretation: Does the described activity constitute a service of crematorium, with transportation of the deceased as
+      part of that service?
+    grounding:
+    - F_DOTA
+    handler: heavy
+  M_FBCMS_A_AIMS:
+    statement: The activity is a service of mortuary, including transportation of the deceased.
+    order: HIGH
+    interpretation: Does the described activity constitute a service of mortuary, with transportation of the deceased as part
+      of that service?
+    grounding:
+    - F_DOTA
+    handler: heavy
+  M_SOLAB_A_TISOL:
+    statement: The transaction is a sale of land.
+    order: LOW
+    rule: F_PSS = 'LAND' OR F_PSS = 'LAND_AND_BUILDING'
+    handler: python
+  M_SOLAB_A_TISOB:
+    statement: The transaction is a sale of building.
+    order: LOW
+    rule: F_PSS = 'BUILDING' OR F_PSS = 'LAND_AND_BUILDING'
+    handler: python
+  M_SOLAB_A_BSSTSC:
+    statement: The sale of building is subject to clause (b) of paragraph 5 of Schedule II.
+    order: HIGH
+    interpretation: Does the sale of building described by the facts fall within clause (b) of paragraph 5 of Schedule II,
+      so that the neither supply treatment in this paragraph does not apply to it? The text of clause (b) is not loaded and
+      must not be supplied from memory.
+    grounding:
+    - F_PSS
+    - F_DOAOT
+    handler: heavy
+  M_ESTE_A_SBETE:
+    statement: The services are provided by an employee to the employer
+    order: LOW
+    rule: F_PRR = 'EMPLOYEE_EMPLOYER'
+    handler: python
+  M_ESTE_A_AIAS:
+    statement: The activity is a supply of services
+    order: LOW
+    rule: F_SKOT IN ['SERVICES', 'BOTH']
+    handler: python
+  M_ESTE_A_SIEC:
+    statement: The services are provided in the course of or in relation to the employee's employment
+    order: HIGH
+    interpretation: Are the services performed in the course of, or in relation to, the employee's employment with the employer,
+      as shown by the description of the activity?
+    grounding:
+    - F_SEC
+    - F_DOAOT
+    handler: heavy
+  M_DBGBM_A_DPAOH:
+    statement: The duties are performed by a person as a Chairperson, a Member or a Director
+    order: LOW
+    rule: F_PBR IN ['CHAIRPERSON', 'MEMBER', 'DIRECTOR']
+    handler: python
+  M_DBGBM_A_BEBG:
+    statement: The body in which the duties are performed is established by the Central Government, a State Government or
+      a local authority
+    order: LOW
+    rule: F_BEA IN ['CENTRAL_GOVT', 'STATE_GOVT', 'LOCAL_AUTHORITY']
+    handler: python
+  M_DBGBM_A_NDEBC:
+    statement: The person is not deemed as an employee before the commencement of this clause
+    order: LOW
+    rule: F_PDEBC = FALSE
+    handler: python
+  M_FOEM_A_AIMF:
+    statement: The activity is a function performed by the person as a Member of the listed body, in that capacity.
+    order: HIGH
+    interpretation: Is the described activity a function performed by the person as the elected Member of that body, rather
+      than a private or commercial activity?
+    grounding:
+    - F_DOTA
+    - F_PEO
+    handler: heavy
+  M_FOEM_A_PHEO:
+    statement: The person is a Member of Parliament, Member of a State Legislature, Member of a Panchayat, Member of a Municipality
+      or Member of another local authority.
+    order: LOW
+    rule: F_PEO IN ['MP', 'STATE_LEGISLATURE_MEMBER', 'PANCHAYAT_MEMBER', 'MUNICIPAL_MEMBER', 'OTHER_LOCAL_AUTHORITY_MEMBER']
+    handler: python
+  M_DBCPH_A_HOCP:
+    statement: The person performing the duties holds a post in pursuance of the provisions of the Constitution
+    order: HIGH
+    interpretation: Is the post held by this person one established in pursuance of the provisions of the Constitution, rather
+      than another post or no post?
+    grounding:
+    - F_PPH
+    handler: light
+  M_DBCPH_A_DPIC:
+    statement: The duties were performed by that person in that capacity, meaning as the holder of the constitutional post
+      and not in another personal or business role
+    order: HIGH
+    interpretation: Were the described duties performed by the holder in the capacity of the constitutional post, rather than
+      in a private or other capacity?
+    grounding:
+    - F_DOAOT
+    - F_PPH
+    handler: heavy
+  M_SBCOT_A_AIAS:
+    statement: The activity is a service rendered by a court or Tribunal
+    order: HIGH
+    if_false: the described activity is not a service
+    interpretation: Does the described activity consist of a service, as distinct from goods, rendered by the court or Tribunal?
+    grounding:
+    - F_DOTA
+    handler: light
+  M_SBCOT_A_PICOT:
+    statement: The services are provided by any court or Tribunal
+    order: HIGH
+    if_false: F_PBT is OTHER
+    interpretation: Is the body providing the service a court or a Tribunal, as opposed to any other body?
+    grounding:
+    - F_PBT
+    handler: light
+  M_SBCOT_A_CEUL:
+    statement: The court or Tribunal is established under any law for the time being in force
+    order: HIGH
+    if_false: the establishing law is not in force at the relevant time
+    interpretation: Is the court or Tribunal established under a law that is in force at the relevant time, so that the statement
+      is met? Missing establishing law gives UNKNOWN, not FALSE
+    grounding:
+    - F_EL
+    handler: heavy
+  M_ACOTLBG_A_AIAC:
+    statement: The activity or transaction is an actionable claim.
+    order: HIGH
+    interpretation: Does the described activity or transaction constitute an actionable claim as used in Schedule III paragraph
+      6?
+    grounding:
+    - F_DOAOT
+    handler: heavy
+  M_ACOTLBG_A_COTLBG:
+    statement: The actionable claim is other than lottery, betting and gambling.
+    order: HIGH
+    if_false: the actionable claim is in substance a lottery, betting or gambling claim
+    interpretation: Is the actionable claim in substance a lottery, betting or gambling claim, which would place it outside
+      the neither-supply treatment?
+    grounding:
+    - F_DOAOT
+    handler: heavy
+  M_SOWGBC_A_GAWG:
+    statement: The transaction is a supply of goods that are warehoused goods, as shown by the goods warehousing status
+    order: LOW
+    rule: F_GWS = 'WAREHOUSED'
+    handler: python
+  M_SOWGBC_A_SBHC:
+    statement: The supply of the goods is made before the goods are cleared for home consumption
+    order: LOW
+    rule: F_HCS = 'BEFORE_CLEARANCE'
+    handler: python
+  M_SIAFOS_A_SIAS:
+    statement: The supply takes the form of a sale of goods or services or both
+    order: LOW
+    rule: F_FOS = 'SALE'
+    handler: python
+  M_SIAFOS_A_SIAT:
+    statement: The supply takes the form of a transfer of goods or services or both
+    order: LOW
+    rule: F_FOS = 'TRANSFER'
+    handler: python
+  M_SIAFOS_A_SIAB:
+    statement: The supply takes the form of a barter of goods or services or both
+    order: LOW
+    rule: F_FOS = 'BARTER'
+    handler: python
+  M_SIAFOS_A_SIAE:
+    statement: The supply takes the form of an exchange of goods or services or both
+    order: LOW
+    rule: F_FOS = 'EXCHANGE'
+    handler: python
+  M_SIAFOS_A_SIALG:
+    statement: The supply takes the form of a licence of goods or services or both
+    order: LOW
+    rule: F_FOS = 'LICENCE'
+    handler: python
+  M_SIAFOS_A_SIAR:
+    statement: The supply takes the form of a rental of goods or services or both
+    order: LOW
+    rule: F_FOS = 'RENTAL'
+    handler: python
+  M_SIAFOS_A_SIAL:
+    statement: The supply takes the form of a lease of goods or services or both
+    order: LOW
+    rule: F_FOS = 'LEASE'
+    handler: python
+  M_SIAFOS_A_SIAD:
+    statement: The supply takes the form of a disposal of goods or services or both
+    order: LOW
+    rule: F_FOS = 'DISPOSAL'
+    handler: python
+  M_SIAFOS_A_SIAQF:
+    statement: The supply is another qualifying form of supply of goods or services or both, not one of the listed forms
+    order: HIGH
+    interpretation: Is this unlisted form of supply a form of supply of the same kind as sale, transfer, barter, exchange,
+      licence, rental, lease or disposal, given that the list is only illustrative?
+    grounding:
+    - F_FOS
+    - F_DOTA
+    handler: heavy
+  M_SIAFOS_A_SIOGOS:
+    statement: The supply is of goods or services or both
+    order: LOW
+    rule: F_SKOT IN ['GOODS', 'SERVICES', 'BOTH']
+    handler: python
+  M_SIAFOS_A_SIMFC:
+    statement: The supply is made for a consideration
+    order: LOW
+    rule: F_SCS = 'PAID'
+    handler: python
+  M_SIAFOS_A_SIAFC:
+    statement: The supply is agreed to be made for a consideration
+    order: LOW
+    rule: F_SCS = 'AGREED'
+    handler: python
+  M_SIAFOS_A_SBPIB:
+    statement: The supply is made by a person in the course or furtherance of business
+    order: HIGH
+    interpretation: Is the person making the supply doing so in the course or furtherance of business, judged from the description
+      of the activity?
+    grounding:
+    - F_DOTA
+    handler: heavy
+  M_IOSFC_A_TISI:
+    statement: The transaction is an import of services
+    order: HIGH
+    interpretation: Does the documented transaction amount to an import of services under the Act, given its supply origin
+      and whether the supply is of services?
+    grounding:
+    - F_SOOT
+    - F_SKOT
+    handler: light
+  M_IOSFC_A_IMFC:
+    statement: The import of services was made for a consideration
+    order: LOW
+    rule: F_SCT IN ['MONEY', 'NON_MONEY']
+    handler: python
+  M_SIAWC_A_ASISI:
+    statement: The activity is one of the activities specified in Schedule I.
+    order: HIGH
+    interpretation: Does the described activity fall within an entry of Schedule I, read with the Schedule entry wording
+    grounding:
+    - F_DOTA
+    handler: heavy
+  M_SIAWC_A_AMWC:
+    statement: The activity was made, or agreed to be made, without a consideration.
+    order: LOW
+    rule: F_SCS = 'NONE'
+    handler: python
+groups:
+  M_DOCFP2_G_CIR:
+    name: Court Inclusion Routes
+    logic: ANY
+    members:
+    - M_DOCFP2_A_BIDC
+    - M_DOCFP2_A_BIHC
+    - M_DOCFP2_A_BISC
+    - M_DOCFP2_A_BIOC
+    description: Any one listed court route or the other court route makes the body a court for paragraph 2
+  M_FBCMS_G_FBKA:
+    name: Funeral Burial Kind Alternatives
+    logic: ANY
+    members:
+    - M_FBCMS_A_AIFS
+    - M_FBCMS_A_AIBS
+    - M_FBCMS_A_AICS
+    - M_FBCMS_A_AIMS
+    description: Any one of the listed kinds of funeral, burial, crematorium or mortuary service
+  M_ESTE_G_ESC:
+    name: Employee Service Conditions
+    logic: ALL
+    members:
+    - M_ESTE_A_SBETE
+    - M_ESTE_A_AIAS
+    - M_ESTE_A_SIEC
+    description: 'All three conditions of the entry must hold: an employee-to-employer relationship, a services activity and
+      a link to employment.'
+  M_DBGBM_G_ODP:
+    name: Office Duty Pair
+    logic: ALL
+    members:
+    - M_DBGBM_A_DPAOH
+    - M_FOEM_A_AIMF
+    description: The person holds the listed office role and the activity is the duty performed in that capacity
+  M_DBCPH_G_CDT:
+    name: Constitutional Duty Test
+    logic: ALL
+    members:
+    - M_DBCPH_A_HOCP
+    - M_DBCPH_A_DPIC
+    description: Both the constitutional post and the capacity of performance must be satisfied
+  M_SBCOT_G_CSC:
+    name: Court Service Conditions
+    logic: ALL
+    members:
+    - M_SBCOT_A_AIAS
+    - M_SBCOT_A_PICOT
+    - M_SBCOT_A_CEUL
+    description: 'All conditions of the entry must be met together: service, provider is a court or Tribunal, and established
+      under law in force'
+  M_SOWGBC_G_WPCC:
+    name: Warehoused Pre Clearance Conditions
+    logic: ALL
+    members:
+    - M_SOWGBC_A_GAWG
+    - M_SOWGBC_A_SBHC
+    description: Both conditions must be met together; the recipient qualifier is not a condition.
+  M_ANGNS_A_ASISIII:
+    name: Any of the referred steps (M_ANGNS_A_ASISIII)
+    logic: ANY
+    members:
+    - M_ACOTLBG_PD_ACNS
+    - M_DBCPH_PD_NSO
+    - M_DBGBM_PD_NSOD
+    - M_ESTE_PD_ESNS
+    - M_FBCMS_PD_NSO
+    - M_FOEM_PD_MFNS
+    - M_SBCOT_PD_NSCS
+    - M_SOLAB_PD_LOBSO
+    - M_SOWGBC_PD_WGNS
+    description: TRUE when any step of the law this check refers to is TRUE
+  M_SIAFOS_G_SFA:
+    name: Supply Form Alternatives
+    logic: ANY
+    members:
+    - M_SIAFOS_A_SIAS
+    - M_SIAFOS_A_SIAT
+    - M_SIAFOS_A_SIAB
+    - M_SIAFOS_A_SIAE
+    - M_SIAFOS_A_SIALG
+    - M_SIAFOS_A_SIAR
+    - M_SIAFOS_A_SIAL
+    - M_SIAFOS_A_SIAD
+    - M_SIAFOS_A_SIAQF
+    description: Any one listed form or any other qualifying form of supply. The list after such as is illustrative and not
+      closed.
+  M_SIAFOS_G_MOAC:
+    name: Made Or Agreed Consideration
+    logic: ANY
+    members:
+    - M_SIAFOS_A_SIMFC
+    - M_SIAFOS_A_SIAFC
+    description: The supply is either made for a consideration or agreed to be made for a consideration. Both events are not
+      required.
+  M_IOSFC_G_IFCG:
+    name: Import For Consideration Group
+    logic: ALL
+    members:
+    - M_IOSFC_A_TISI
+    - M_IOSFC_A_IMFC
+    description: Both the import of services and its consideration are required for the inclusion
+  M_SIAWC_G_SAWC:
+    name: Schedule Activity Without Consideration
+    logic: ALL
+    members:
+    - M_SIAWC_A_ASISI
+    - M_SIAWC_A_AMWC
+    description: Both the Schedule I activity test and the nil consideration test must be met for this inclusion.
+outcomes:
+  M_DOCFP2_LE_BICFPT:
+    outcome: IS_COURT_FOR_PARA2
+    expr: M_DOCFP2_G_CIR
+    module: M_DOCFP2
+    description: The body is a court for paragraph 2 of Schedule III if any inclusion route is met, and the outcome applies
+      only within paragraph 2
+  M_MOWG_LE_WGMO:
+    outcome: WAREHOUSED_GOODS_MEANING_APPLIES
+    expr: M_MOWG_A_WGCM
+    module: M_MOWG
+    description: Warehoused goods take the Customs Act, 1962 meaning for paragraph 8
+  M_NGANGNS_LE_NANS:
+    outcome: NEITHER_GOODS_NOR_SERVICES
+    expr: M_NGANGNS_A_UBGB AND M_NGANGNS_A_EAPA AND M_NGANGNS_A_AINBG AND M_GPTNQR_A_NOCR
+    module: M_NGANGNS
+    description: When all four conditions hold, the activity or transaction shall be treated neither as a supply of goods
+      nor a supply of services, overriding sub-section (1).
+  M_FBCMS_LE_NSO:
+    outcome: NEITHER_SUPPLY_SCHIII_4
+    expr: M_FBCMS_G_FBKA
+    module: M_FBCMS
+    description: The activity is treated neither as a supply of goods nor a supply of services when it is one of the listed
+      funeral, burial, crematorium or mortuary services
+  M_SOLAB_LE_LOBSO:
+    outcome: NEITHER_SUPPLY
+    expr: M_SOLAB_A_TISOL OR (M_SOLAB_A_TISOB AND NOT M_SOLAB_A_BSSTSC)
+    module: M_SOLAB
+    description: The transaction is treated as neither supply of goods nor supply of services if it includes a sale of land,
+      or a sale of building that is not subject to clause (b) of paragraph 5 of Schedule II
+  M_ESTE_LE_ESNS:
+    outcome: NEITHER_SUPPLY
+    expr: M_ESTE_G_ESC
+    module: M_ESTE
+    description: The activity is treated as neither a supply of goods nor a supply of services when all employee service conditions
+      are met.
+  M_DBGBM_LE_NSOD:
+    outcome: NEITHER_SUPPLY
+    expr: M_DBGBM_G_ODP AND M_DBGBM_A_BEBG AND M_DBGBM_A_NDEBC
+    module: M_DBGBM
+    description: Office duties in a government-established body by a person not deemed an employee are treated neither as
+      a supply of goods nor services
+  M_FOEM_LE_MFNS:
+    outcome: NEITHER_SUPPLY
+    expr: M_FOEM_A_PHEO AND M_FOEM_A_AIMF
+    module: M_FOEM
+    description: The activity is treated neither as a supply of goods nor a supply of services when the person holds a listed
+      elected office and the activity is a function performed by that Member.
+  M_DBCPH_LE_NSO:
+    outcome: NEITHER_SUPPLY
+    expr: M_DBCPH_G_CDT
+    module: M_DBCPH
+    description: The duties are treated neither as a supply of goods nor as a supply of services
+  M_SBCOT_LE_NSCS:
+    outcome: NEITHER_SUPPLY_OF_GOODS_NOR_SERVICES
+    expr: M_SBCOT_G_CSC
+    module: M_SBCOT
+    description: Service by a court or Tribunal established under law is treated neither as a supply of goods nor a supply
+      of services
+  M_ACOTLBG_LE_ACNS:
+    outcome: NEITHER_SUPPLY
+    expr: M_ACOTLBG_A_AIAC AND M_ACOTLBG_A_COTLBG
+    module: M_ACOTLBG
+    description: Both conditions true gives neither supply of goods nor supply of services under Schedule III paragraph 6
+  M_SOWGBC_LE_WGNS:
+    outcome: NEITHER_SUPPLY_OF_GOODS_NOR_SERVICES
+    expr: M_SOWGBC_G_WPCC
+    module: M_SOWGBC
+    description: Outcome applies only when both atoms in the group are TRUE; the qualifier to any person adds no recipient
+      test.
+  M_ANGNS_LE_SIIINSO:
+    outcome: NEITHER_GOODS_NOR_SERVICES
+    expr: M_ANGNS_A_ASISIII
+    module: M_ANGNS
+    description: The activity or transaction is treated neither as a supply of goods nor as a supply of services when it is
+      specified in Schedule III, notwithstanding sub-section (1).
+  M_SIAFOS_LE_SIBC:
+    outcome: SUPPLY_INCLUDED
+    expr: M_SIAFOS_G_SFA AND M_SIAFOS_A_SIOGOS AND M_SIAFOS_G_MOAC AND M_SIAFOS_A_SBPIB
+    module: M_SIAFOS
+    description: The transaction is included in supply under Section 7(1)(a) when it is in a qualifying form, is of goods
+      or services or both, is made or agreed to be made for a consideration, and is by a person in the course or furtherance
+      of business.
+  M_IOSFC_LE_IOSI:
+    outcome: SUPPLY_INCLUDED
+    expr: M_IOSFC_G_IFCG
+    module: M_IOSFC
+    description: Import of services for a consideration is included in supply; the business test is not a member of this expression
+  M_SIAWC_LE_SIO:
+    outcome: SUPPLY_INCLUDED
+    expr: M_SIAWC_G_SAWC
+    module: M_SIAWC
+    description: The supply is included under this limb only when the Schedule I activity group is met.
+overrides:
+  IH_ANGNS_SIAFOS:
+    outcome: NEITHER_GOODS_NOR_SERVICES
+    expr: M_ANGNS_A_ASISIII
+    module: M_ANGNS
+    description: The activity or transaction is treated neither as a supply of goods nor as a supply of services when it is
+      specified in Schedule III, notwithstanding sub-section (1).
+  IH_NGANGNS_SIAFOS:
+    outcome: NEITHER_GOODS_NOR_SERVICES
+    expr: M_NGANGNS_A_UBGB AND M_NGANGNS_A_EAPA AND M_NGANGNS_A_AINBG AND M_GPTNQR_A_NOCR
+    module: M_NGANGNS
+    description: When all four conditions hold, the activity or transaction shall be treated neither as a supply of goods
+      nor a supply of services, overriding sub-section (1).
+  IH_ANGNS_IOSFC:
+    outcome: NEITHER_GOODS_NOR_SERVICES
+    expr: M_ANGNS_A_ASISIII
+    module: M_ANGNS
+    description: The activity or transaction is treated neither as a supply of goods nor as a supply of services when it is
+      specified in Schedule III, notwithstanding sub-section (1).
+  IH_NGANGNS_IOSFC:
+    outcome: NEITHER_GOODS_NOR_SERVICES
+    expr: M_NGANGNS_A_UBGB AND M_NGANGNS_A_EAPA AND M_NGANGNS_A_AINBG AND M_GPTNQR_A_NOCR
+    module: M_NGANGNS
+    description: When all four conditions hold, the activity or transaction shall be treated neither as a supply of goods
+      nor a supply of services, overriding sub-section (1).
+  IH_ANGNS_SIAWC:
+    outcome: NEITHER_GOODS_NOR_SERVICES
+    expr: M_ANGNS_A_ASISIII
+    module: M_ANGNS
+    description: The activity or transaction is treated neither as a supply of goods nor as a supply of services when it is
+      specified in Schedule III, notwithstanding sub-section (1).
+  IH_NGANGNS_SIAWC:
+    outcome: NEITHER_GOODS_NOR_SERVICES
+    expr: M_NGANGNS_A_UBGB AND M_NGANGNS_A_EAPA AND M_NGANGNS_A_AINBG AND M_GPTNQR_A_NOCR
+    module: M_NGANGNS
+    description: When all four conditions hold, the activity or transaction shall be treated neither as a supply of goods
+      nor a supply of services, overriding sub-section (1).
+products:
+  M_DOCFP2_PD_BICFPT:
+    statement: The body is a court for paragraph 2 of Schedule III if any inclusion route is met, and the outcome applies
+      only within paragraph 2
+  M_MOWG_PD_WGMO:
+    statement: Warehoused goods take the Customs Act, 1962 meaning for paragraph 8
+  M_NGANGNS_PD_NANS:
+    statement: When all four conditions hold, the activity or transaction shall be treated neither as a supply of goods nor
+      a supply of services, overriding sub-section (1).
+  M_FBCMS_PD_NSO:
+    statement: The activity is treated neither as a supply of goods nor a supply of services when it is one of the listed
+      funeral, burial, crematorium or mortuary services
+  M_SOLAB_PD_LOBSO:
+    statement: The transaction is treated as neither supply of goods nor supply of services if it includes a sale of land,
+      or a sale of building that is not subject to clause (b) of paragraph 5 of Schedule II
+  M_ESTE_PD_ESNS:
+    statement: The activity is treated as neither a supply of goods nor a supply of services when all employee service conditions
+      are met.
+  M_DBGBM_PD_NSOD:
+    statement: Office duties in a government-established body by a person not deemed an employee are treated neither as a
+      supply of goods nor services
+  M_FOEM_PD_MFNS:
+    statement: The activity is treated neither as a supply of goods nor a supply of services when the person holds a listed
+      elected office and the activity is a function performed by that Member.
+  M_DBCPH_PD_NSO:
+    statement: The duties are treated neither as a supply of goods nor as a supply of services
+  M_SBCOT_PD_NSCS:
+    statement: Service by a court or Tribunal established under law is treated neither as a supply of goods nor a supply of
+      services
+  M_ACOTLBG_PD_ACNS:
+    statement: Both conditions true gives neither supply of goods nor supply of services under Schedule III paragraph 6
+  M_SOWGBC_PD_WGNS:
+    statement: Outcome applies only when both atoms in the group are TRUE; the qualifier to any person adds no recipient test.
+  M_ANGNS_PD_SIIINSO:
+    statement: The activity or transaction is treated neither as a supply of goods nor as a supply of services when it is
+      specified in Schedule III, notwithstanding sub-section (1).
+  M_SIAFOS_PD_SIBC:
+    statement: The transaction is included in supply under Section 7(1)(a) when it is in a qualifying form, is of goods or
+      services or both, is made or agreed to be made for a consideration, and is by a person in the course or furtherance
+      of business.
+  M_IOSFC_PD_IOSI:
+    statement: Import of services for a consideration is included in supply; the business test is not a member of this expression
+  M_SIAWC_PD_SIO:
+    statement: The supply is included under this limb only when the Schedule I activity group is met.
+compounds:
+- id: C_DOCFP2
+  question: 'Schedule III, paragraph 8(b), Explanation 1: Definition Of Court For Paragraph 2?'
+  includes:
+  - M_DOCFP2_LE_BICFPT
+  produces:
+  - product: M_DOCFP2_PD_BICFPT
+    from:
+    - M_DOCFP2_LE_BICFPT
+- id: C_MOWG
+  question: 'Schedule III, paragraph 8, clause (b), Explanation 2: Meaning Of Warehoused Goods?'
+  includes:
+  - M_MOWG_LE_WGMO
+  produces:
+  - product: M_MOWG_PD_WGMO
+    from:
+    - M_MOWG_LE_WGMO
+- id: C_FBCMS
+  question: 'Schedule III, entry 4: Funeral Burial Crematorium Mortuary Services?'
+  includes:
+  - M_FBCMS_LE_NSO
+  produces:
+  - product: M_FBCMS_PD_NSO
+    from:
+    - M_FBCMS_LE_NSO
+- id: C_SOLAB
+  question: 'Schedule III, paragraph 5: Sale Of Land And Building?'
+  includes:
+  - M_SOLAB_LE_LOBSO
+  produces:
+  - product: M_SOLAB_PD_LOBSO
+    from:
+    - M_SOLAB_LE_LOBSO
+- id: C_ESTE
+  question: 'Schedule III, entry 1: Employee Services To Employer?'
+  includes:
+  - M_ESTE_LE_ESNS
+  produces:
+  - product: M_ESTE_PD_ESNS
+    from:
+    - M_ESTE_LE_ESNS
+- id: C_SCHIII_EN3
+  question: 'Schedule III, paragraph 3: which clause applies?'
+  includes:
+  - M_DBGBM_LE_NSOD
+  - M_FOEM_LE_MFNS
+  - M_DBCPH_LE_NSO
+  produces:
+  - product: M_DBGBM_PD_NSOD
+    from:
+    - M_DBGBM_LE_NSOD
+  - product: M_FOEM_PD_MFNS
+    from:
+    - M_FOEM_LE_MFNS
+  - product: M_DBCPH_PD_NSO
+    from:
+    - M_DBCPH_LE_NSO
+- id: C_SBCOT
+  question: 'Schedule III, entry 2: Services By Court Or Tribunal?'
+  includes:
+  - M_SBCOT_LE_NSCS
+  produces:
+  - product: M_SBCOT_PD_NSCS
+    from:
+    - M_SBCOT_LE_NSCS
+- id: C_ACOTLBG
+  question: 'Schedule III paragraph 6: Actionable Claims Other Than Lottery Betting Gambling?'
+  includes:
+  - M_ACOTLBG_LE_ACNS
+  produces:
+  - product: M_ACOTLBG_PD_ACNS
+    from:
+    - M_ACOTLBG_LE_ACNS
+- id: C_SOWGBC
+  question: 'Schedule III, paragraph 8(a): Supply Of Warehoused Goods Before Clearance?'
+  includes:
+  - M_SOWGBC_LE_WGNS
+  produces:
+  - product: M_SOWGBC_PD_WGNS
+    from:
+    - M_SOWGBC_LE_WGNS
+- id: C_S7_SS2
+  question: 'Section 7(2): which clause applies?'
+  includes:
+  - M_NGANGNS_LE_NANS
+  - M_ANGNS_LE_SIIINSO
+  produces:
+  - product: M_NGANGNS_PD_NANS
+    from:
+    - M_NGANGNS_LE_NANS
+  - product: M_ANGNS_PD_SIIINSO
+    from:
+    - M_ANGNS_LE_SIIINSO
+- id: C_S7_SS1
+  question: 'Section 7(1): which clause applies?'
+  includes:
+  - M_SIAFOS_LE_SIBC
+  - M_IOSFC_LE_IOSI
+  - M_SIAWC_LE_SIO
+  produces:
+  - product: M_SIAFOS_PD_SIBC
+    from:
+    - M_SIAFOS_LE_SIBC
+  - product: M_IOSFC_PD_IOSI
+    from:
+    - M_IOSFC_LE_IOSI
+  - product: M_SIAWC_PD_SIO
+    from:
+    - M_SIAWC_LE_SIO
+  overrides:
+  - IH_ANGNS_SIAFOS
+  - IH_NGANGNS_SIAFOS
+  - IH_ANGNS_IOSFC
+  - IH_NGANGNS_IOSFC
+  - IH_ANGNS_SIAWC
+  - IH_NGANGNS_SIAWC
+time:
+  law_date: F_DOI

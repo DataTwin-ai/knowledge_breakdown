@@ -9,3 +9,4 @@ CGSTA17 | CGSTA17_S2_C18_SCe#TEXT | RuntimeError: Standard Judge output is not p
 CGSTA17 | CGSTA17_S2_C64#TEXT | RuntimeError: Standard Judge output is not parseable: Atom needs family in RESULTS: A_CTX_NOT_OVERRIDDEN
 CGSTA17 | CGSTA17_S2_C18_SCe#TEXT | RuntimeError: cannot schedule new futures after interpreter shutdown
 CGSTA17 | CGSTA17_S2_C76#TEXT | RuntimeError: cannot schedule new futures after interpreter shutdown
+CGSTA17 | CGSTA17_SCHIII_EN7#TEXT | RuntimeError: Standard Judge output is not parseable: Atom needs family in RESULTS: A_GOODS

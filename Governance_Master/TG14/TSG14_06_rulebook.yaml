@@ -1,0 +1,57 @@
+# GOVERNANCE MASTER TSG14_06 Statutory Interpretation of Definitions (TG14 Definitions & Effective Law)
+# LAW ARC - 1 laws - status APPROVED
+name: TSG14_06 Statutory Interpretation of Definitions - GOVERNANCE MASTER rulebook
+version: TSG14_06
+facts:
+  F_BD:
+    name: Body Designation
+    type: CODE
+    options:
+    - DISTRICT_COURT
+    - HIGH_COURT
+    - SUPREME_COURT
+    - OTHER_COURT
+    - TRIBUNAL
+    - OTHER_BODY
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_DOCFP2_A_BIOC:
+    statement: The body is a court other than a District Court, High Court or Supreme Court, which the open word includes
+      brings within the term court for the purposes of paragraph 2 of Schedule III
+    order: HIGH
+    interpretation: Is the body a court in its own right, other than a District Court, High Court or Supreme Court, so that
+      the open word includes brings it within the term court for paragraph 2 of Schedule III? This Explanation does not decide
+      whether a tribunal or other body is a court
+    grounding:
+    - F_BD
+    handler: heavy
+    valid_from: '2019-02-01'
+groups: {}
+outcomes:
+  M_DOCFP2_LE_BIOC:
+    outcome: BODY_IS_OTHER_COURT
+    expr: M_DOCFP2_A_BIOC
+    module: M_DOCFP2
+    description: The body is a court other than a District Court, High Court or Supreme Court, which the open word includes
+      brings within the term court for the purposes of paragraph 2 of Schedule III (Schedule III, paragraph 8(b), Explanation
+      1, part of the law)
+products:
+  M_DOCFP2_PD_BIOC:
+    statement: The body is a court other than a District Court, High Court or Supreme Court, which the open word includes
+      brings within the term court for the purposes of paragraph 2 of Schedule III
+compounds:
+- id: C_DOCFP2
+  question: The body is a court other than a District Court, High Court or Supreme Court, which the open word includes brings
+    within the term court for the purposes of paragraph 2 of Schedule III? (Schedule III, paragraph 8(b), Explanation 1)
+  includes:
+  - M_DOCFP2_LE_BIOC
+  produces:
+  - product: M_DOCFP2_PD_BIOC
+    from:
+    - M_DOCFP2_LE_BIOC
+time:
+  law_date: F_DOI

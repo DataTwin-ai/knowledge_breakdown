@@ -345,3 +345,9 @@
 2026-11-21 13:32:26,CGSTA17,CGSTA17_S37_SS1,ALL,W1,finished on a later run,0,DONE
 2026-11-21 13:34:13,CGSTA17,CGSTA17_S39_SS1_P1,ALL,W6,finished on a later run,0,DONE
 2026-11-21 13:34:36,CGSTA17,CGSTA17_S39_SS1,ALL,W5,finished on a later run,0,DONE
+2026-11-21 14:24:45,CGSTA17,CGSTA17_S7_SS1,MKP_GATE,W6,GateError: MKP GATE: judge did not return the seven-column table CLUSTER|TYPE|ELEMENT|MODEL_1|MODEL_2|FINAL|CONFIDENCE,0,SPLIT
+2026-11-21 14:28:11,CGSTA17,CGSTA17_SCHIII,MKP_GATE,W1,"GateError: MKP GATE: judge row is not seven columns: C_CGSTA17_SCHIII|MKP|CGSTA17_SCHIII_EN8_Cb#AMD1|concept: ""Amendment Inserting High-Sea Sales Entries",0,SPLIT
+2026-11-21 14:33:55,CGSTA17,CGSTA17_SCHIII_EN7#TEXT,AKP,W5,RuntimeError: Standard Judge output is not parseable: Atom needs family in RESULTS: A_GOODS,0,FAILED
+2026-11-21 14:33:55,CGSTA17,CGSTA17_SCHIII_EN7,AKP,W5,comparison FALSE for CGSTA17_SCHIII_EN7#TEXT (other MKPs of the unit saved),0,FAILED
+2026-11-21 14:36:56,CGSTA17,CGSTA17_SCHIII_EN8,MKP_GATE,W8,"GateError: MKP GATE: judge row is not seven columns: C_CGSTA17_SCHIII_EN8|MKP|CGSTA17_SCHIII_EN8_Cb#TEXT|concept: ""Supply Of Goods By Consignee Before Ho",0,SPLIT
+2026-11-21 14:41:46,CGSTA17,CGSTA17_SCHIII_EN8_Cb,MKP_GATE,W4,"GateError: MKP GATE: judge row is not seven columns: C_CGSTA17_SCHIII_EN8|MKP|CGSTA17_SCHIII_EN8_Cb#AMD1|concept: ""Amendment Inserting Supply By Consigne",0,SPLIT

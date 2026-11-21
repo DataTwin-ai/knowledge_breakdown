@@ -103,6 +103,21 @@ def _starts(key: str, prefix: str) -> bool:
     return key == prefix or key.startswith(prefix + "_")
 
 
+def lk_target(snap: Snapshot, b: "Bundle", lk: dict) -> str:
+    """2026-11-21 (bug 3): an LK target written as words ("sub-section (1)") -> the key the reference step saved for
+    those words in mkp_ref (CGSTA17_S7_SS1). A target that is already a key, or words with no single key, stay."""
+    t = rf(lk, "target").strip().strip('"')
+    if not t or KEY_RX.fullmatch(t):
+        return t
+    me, low = b.key.split("#")[0], t.lower()
+    rows = [r for r in getattr(snap, "self_refs", []) if str(r.get("source_mkp") or "").split("#")[0] == me]
+    hits = list(dict.fromkeys(r["target_key"] for r in rows if str(r.get("mention") or "").strip().lower() == low))
+    if not hits:
+        hits = list(dict.fromkeys(r["target_key"] for r in rows
+                                  if str(r.get("mention") or "").strip() and str(r["mention"]).strip().lower() in low))
+    return hits[0] if len(hits) == 1 else t
+
+
 # ---------------------------------------------------------------- 1. which MKPs go in
 
 def select(snap: Snapshot, bundles: "OrderedDict[str, Bundle]", tsg: str, cfg: dict, spine: dict,
@@ -206,13 +221,13 @@ def select(snap: Snapshot, bundles: "OrderedDict[str, Bundle]", tsg: str, cfg: d
                         add(h, f"REFERENCE {r.get('ref_id')} {part}", queue, level + 1)
         if "overrides" in follow:
             for lk in b.of("LK"):
-                rel, target = rf(lk, "relation").upper(), rf(lk, "target")
+                rel, target = rf(lk, "relation").upper(), lk_target(snap, b, lk)
                 if rel == "OVERRIDDEN_BY" and target:
                     for h in [k for k, x in bundles.items() if _starts(x.citation_key, target)]:
                         add(h, f"OVERRIDE {target}", queue, level + 1)
             for k, x in bundles.items():
                 for lk in x.of("LK"):
-                    if rf(lk, "relation").upper() == "OVERRIDES" and _starts(b.citation_key, rf(lk, "target")) and k != key:
+                    if rf(lk, "relation").upper() == "OVERRIDES" and _starts(b.citation_key, lk_target(snap, x, lk)) and k != key:
                         add(k, f"OVERRIDE {b.citation_key}", queue, level + 1)
         if "definitions" in follow and chosen.get(key) == "MEMBER":
             text = " ".join(rf(a, "statement") for a in b.of("A")).lower()
@@ -449,9 +464,18 @@ def build(snap: Snapshot, tsg: str, tsg_name: str, tg: str, tg_name: str, cfg: d
         # a clause naming its sibling ("referred to in clause (a) above") only describes it - it is not a
         # condition, and waiting for it would make the two clauses wait for each other
         mine = _clause_parent(bundles[me].citation_key)
+
+        def entry(owner: str) -> bool:
+            # 2026-11-21 (bug 1): "specified in Schedule III" means its entries - not its Explanations or definitions
+            # ("court" includes ..., "warehoused goods" means ...), unless the reference names that part itself
+            ck = bundles[owner].citation_key
+            if ck == ref:
+                return True
+            return not (re.search(r"_E\d+(_|$)", ck[len(ref):]) or bundles[owner].knowledge_type == "DEFINITION")
         return sorted(pid for pid, owner in product_owner.items()
                       if owner != me and _starts(bundles[owner].citation_key, ref)
-                      and not (mine and _clause_parent(bundles[owner].citation_key) == mine))
+                      and not (mine and _clause_parent(bundles[owner].citation_key) == mine)
+                      and entry(owner))
 
     def _outside_parts(a: dict, src: dict, me: str) -> List[str]:
         """Bug list C1: an atom that names an outside document ("Notification No. 13/2017", "as notified") is
@@ -476,6 +500,9 @@ def build(snap: Snapshot, tsg: str, tsg_name: str, tg: str, tg_name: str, cfg: d
         """'specified in Schedule I' and Schedule I's paragraphs are steps here: the check becomes ANY of their
         results, so the engine uses those steps instead of asking again."""
         refs = [r for r in rlist(src, "reference_keys") + rlist(a, "reference_keys") if r] + _outside_parts(a, src, me)
+        # 2026-11-21 (bug 2): a law inside Schedule III that names "Schedule III" points at its own document - its
+        # atom keeps its own check (an Explanation's "the body is a District Court" is not ANY of Schedule III)
+        refs = [r for r in refs if not _starts(bundles[me].citation_key, r)]
         pds = sorted({p for r in dict.fromkeys(refs) for p in _products_of(r, me)})
         if not pds:
             return False
@@ -693,9 +720,10 @@ def build(snap: Snapshot, tsg: str, tsg_name: str, tg: str, tg_name: str, cfg: d
             if other == key:
                 continue
             ob = od["bundle"]
-            rel = [(rf(lk, "relation").upper(), rf(lk, "target")) for lk in b.of("LK")]
+            rel = [(rf(lk, "relation").upper(), lk_target(snap, b, lk)) for lk in b.of("LK")]
             hit = any(r == "OVERRIDDEN_BY" and _starts(ob.citation_key, t) for r, t in rel) or \
-                any(rf(lk, "relation").upper() == "OVERRIDES" and _starts(b.citation_key, rf(lk, "target")) for lk in ob.of("LK"))
+                any(rf(lk, "relation").upper() == "OVERRIDES" and _starts(b.citation_key, lk_target(snap, ob, lk))
+                    for lk in ob.of("LK"))
             if hit:
                 src = next(iter(od["outcomes"].items()))
                 oid = new_id(f"IH_{ob.tag}_{b.tag}", ob, "OVERRIDE")

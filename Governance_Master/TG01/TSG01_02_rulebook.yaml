@@ -1,0 +1,62 @@
+# GOVERNANCE MASTER TSG01_02 Supply without consideration (Schedule I) (TG01 Supply & Taxability)
+# LAW ARC - 1 laws - status APPROVED
+name: TSG01_02 Supply without consideration (Schedule I) - GOVERNANCE MASTER rulebook
+version: TSG01_02
+facts:
+  F_DOTA:
+    name: Description Of The Activity
+    type: TEXT
+    tier: T1
+  F_SCS:
+    name: Supply Consideration Status
+    type: CODE
+    options:
+    - AGREED
+    - NONE
+    - PAID
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_SIAWC_A_ASISI:
+    statement: The activity is one of the activities specified in Schedule I.
+    order: HIGH
+    interpretation: Does the described activity fall within an entry of Schedule I, read with the Schedule entry wording
+    grounding:
+    - F_DOTA
+    handler: heavy
+  M_SIAWC_A_AMWC:
+    statement: The activity was made, or agreed to be made, without a consideration.
+    order: LOW
+    rule: F_SCS = 'NONE'
+    handler: python
+groups:
+  M_SIAWC_G_SAWC:
+    name: Schedule Activity Without Consideration
+    logic: ALL
+    members:
+    - M_SIAWC_A_ASISI
+    - M_SIAWC_A_AMWC
+    description: Both the Schedule I activity test and the nil consideration test must be met for this inclusion.
+outcomes:
+  M_SIAWC_LE_SIO:
+    outcome: SUPPLY_INCLUDED
+    expr: M_SIAWC_G_SAWC
+    module: M_SIAWC
+    description: The supply is included under this limb only when the Schedule I activity group is met.
+products:
+  M_SIAWC_PD_SIO:
+    statement: The supply is included under this limb only when the Schedule I activity group is met.
+compounds:
+- id: C_SIAWC
+  question: 'Section 7(1)(c): Schedule I Activities Without Consideration?'
+  includes:
+  - M_SIAWC_LE_SIO
+  produces:
+  - product: M_SIAWC_PD_SIO
+    from:
+    - M_SIAWC_LE_SIO
+time:
+  law_date: F_DOI
