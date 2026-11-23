@@ -126,7 +126,8 @@ class RefStore:
                 [fields[c] for c in cols] + [ref_id])
         self.conn.commit()
 
-    def pending(self, kinds: Iterable[str] = ("NOTIFICATION", "CIRCULAR", "AMENDING_ACT"), limit: int = 200) -> List[dict]:
+    def pending(self, kinds: Iterable[str] = ("NOTIFICATION", "CIRCULAR", "AMENDING_ACT", "ACT", "RULES", "OTHER_ACT"),
+                limit: int = 200) -> List[dict]:
         """Each outside document ONCE (ref_document has one row per document, however many laws cite it)."""
         with self.conn.cursor() as cur:
             cur.execute(sql.SQL("""SELECT ref_id, kind, title, number, year, series, link, status, mentions FROM {}

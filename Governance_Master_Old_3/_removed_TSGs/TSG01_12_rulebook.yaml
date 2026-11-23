@@ -1,0 +1,67 @@
+# GOVERNANCE MASTER TSG01_12 Food And Drink Composite Deeming Goods Scope (TG01 Supply & Taxability)
+# LAW ARC - 1 laws - status APPROVED
+name: TSG01_12 Food And Drink Composite Deeming Goods Scope - GOVERNANCE MASTER rulebook
+version: TSG01_12
+facts:
+  # ---- level 1: gate facts - if one is false, that law stops here
+  F_GCC:  # 1. 1 gate | 1 law(s)
+    name: Goods Consumption Category
+    type: CODE
+    options:
+    - FOOD
+    - OTHER_ARTICLE_FOR_HUMAN_CONSUMPTION
+    - DRINK_OTHER_THAN_LIQUOR
+    - ALCOHOLIC_LIQUOR_FOR_HUMAN_CONSUMPTION
+    - OTHER_GOODS
+    - UNDETERMINED
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_FADCSAS_A_GAFOA:
+    statement: The goods supplied are food or any other article for human consumption.
+    order: LOW
+    rule: F_GCC IN ['FOOD','OTHER_ARTICLE_FOR_HUMAN_CONSUMPTION']
+    handler: python
+  M_FADCSAS_A_GADNL:
+    statement: The goods supplied are any drink (other than alcoholic liquor for human consumption).
+    order: LOW
+    rule: F_GCC = 'DRINK_OTHER_THAN_LIQUOR'
+    handler: python
+groups: {}
+outcomes:
+  M_FADCSAS_LE_GAFOA:
+    outcome: GOODS_ARE_FOOD_OR_ARTICLE
+    expr: M_FADCSAS_A_GAFOA
+    module: M_FADCSAS
+    description: The goods supplied are food or any other article for human consumption. (Schedule II, paragraph 6, part of
+      the law)
+  M_FADCSAS_LE_GADNL:
+    outcome: GOODS_ARE_DRINK_NOT_LIQUOR
+    expr: M_FADCSAS_A_GADNL
+    module: M_FADCSAS
+    description: The goods supplied are any drink (other than alcoholic liquor for human consumption). (Schedule II, paragraph
+      6, part of the law)
+products:
+  M_FADCSAS_PD_GAFOA:
+    statement: The goods supplied are food or any other article for human consumption.
+  M_FADCSAS_PD_GADNL:
+    statement: The goods supplied are any drink (other than alcoholic liquor for human consumption).
+compounds:
+- id: C_FADCSAS
+  question: The goods supplied are food or any other article for human consumption; The goods supplied are any drink (other
+    than alcoholic liquor for human consumption)? (Schedule II, paragraph 6)
+  includes:
+  - M_FADCSAS_LE_GAFOA
+  - M_FADCSAS_LE_GADNL
+  produces:
+  - product: M_FADCSAS_PD_GAFOA
+    from:
+    - M_FADCSAS_LE_GAFOA
+  - product: M_FADCSAS_PD_GADNL
+    from:
+    - M_FADCSAS_LE_GADNL
+time:
+  law_date: F_DOI

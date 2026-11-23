@@ -1,0 +1,150 @@
+# GOVERNANCE MASTER TSG01_10 IT Software Service Deeming (Sch II para 5(d)) (TG01 Supply & Taxability)
+# LAW ARC - 2 laws - status NEEDS_REVIEW
+name: TSG01_10 IT Software Service Deeming (Sch II para 5(d)) - GOVERNANCE MASTER rulebook
+version: TSG01_10
+facts:
+  # ---- level 1: gate facts - if one is false, that law stops here
+  F_SAT:  # 1. 1 gate | 1 law(s)
+    name: Software Activity Type
+    type: CODE
+    options:
+    - DEVELOPMENT
+    - DESIGN
+    - PROGRAMMING
+    - CUSTOMISATION
+    - ADAPTATION
+    - UPGRADATION
+    - ENHANCEMENT
+    - IMPLEMENTATION
+    - OTHER
+    tier: T1
+  # ---- LAST: only heavy checks (free text) need these
+  F_DOTA:  # 2. LAST (heavy check only) | 1 law(s)
+    name: Description Of The Activity
+    type: TEXT
+    tier: T1
+  F_IPS:  # 3. LAST (heavy check only) | 1 law(s)
+    name: Intellectual Property Subject
+    type: CODE
+    options:
+    - INTELLECTUAL_PROPERTY_RIGHT
+    - OTHER_RIGHT
+    - UNDETERMINED
+    tier: T1
+  F_SK:  # 4. LAST (heavy check only) | 1 law(s) | asked only if M_ISDIS: F_SAT
+    name: Software Kind
+    type: CODE
+    options:
+    - INFORMATION_TECHNOLOGY_SOFTWARE
+    - OTHER_SOFTWARE
+    - NOT_SOFTWARE
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_TTOIPS_A_SIAIR:
+    statement: The right concerned in the activity is an intellectual property right of any kind.
+    order: HIGH
+    interpretation: Is the right transferred or made available for use an intellectual property right of any kind, and is
+      it not left undetermined by the documents?
+    grounding:
+    - F_IPS
+    - F_DOTA
+    handler: light
+  M_ISDIS_A_SDAP:
+    statement: The activity performed is development of information technology software
+    order: LOW
+    rule: F_SAT = 'DEVELOPMENT'
+    handler: python
+  M_ISDIS_A_SDAP2:
+    statement: The activity performed is design of information technology software
+    order: LOW
+    rule: F_SAT = 'DESIGN'
+    handler: python
+  M_ISDIS_A_SPAP:
+    statement: The activity performed is programming of information technology software
+    order: LOW
+    rule: F_SAT = 'PROGRAMMING'
+    handler: python
+  M_ISDIS_A_SCAP:
+    statement: The activity performed is customisation of information technology software
+    order: LOW
+    rule: F_SAT = 'CUSTOMISATION'
+    handler: python
+  M_ISDIS_A_SAAP:
+    statement: The activity performed is adaptation of information technology software
+    order: LOW
+    rule: F_SAT = 'ADAPTATION'
+    handler: python
+  M_ISDIS_A_SUAP:
+    statement: The activity performed is upgradation of information technology software
+    order: LOW
+    rule: F_SAT = 'UPGRADATION'
+    handler: python
+  M_ISDIS_A_SEAP:
+    statement: The activity performed is enhancement of information technology software
+    order: LOW
+    rule: F_SAT = 'ENHANCEMENT'
+    handler: python
+  M_ISDIS_A_SIAP:
+    statement: The activity performed is implementation of information technology software
+    order: LOW
+    rule: F_SAT = 'IMPLEMENTATION'
+    handler: python
+  M_ISDIS_A_SIIT:
+    statement: The software on which the listed activity is performed is information technology software
+    order: HIGH
+    interpretation: Is the software on which the activity is performed information technology software, as opposed to other
+      software or not software?
+    grounding:
+    - F_SK
+    handler: light
+groups:
+  M_ISDIS_G_LSAP:
+    name: Listed Software Activity Performed
+    logic: ANY
+    members:
+    - M_ISDIS_A_SDAP
+    - M_ISDIS_A_SDAP2
+    - M_ISDIS_A_SPAP
+    - M_ISDIS_A_SCAP
+    - M_ISDIS_A_SAAP
+    - M_ISDIS_A_SUAP
+    - M_ISDIS_A_SEAP
+    - M_ISDIS_A_SIAP
+    description: One of the eight namely activities is performed on the software
+outcomes:
+  M_TTOIPS_LE_SIAIR:
+    outcome: SUBJECT_IS_ANY_IP_RIGHT
+    expr: M_TTOIPS_A_SIAIR
+    module: M_TTOIPS
+    description: The right concerned in the activity is an intellectual property right of any kind. (Schedule II, paragraph
+      5, part of the law)
+  M_ISDIS_LE_SSD:
+    outcome: SUPPLY_OF_SERVICES_DEEMED
+    expr: M_ISDIS_G_LSAP AND M_ISDIS_A_SIIT
+    module: M_ISDIS
+    description: A listed activity is performed on information technology software, so the activity is deemed a supply of
+      services
+products:
+  M_TTOIPS_PD_SIAIR:
+    statement: The right concerned in the activity is an intellectual property right of any kind.
+  M_ISDIS_PD_SSD:
+    statement: A listed activity is performed on information technology software, so the activity is deemed a supply of services
+compounds:
+- id: C_SCHII_EN5
+  question: 'Schedule II, paragraph 5: which clause applies?'
+  includes:
+  - M_TTOIPS_LE_SIAIR
+  - M_ISDIS_LE_SSD
+  produces:
+  - product: M_TTOIPS_PD_SIAIR
+    from:
+    - M_TTOIPS_LE_SIAIR
+  - product: M_ISDIS_PD_SSD
+    from:
+    - M_ISDIS_LE_SSD
+time:
+  law_date: F_DOI

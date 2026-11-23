@@ -1,0 +1,2 @@
+﻿time,document,unit,stage,worker,error,retries,status
+2026-11-23 03:08:38,IGSTA17,IGSTA17_S8,MKP_GATE,W1,"GateError: MKP GATE: judge row is not seven columns: C_IGSTA17_S8|MKP|IGSTA17_S8#TEXT|concept: ""Intra-State Supply Heading""; citation: ""Section 8""; citat",0,SPLIT

@@ -1,0 +1,92 @@
+# GOVERNANCE MASTER TSG06_03 Composition & special taxpayers / recipients (TG06 Parties & Registration)
+# LAW ARC - 2 laws - status APPROVED
+name: TSG06_03 Composition & special taxpayers / recipients - GOVERNANCE MASTER rulebook
+version: TSG06_03
+facts:
+  # ---- level 1: gate facts - if one is false, that law stops here
+  F_PTC:  # 1. 1 gate | 2 law(s)
+    name: Person Tax Category
+    type: CODE
+    options:
+    - COMPOSITION_S10
+    - ISD
+    - NON_RESIDENT
+    - REGULAR
+    - TCS_S52
+    - TDS_S51
+    tier: T0
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_RPOSD_A_PINTP:
+    statement: The person is a non-resident taxable person
+    order: LOW
+    rule: F_PTC = 'NON_RESIDENT'
+    handler: python
+  M_RPOSD_A_PPTUS10:
+    statement: The person is a person paying tax under the provisions of section 10
+    order: LOW
+    rule: F_PTC = 'COMPOSITION_S10'
+    handler: python
+groups: {}
+outcomes:
+  M_RPOSD_LE_PINTP:
+    outcome: PERSON_IS_NON_RESIDENT_TAXABLE_PERSON
+    expr: M_RPOSD_A_PINTP
+    module: M_RPOSD
+    description: The person is a non-resident taxable person (Section 37(1), part of the law)
+  M_RPOSD_LE_PPTUS10:
+    outcome: PERSON_PAYS_TAX_UNDER_SECTION_10
+    expr: M_RPOSD_A_PPTUS10
+    module: M_RPOSD
+    description: The person is a person paying tax under the provisions of section 10 (Section 37(1), part of the law)
+  M_RPOSD_LE_PINTP_RPFMR:
+    outcome: PERSON_IS_NON_RESIDENT_TAXABLE_PERSON
+    expr: M_RPOSD_A_PINTP
+    module: M_RPFMR
+    description: The person is a non-resident taxable person (Section 39(1), part of the law)
+  M_RPOSD_LE_PPTUS10_RPFMR:
+    outcome: PERSON_PAYS_TAX_UNDER_SECTION_10
+    expr: M_RPOSD_A_PPTUS10
+    module: M_RPFMR
+    description: The person is a person paying tax under the provisions of section 10 (Section 39(1), part of the law)
+products:
+  M_RPOSD_PD_PINTP:
+    statement: The person is a non-resident taxable person
+  M_RPOSD_PD_PPTUS10:
+    statement: The person is a person paying tax under the provisions of section 10
+  M_RPOSD_PD_PINTP_RPFMR:
+    statement: The person is a non-resident taxable person
+  M_RPOSD_PD_PPTUS10_RPFMR:
+    statement: The person is paying tax under the provisions of section 10
+compounds:
+- id: C_RPOSD
+  question: The person is a non-resident taxable person; The person is a person paying tax under the provisions of section
+    10? (Section 37(1))
+  includes:
+  - M_RPOSD_LE_PINTP
+  - M_RPOSD_LE_PPTUS10
+  produces:
+  - product: M_RPOSD_PD_PINTP
+    from:
+    - M_RPOSD_LE_PINTP
+  - product: M_RPOSD_PD_PPTUS10
+    from:
+    - M_RPOSD_LE_PPTUS10
+- id: C_RPFMR
+  question: The person is a non-resident taxable person; The person is a person paying tax under the provisions of section
+    10? (Section 39(1))
+  includes:
+  - M_RPOSD_LE_PINTP_RPFMR
+  - M_RPOSD_LE_PPTUS10_RPFMR
+  produces:
+  - product: M_RPOSD_PD_PINTP_RPFMR
+    from:
+    - M_RPOSD_LE_PINTP_RPFMR
+  - product: M_RPOSD_PD_PPTUS10_RPFMR
+    from:
+    - M_RPOSD_LE_PPTUS10_RPFMR
+time:
+  law_date: F_DOI

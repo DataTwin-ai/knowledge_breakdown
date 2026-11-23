@@ -1,0 +1,436 @@
+# GOVERNANCE MASTER TSG05_01 Time of supply – goods (TG05 Time & Period)
+# LAW ARC - 6 laws - status APPROVED
+name: TSG05_01 Time of supply – goods - GOVERNANCE MASTER rulebook
+version: TSG05_01
+facts:
+  # ---- level 1: gate facts - if one is false, that law stops here
+  F_SCS:  # 1. 1 gate | 2 law(s)
+    name: Supply Consideration Status
+    type: CODE
+    options:
+    - AGREED
+    - NONE
+    - PAID
+    tier: T1
+  F_SKOT:  # 2. 1 gate | 2 law(s)
+    name: Supply Kind Of Transaction
+    type: CODE
+    options:
+    - BOTH
+    - GOODS
+    - SERVICES
+    tier: T1
+  F_ASK:  # 3. 1 gate | 1 law(s)
+    name: Activity Subject Kind
+    type: CODE
+    options:
+    - GOODS
+    - SERVICES
+    - OTHER
+    tier: T1
+  F_BAS:  # 4. 1 gate | 1 law(s)
+    name: Business Asset Status
+    type: CODE
+    options:
+    - PART_OF_BUSINESS_ASSETS
+    - NOT_PART_OF_BUSINESS_ASSETS
+    tier: T1
+  F_GOR:  # 5. 1 gate | 1 law(s)
+    name: Goods Owner Relation
+    type: CODE
+    options:
+    - OWNED_BY_ANOTHER_PERSON
+    - OWNED_BY_PERFORMER
+    - OTHER
+    tier: T1
+  F_SCT:  # 6. 1 gate | 1 law(s)
+    name: Supply Consideration Type
+    type: CODE
+    options:
+    - MONEY
+    - NON_MONEY
+    - NONE
+    tier: T1
+  F_SPRD:  # 7. 1 gate | 1 law(s)
+    name: Supply Payment Receipt Date
+    type: DATE
+    tier: T1
+  # ---- level 2: asked only when that law's gates pass
+  F_FOGU:  # 8. 2 | 1 law(s) | asked only if M_PUOBGIS: F_BAS
+    name: Form Of Goods Use
+    type: CODE
+    options:
+    - MADE_AVAILABLE_TO_ANY_PERSON
+    - NOT_USED
+    - PRIVATE_USE
+    - USED_BY_PERSON
+    tier: T1
+  F_FOS:  # 9. 2 | 1 law(s) | asked only if M_SIAFOS: F_SCS + F_SKOT
+    name: Form Of Supply
+    type: CODE
+    options:
+    - BARTER
+    - DISPOSAL
+    - EXCHANGE
+    - LEASE
+    - LICENCE
+    - OTHER
+    - RENTAL
+    - SALE
+    - TRANSFER
+    tier: T1
+  F_POGU:  # 10. 2 | 1 law(s) | asked only if M_PUOBGIS: F_BAS
+    name: Purpose Of Goods Use
+    type: CODE
+    options:
+    - BUSINESS
+    - NON_BUSINESS
+    tier: T1
+  # ---- LAST: only heavy checks (free text) need these
+  F_DOTA:  # 11. LAST (heavy check only) | 2 law(s) | asked only if M_SIAFOS: F_SCS + F_SKOT | M_SIAWC: F_SCS
+    name: Description Of The Activity
+    type: TEXT
+    tier: T1
+  F_DOAOT:  # 12. LAST (heavy check only) | 1 law(s) | asked only if M_TOPOGIS: F_ASK + F_GOR
+    name: Description Of Activity Or Transaction
+    type: TEXT
+    tier: T1
+  F_DOGU:  # 13. LAST (heavy check only) | 1 law(s) | asked only if M_PUOBGIS: F_BAS
+    name: Direction Of Goods Use
+    type: CODE
+    options:
+    - BY_BUSINESS_PERSON
+    - OTHER
+    - UNDER_BUSINESS_PERSON_DIRECTION
+    tier: T1
+  F_PBAD:  # 14. LAST (heavy check only) | 1 law(s) | asked only if M_PUOBGIS: F_BAS
+    name: Person Business Activity Description
+    type: TEXT
+    tier: T1
+  F_SOOT:  # 15. LAST (heavy check only) | 1 law(s) | asked only if M_IOSFC: F_SCT
+    name: Supply Origin Of Transaction
+    type: CODE
+    options:
+    - IMPORT
+    - DOMESTIC
+    - EXPORT
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_SIAFOS_A_SIAS:
+    statement: The supply takes the form of a sale of goods or services or both
+    order: LOW
+    rule: F_FOS = 'SALE'
+    handler: python
+  M_SIAFOS_A_SIAT:
+    statement: The supply takes the form of a transfer of goods or services or both
+    order: LOW
+    rule: F_FOS = 'TRANSFER'
+    handler: python
+  M_SIAFOS_A_SIAB:
+    statement: The supply takes the form of a barter of goods or services or both
+    order: LOW
+    rule: F_FOS = 'BARTER'
+    handler: python
+  M_SIAFOS_A_SIAE:
+    statement: The supply takes the form of an exchange of goods or services or both
+    order: LOW
+    rule: F_FOS = 'EXCHANGE'
+    handler: python
+  M_SIAFOS_A_SIALG:
+    statement: The supply takes the form of a licence of goods or services or both
+    order: LOW
+    rule: F_FOS = 'LICENCE'
+    handler: python
+  M_SIAFOS_A_SIAR:
+    statement: The supply takes the form of a rental of goods or services or both
+    order: LOW
+    rule: F_FOS = 'RENTAL'
+    handler: python
+  M_SIAFOS_A_SIAL:
+    statement: The supply takes the form of a lease of goods or services or both
+    order: LOW
+    rule: F_FOS = 'LEASE'
+    handler: python
+  M_SIAFOS_A_SIAD:
+    statement: The supply takes the form of a disposal of goods or services or both
+    order: LOW
+    rule: F_FOS = 'DISPOSAL'
+    handler: python
+  M_SIAFOS_A_SIAQF:
+    statement: The supply is another qualifying form of supply of goods or services or both, not one of the listed forms
+    order: HIGH
+    interpretation: Is this unlisted form of supply a form of supply of the same kind as sale, transfer, barter, exchange,
+      licence, rental, lease or disposal, given that the list is only illustrative?
+    grounding:
+    - F_FOS
+    - F_DOTA
+    handler: heavy
+  M_SIAFOS_A_SIOGOS:
+    statement: The supply is of goods or services or both
+    order: LOW
+    rule: F_SKOT IN ['GOODS', 'SERVICES', 'BOTH']
+    handler: python
+  M_SIAFOS_A_SIMFC:
+    statement: The supply is made for a consideration
+    order: LOW
+    rule: F_SCS = 'PAID'
+    handler: python
+  M_SIAFOS_A_SIAFC:
+    statement: The supply is agreed to be made for a consideration
+    order: LOW
+    rule: F_SCS = 'AGREED'
+    handler: python
+  M_SIAFOS_A_SBPIB:
+    statement: The supply is made by a person in the course or furtherance of business
+    order: HIGH
+    interpretation: Is the person making the supply doing so in the course or furtherance of business, judged from the description
+      of the activity?
+    grounding:
+    - F_DOTA
+    handler: heavy
+  M_IOSFC_A_TISI:
+    statement: The transaction is an import of services
+    order: HIGH
+    interpretation: Does the documented transaction amount to an import of services under the Act, given its supply origin
+      and whether the supply is of services?
+    grounding:
+    - F_SOOT
+    - F_SKOT
+    handler: light
+  M_IOSFC_A_IMFC:
+    statement: The import of services was made for a consideration
+    order: LOW
+    rule: F_SCT IN ['MONEY', 'NON_MONEY']
+    handler: python
+  M_SIAWC_A_ASISI:
+    statement: The activity is one of the activities specified in Schedule I.
+    order: HIGH
+    interpretation: Does the described activity fall within an entry of Schedule I, read with the Schedule entry wording
+    grounding:
+    - F_DOTA
+    handler: heavy
+  M_SIAWC_A_AMWC:
+    statement: The activity was made, or agreed to be made, without a consideration.
+    order: LOW
+    rule: F_SCS = 'NONE'
+    handler: python
+  M_TOSGPD_A_SRPFS:
+    statement: The supplier receives the payment with respect to the supply, on a date of receipt
+    order: LOW
+    if_false: no payment receipt date is recorded for the supply
+    rule: F_SPRD IS_SET
+    handler: python
+  M_TOPOGIS_A_AITOP:
+    statement: The activity performed is any treatment or process
+    order: HIGH
+    interpretation: Does the described activity qualify as a treatment or process in its ordinary sense, the word any being
+      unrestricted
+    grounding:
+    - F_DOAOT
+    handler: heavy
+  M_TOPOGIS_A_AATG:
+    statement: The treatment or process is applied to goods
+    order: LOW
+    rule: F_ASK = 'GOODS'
+    handler: python
+  M_TOPOGIS_A_GBTAP:
+    statement: The goods to which the treatment or process is applied belong to another person
+    order: LOW
+    rule: F_GOR = 'OWNED_BY_ANOTHER_PERSON'
+    handler: python
+  M_PUOBGIS_A_PCOAB:
+    statement: The person by whom or under whose direction the goods are used or made available is a person carrying on a
+      business
+    order: HIGH
+    interpretation: Does the described activity of the person amount to carrying on a business?
+    grounding:
+    - F_PBAD
+    handler: heavy
+  M_PUOBGIS_A_UIBOUD:
+    statement: The usage or making available of the goods is by, or under the direction of, the person carrying on the business
+    order: HIGH
+    interpretation: Is the goods use carried out by the business person, or by another person under that person's direction?
+    grounding:
+    - F_DOGU
+    handler: light
+  M_PUOBGIS_A_GPTAPU:
+    statement: The goods are put to any private use
+    order: LOW
+    rule: F_FOGU = 'PRIVATE_USE'
+    handler: python
+  M_PUOBGIS_A_GUFNBP:
+    statement: The goods are used for any purpose other than a purpose of the business
+    order: LOW
+    rule: F_FOGU = 'USED_BY_PERSON' AND F_POGU = 'NON_BUSINESS'
+    handler: python
+  M_PUOBGIS_A_GMAFNBU:
+    statement: The goods are made available to any person for use, for any purpose other than a purpose of the business
+    order: LOW
+    rule: F_FOGU = 'MADE_AVAILABLE_TO_ANY_PERSON' AND F_POGU = 'NON_BUSINESS'
+    handler: python
+  M_TOBASOG_A_GFBA:
+    statement: Goods forming part of the assets of a business
+    order: LOW
+    rule: F_BAS = 'PART_OF_BUSINESS_ASSETS'
+    handler: python
+groups:
+  M_SIAFOS_G_SFA:
+    name: Supply Form Alternatives
+    logic: ANY
+    members:
+    - M_SIAFOS_A_SIAS
+    - M_SIAFOS_A_SIAT
+    - M_SIAFOS_A_SIAB
+    - M_SIAFOS_A_SIAE
+    - M_SIAFOS_A_SIALG
+    - M_SIAFOS_A_SIAR
+    - M_SIAFOS_A_SIAL
+    - M_SIAFOS_A_SIAD
+    - M_SIAFOS_A_SIAQF
+    description: Any one listed form or any other qualifying form of supply. The list after such as is illustrative and not
+      closed.
+  M_SIAFOS_G_MOAC:
+    name: Made Or Agreed Consideration
+    logic: ANY
+    members:
+    - M_SIAFOS_A_SIMFC
+    - M_SIAFOS_A_SIAFC
+    description: The supply is either made for a consideration or agreed to be made for a consideration. Both events are not
+      required.
+  M_IOSFC_G_IFCG:
+    name: Import For Consideration Group
+    logic: ALL
+    members:
+    - M_IOSFC_A_TISI
+    - M_IOSFC_A_IMFC
+    description: Both the import of services and its consideration are required for the inclusion
+  M_SIAWC_G_SAWC:
+    name: Schedule Activity Without Consideration
+    logic: ALL
+    members:
+    - M_SIAWC_A_ASISI
+    - M_SIAWC_A_AMWC
+    description: Both the Schedule I activity test and the nil consideration test must be met for this inclusion.
+  M_TOPOGIS_G_TOAG:
+    name: Treatment On Another Goods
+    logic: ALL
+    members:
+    - M_TOPOGIS_A_AITOP
+    - M_TOPOGIS_A_AATG
+    - M_TOPOGIS_A_GBTAP
+    description: All three conditions must be satisfied together
+  M_PUOBGIS_G_BPAGC:
+    name: Business Person And Goods Context
+    logic: ALL
+    members:
+    - M_PUOBGIS_A_PCOAB
+    - M_PUOBGIS_A_UIBOUD
+    - M_TOBASOG_A_GFBA
+    description: A person carrying on a business, by or under whose direction the use occurs, and goods held or used for that
+      business.
+  M_PUOBGIS_G_PONBUR:
+    name: Private Or Non Business Use Routes
+    logic: ANY
+    members:
+    - M_PUOBGIS_A_GPTAPU
+    - M_PUOBGIS_A_GUFNBP
+    - M_PUOBGIS_A_GMAFNBU
+    description: 'Any one of: private use, use for a non-business purpose, or making available to any person for use for a
+      non-business purpose.'
+outcomes:
+  M_SIAFOS_LE_SIBC:
+    outcome: SUPPLY_INCLUDED
+    expr: M_SIAFOS_G_SFA AND M_SIAFOS_A_SIOGOS AND M_SIAFOS_G_MOAC AND M_SIAFOS_A_SBPIB
+    module: M_SIAFOS
+    description: The transaction is included in supply under Section 7(1)(a) when it is in a qualifying form, is of goods
+      or services or both, is made or agreed to be made for a consideration, and is by a person in the course or furtherance
+      of business.
+  M_IOSFC_LE_IOSI:
+    outcome: SUPPLY_INCLUDED
+    expr: M_IOSFC_G_IFCG
+    module: M_IOSFC
+    description: Import of services for a consideration is included in supply; the business test is not a member of this expression
+  M_SIAWC_LE_SIO:
+    outcome: SUPPLY_INCLUDED
+    expr: M_SIAWC_G_SAWC
+    module: M_SIAWC
+    description: The supply is included under this limb only when the Schedule I activity group is met.
+  M_TOSGPD_LE_PDCO:
+    outcome: PAYMENT_RECEIPT_DATE_IS_CANDIDATE_FOR_TIME_OF_SUPPLY_OF_GOODS
+    expr: M_TOSGPD_A_SRPFS
+    module: M_TOSGPD
+    description: When the supplier receives payment with respect to the supply, the date of receipt is a candidate time of
+      supply of goods, and the earlier of the listed dates applies.
+  M_TOPOGIS_LE_TOAGIS:
+    outcome: SUPPLY_OF_SERVICES
+    expr: M_TOPOGIS_G_TOAG
+    module: M_TOPOGIS
+    description: The deemed supply of services follows when the whole treatment group is satisfied
+  M_PUOBGIS_LE_BGPUDS:
+    outcome: USAGE_OR_MAKING_AVAILABLE_DEEMED_SUPPLY_OF_SERVICES
+    expr: M_PUOBGIS_G_BPAGC AND M_PUOBGIS_G_PONBUR
+    module: M_PUOBGIS
+    description: The deeming applies when the business context is met and at least one of the three use routes is met.
+products:
+  M_SIAFOS_PD_SIBC:
+    statement: The transaction is included in supply under Section 7(1)(a) when it is in a qualifying form, is of goods or
+      services or both, is made or agreed to be made for a consideration, and is by a person in the course or furtherance
+      of business.
+  M_IOSFC_PD_IOSI:
+    statement: Import of services for a consideration is included in supply; the business test is not a member of this expression
+  M_SIAWC_PD_SIO:
+    statement: The supply is included under this limb only when the Schedule I activity group is met.
+  M_TOSGPD_PD_PDCO:
+    statement: When the supplier receives payment with respect to the supply, the date of receipt is a candidate time of supply
+      of goods, and the earlier of the listed dates applies.
+  M_TOPOGIS_PD_TOAGIS:
+    statement: The deemed supply of services follows when the whole treatment group is satisfied
+  M_PUOBGIS_PD_BGPUDS:
+    statement: The deeming applies when the business context is met and at least one of the three use routes is met.
+compounds:
+- id: C_S7_SS1
+  question: 'Section 7(1): which clause applies?'
+  includes:
+  - M_SIAFOS_LE_SIBC
+  - M_IOSFC_LE_IOSI
+  - M_SIAWC_LE_SIO
+  produces:
+  - product: M_SIAFOS_PD_SIBC
+    from:
+    - M_SIAFOS_LE_SIBC
+  - product: M_IOSFC_PD_IOSI
+    from:
+    - M_IOSFC_LE_IOSI
+  - product: M_SIAWC_PD_SIO
+    from:
+    - M_SIAWC_LE_SIO
+- id: C_TOSGPD
+  question: 'Section 12(2)(b): Time Of Supply Goods Payment Date?'
+  includes:
+  - M_TOSGPD_LE_PDCO
+  produces:
+  - product: M_TOSGPD_PD_PDCO
+    from:
+    - M_TOSGPD_LE_PDCO
+- id: C_TOPOGIS
+  question: 'Schedule II, paragraph 3: Treatment Or Process On Goods Is Services?'
+  includes:
+  - M_TOPOGIS_LE_TOAGIS
+  produces:
+  - product: M_TOPOGIS_PD_TOAGIS
+    from:
+    - M_TOPOGIS_LE_TOAGIS
+- id: C_PUOBGIS
+  question: 'Schedule II, paragraph 4(b): Private Use Of Business Goods Is Services?'
+  includes:
+  - M_PUOBGIS_LE_BGPUDS
+  produces:
+  - product: M_PUOBGIS_PD_BGPUDS
+    from:
+    - M_PUOBGIS_LE_BGPUDS
+time:
+  law_date: F_DOI

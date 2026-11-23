@@ -146,6 +146,14 @@ REFERENCE_AFTER = re.compile(r"^\s*(of|to|in)\s+(this|that|the said|section|sub-
 # '; or' / ', and' end a list item, so a marker after them is a real list item.
 REFERENCE_BEFORE = re.compile(r"(?i)(?:^|[^;,:.\-—–\s])\s*\b(sub-section|section|sub-rule|rule|clause|sub-clause|item|"
                               r"paragraph|under|of|in|and|or|with|to|entry|serial|number|no\.)\s*\[?$")
+# 2026-11-22: amending Acts quote the new law: '... shall be inserted, namely:— "(i) ... (ii) ...";' - the quoted text
+# is one block of the clause that quotes it (its (i), (ii), "49A." are the PRINCIPAL Act's numbers, not this Act's)
+AMENDING_CODE_RE = re.compile(r"^ACT_\d{1,3}_\d{4}$")
+AMENDING_TEXT_RE = re.compile(r"(?i)\ban\s+act\s+further\s+to\s+amend\b")
+QUOTE_OPEN = "\"“‘'"
+NAMELY_OPEN_RE = re.compile(r"(?i)\bnamely\s*[:;,]?\s*[-–—―]*\s*([\"“‘'])")
+NAMELY_END_RE = re.compile(r"(?i)\bnamely\s*[:;,]?\s*[-–—―]*\s*$")
+QUOTE_CLOSE_RE = re.compile(r"[\"”’']\s*(?:[.;,:]|(?:and|or|shall)\b|$)")
 HEADING_DELIM = re.compile(r"(\.\s*[-—–―]+|\s[-—–]{1,2}\s|[—–]{1,2}|:-|\.\s*:)")
 
 
@@ -232,6 +240,10 @@ class Parser:
         self.margin_by_page: Dict[int, list] = {}
         for note in layout.margin_notes:
             self.margin_by_page.setdefault(note.page, []).append(note)
+        self.amending = self.profile == "STATUTE" and (bool(AMENDING_CODE_RE.match(code)) or any(
+            AMENDING_TEXT_RE.search(l.text) for l in layout.lines[:40]))
+        self.in_quote = False          # amending Act: inside quoted new text
+        self.after_namely = False      # amending Act: the last line ended with 'namely:—' (the quote starts next line)
         self.root = self._new(Node(code, "DOCUMENT", parent="", kind="ROOT"), attach=False)
         self.front = self._new(Node(f"{code}_FRONT", "FRONT", parent=code, kind="FRONT", heading="FRONT MATTER"))
         self.stack = [self.root, self.front]
@@ -395,6 +407,39 @@ class Parser:
                               self.seg_line, self.seg_line_off, self.issue_keys)
 
     def _handle_line(self, lines: List[Line], i: int) -> int:
+        if self.amending:
+            return self._amending_line(lines, i)
+        return self._handle_line_main(lines, i)
+
+    @staticmethod
+    def _closes(text: str, start: int = 0) -> bool:
+        return bool(QUOTE_CLOSE_RE.search(text, start))
+
+    def _amending_line(self, lines: List[Line], i: int) -> int:
+        """Amending Act: quoted new text stays in the clause that quotes it (no markers / sections read inside)."""
+        line, text = lines[i], lines[i].text
+        if self.in_quote:
+            self._append(self.stack[-1], text, line, False)
+            if self._closes(text):
+                self.in_quote = False
+            self.after_namely = False
+            return 1
+        stripped = text.lstrip()
+        if self.after_namely and stripped[:1] in QUOTE_OPEN and self._unit_node() is not None:
+            self.after_namely = False
+            self._append(self.stack[-1], text, line, False)
+            self.in_quote = not self._closes(stripped, 1)
+            return 1
+        consumed = self._handle_line_main(lines, i)
+        m = NAMELY_OPEN_RE.search(text)
+        if m and self._unit_node() is not None:
+            self.in_quote = not self._closes(text, m.end())
+            self.after_namely = False
+        else:
+            self.after_namely = bool(NAMELY_END_RE.search(text))
+        return consumed
+
+    def _handle_line_main(self, lines: List[Line], i: int) -> int:
         line = lines[i]
         text = line.text
         prev = lines[i - 1] if i > 0 else None

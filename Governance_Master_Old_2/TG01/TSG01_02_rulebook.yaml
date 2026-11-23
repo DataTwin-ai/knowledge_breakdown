@@ -1,0 +1,167 @@
+# GOVERNANCE MASTER TSG01_02 Supply without consideration (Schedule I) (TG01 Supply & Taxability)
+# LAW ARC - 3 laws - status APPROVED
+name: TSG01_02 Supply without consideration (Schedule I) - GOVERNANCE MASTER rulebook
+version: TSG01_02
+facts:
+  # ---- level 1: gate facts - if one is false, that law stops here
+  F_ACBN:  # 1. 1 gate | 1 law(s)
+    name: Activity Covered By Notification
+    type: BOOLEAN
+    tier: T1
+  F_AUT:  # 2. 1 gate | 1 law(s)
+    name: Activity Undertaker Type
+    type: CODE
+    options:
+    - CENTRAL_GOVT
+    - STATE_GOVT
+    - LOCAL_AUTHORITY
+    - OTHER
+    tier: T1
+  F_NRB:  # 3. 1 gate | 1 law(s)
+    name: Notification Recommending Body
+    type: CODE
+    options:
+    - COUNCIL
+    - OTHER
+    - NONE_STATED
+    tier: T1
+  F_SCS:  # 4. 1 gate | 1 law(s)
+    name: Supply Consideration Status
+    type: CODE
+    options:
+    - AGREED
+    - NONE
+    - PAID
+    tier: T1
+  # ---- LAST: only heavy checks (free text) need these
+  F_DOTA:  # 5. LAST (heavy check only) | 2 law(s) | asked only if M_NGANGNS: F_ACBN + F_AUT + F_NRB | M_SIAWC: F_SCS
+    name: Description Of The Activity
+    type: TEXT
+    tier: T1
+  F_DOAOT:  # 6. LAST (heavy check only) | 1 law(s)
+    name: Description Of Activity Or Transaction
+    type: TEXT
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_ANGNS_A_ASISIII:
+    statement: The activity or transaction is specified in Schedule III
+    order: HIGH
+    interpretation: Does the activity or transaction described in the document match an entry specified in Schedule III?
+    grounding:
+    - F_DOAOT
+    handler: heavy
+  M_NGANGNS_A_UBGB:
+    statement: The activity or transaction is undertaken by the Central Government, a State Government or any local authority.
+    order: LOW
+    rule: F_AUT IN ['CENTRAL_GOVT', 'STATE_GOVT', 'LOCAL_AUTHORITY']
+    handler: python
+  M_NGANGNS_A_EAPA:
+    statement: The Central Government, State Government or local authority is engaged in the activity or transaction as a
+      public authority.
+    order: HIGH
+    if_false: the activity is carried on other than as a public authority
+    interpretation: On the description of the activity, is the government body engaged in it as a public authority, rather
+      than in an ordinary commercial or private capacity?
+    grounding:
+    - F_DOTA
+    handler: heavy
+  M_NGANGNS_A_AINBG:
+    statement: The activity or transaction is one that may be notified by the Government and has been so notified.
+    order: LOW
+    rule: F_ACBN = TRUE
+    handler: python
+  M_GPTNQR_A_NOCR:
+    statement: The Government's notification of the class of registered persons is made on the recommendations of the Council
+    order: LOW
+    rule: F_NRB = 'COUNCIL'
+    handler: python
+  M_SIAWC_A_ASISI:
+    statement: The activity is one of the activities specified in Schedule I.
+    order: HIGH
+    interpretation: Does the described activity fall within an entry of Schedule I, read with the Schedule entry wording
+    grounding:
+    - F_DOTA
+    handler: heavy
+  M_SIAWC_A_AMWC:
+    statement: The activity was made, or agreed to be made, without a consideration.
+    order: LOW
+    rule: F_SCS = 'NONE'
+    handler: python
+groups:
+  M_SIAWC_G_SAWC:
+    name: Schedule Activity Without Consideration
+    logic: ALL
+    members:
+    - M_SIAWC_A_ASISI
+    - M_SIAWC_A_AMWC
+    description: Both the Schedule I activity test and the nil consideration test must be met for this inclusion.
+outcomes:
+  M_ANGNS_LE_SIIINSO:
+    outcome: NEITHER_GOODS_NOR_SERVICES
+    expr: M_ANGNS_A_ASISIII
+    module: M_ANGNS
+    description: The activity or transaction is treated neither as a supply of goods nor as a supply of services when it is
+      specified in Schedule III, notwithstanding sub-section (1).
+  M_NGANGNS_LE_NANS:
+    outcome: NEITHER_GOODS_NOR_SERVICES
+    expr: M_NGANGNS_A_UBGB AND M_NGANGNS_A_EAPA AND M_NGANGNS_A_AINBG AND M_GPTNQR_A_NOCR
+    module: M_NGANGNS
+    description: When all four conditions hold, the activity or transaction shall be treated neither as a supply of goods
+      nor a supply of services, overriding sub-section (1).
+  M_SIAWC_LE_SIO:
+    outcome: SUPPLY_INCLUDED
+    expr: M_SIAWC_G_SAWC
+    module: M_SIAWC
+    description: The supply is included under this limb only when the Schedule I activity group is met.
+overrides:
+  IH_ANGNS_SIAWC:
+    outcome: NEITHER_GOODS_NOR_SERVICES
+    expr: M_ANGNS_A_ASISIII
+    module: M_ANGNS
+    description: The activity or transaction is treated neither as a supply of goods nor as a supply of services when it is
+      specified in Schedule III, notwithstanding sub-section (1).
+  IH_NGANGNS_SIAWC:
+    outcome: NEITHER_GOODS_NOR_SERVICES
+    expr: M_NGANGNS_A_UBGB AND M_NGANGNS_A_EAPA AND M_NGANGNS_A_AINBG AND M_GPTNQR_A_NOCR
+    module: M_NGANGNS
+    description: When all four conditions hold, the activity or transaction shall be treated neither as a supply of goods
+      nor a supply of services, overriding sub-section (1).
+products:
+  M_ANGNS_PD_SIIINSO:
+    statement: The activity or transaction is treated neither as a supply of goods nor as a supply of services when it is
+      specified in Schedule III, notwithstanding sub-section (1).
+  M_NGANGNS_PD_NANS:
+    statement: When all four conditions hold, the activity or transaction shall be treated neither as a supply of goods nor
+      a supply of services, overriding sub-section (1).
+  M_SIAWC_PD_SIO:
+    statement: The supply is included under this limb only when the Schedule I activity group is met.
+compounds:
+- id: C_S7_SS2
+  question: 'Section 7(2): which clause applies?'
+  includes:
+  - M_ANGNS_LE_SIIINSO
+  - M_NGANGNS_LE_NANS
+  produces:
+  - product: M_ANGNS_PD_SIIINSO
+    from:
+    - M_ANGNS_LE_SIIINSO
+  - product: M_NGANGNS_PD_NANS
+    from:
+    - M_NGANGNS_LE_NANS
+- id: C_SIAWC
+  question: 'Section 7(1)(c): Schedule I Activities Without Consideration?'
+  includes:
+  - M_SIAWC_LE_SIO
+  produces:
+  - product: M_SIAWC_PD_SIO
+    from:
+    - M_SIAWC_LE_SIO
+  overrides:
+  - IH_ANGNS_SIAWC
+  - IH_NGANGNS_SIAWC
+time:
+  law_date: F_DOI

@@ -1,0 +1,1603 @@
+about: Every fact and the laws it can check. kind = how the fact is obtained (DOCUMENT / DERIVED / LOOKUP / ASK); reviewed
+  = false means the kind is a default - confirm it in Config/fact_kinds.json.
+facts:
+- fact_id: F_ACBN
+  name: Activity Covered By Notification
+  entity: ACTIVITY
+  data_type: BOOL
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S7_SS2_Cb#TEXT
+    atom: M_NGANGNS_A_AINBG
+    tsgs:
+    - TSG01_03
+    check: PYTHON
+- fact_id: F_AUT
+  name: Activity Undertaker Type
+  entity: ACTIVITY
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S7_SS2_Cb#TEXT
+    atom: M_NGANGNS_A_UBGB
+    tsgs:
+    - TSG01_03
+    check: PYTHON
+- fact_id: F_BD
+  name: Body Designation
+  entity: BODY
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 3
+    judge: 1
+  tsgs:
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 4
+  - tsg: TSG14_06
+    name: Statutory Interpretation of Definitions
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_SCHIII_EN8_Cb_E1#TEXT
+    atom: M_DOCFP2_A_BIDC
+    tsgs:
+    - TSG01_03
+    check: PYTHON
+  - mkp: CGSTA17_SCHIII_EN8_Cb_E1#TEXT
+    atom: M_DOCFP2_A_BIHC
+    tsgs:
+    - TSG01_03
+    check: PYTHON
+  - mkp: CGSTA17_SCHIII_EN8_Cb_E1#TEXT
+    atom: M_DOCFP2_A_BISC
+    tsgs:
+    - TSG01_03
+    check: PYTHON
+  - mkp: CGSTA17_SCHIII_EN8_Cb_E1#TEXT
+    atom: M_DOCFP2_A_BIOC
+    tsgs:
+    - TSG01_03
+    - TSG14_06
+    check: JUDGE
+- fact_id: F_BEA
+  name: Body Establishing Authority
+  entity: BODY
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_SCHIII_EN3_Cc#TEXT
+    atom: M_DBGBM_A_BEBG
+    tsgs:
+    - TSG01_03
+    check: PYTHON
+- fact_id: F_CDTR
+  name: Communication Date To Recipient
+  entity: RETURN
+  data_type: DATE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG11_01
+    name: GSTR-1 / IFF
+    atoms: 1
+  - tsg: TSG11_03
+    name: GSTR-2A / 2B
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S37_SS1#TEXT
+    atom: M_RPOSD_A_CIPTAM
+    tsgs:
+    - TSG11_01
+    - TSG11_03
+    check: JUDGE
+- fact_id: F_CMTR
+  name: Communication Method To Recipient
+  entity: RETURN
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG11_01
+    name: GSTR-1 / IFF
+    atoms: 1
+  - tsg: TSG11_03
+    name: GSTR-2A / 2B
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S37_SS1#TEXT
+    atom: M_RPOSD_A_CIPTAM
+    tsgs:
+    - TSG11_01
+    - TSG11_03
+    check: JUDGE
+- fact_id: F_CTIN
+  name: Conditions Text In Notification
+  entity: NOTIFICATION
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG05_05
+    name: Tax period & reporting period
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S39_SS1_P1#TEXT
+    atom: M_GPTNQR_A_NCSBP
+    tsgs:
+    - TSG05_05
+    check: JUDGE
+- fact_id: F_DCTR
+  name: Details Communicated To Recipient
+  entity: RETURN
+  data_type: BOOL
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG11_01
+    name: GSTR-1 / IFF
+    atoms: 1
+  - tsg: TSG11_03
+    name: GSTR-2A / 2B
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S37_SS1#TEXT
+    atom: M_RPOSD_A_DCTR
+    tsgs:
+    - TSG11_01
+    - TSG11_03
+    check: PYTHON
+- fact_id: F_DOAOT
+  name: Description Of Activity Or Transaction
+  entity: ACTIVITY
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 6
+  tsgs:
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 5
+  laws:
+  - mkp: CGSTA17_S7_SS2_Ca#TEXT
+    atom: M_ANGNS_A_ASISIII
+    tsgs:
+    - TSG01_03
+    check: JUDGE
+  - mkp: CGSTA17_SCHIII_EN5#TEXT
+    atom: M_SOLAB_A_BSSTSC
+    tsgs: []
+    check: JUDGE
+  - mkp: CGSTA17_SCHIII_EN1#TEXT
+    atom: M_ESTE_A_SIEC
+    tsgs:
+    - TSG01_03
+    check: JUDGE
+  - mkp: CGSTA17_SCHIII_EN6#TEXT
+    atom: M_ACOTLBG_A_AIAC
+    tsgs:
+    - TSG01_03
+    check: JUDGE
+  - mkp: CGSTA17_SCHIII_EN6#TEXT
+    atom: M_ACOTLBG_A_COTLBG
+    tsgs:
+    - TSG01_03
+    check: JUDGE
+  - mkp: CGSTA17_SCHIII_EN3_Cb#TEXT
+    atom: M_DBCPH_A_DPIC
+    tsgs:
+    - TSG01_03
+    check: JUDGE
+- fact_id: F_DOF
+  name: Date Of Furnishing
+  entity: RETURN
+  data_type: DATE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG11_02
+    name: GSTR-3B
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S39_SS1#TEXT
+    atom: M_RPFMR_A_RFWPT
+    tsgs:
+    - TSG11_02
+    check: JUDGE
+- fact_id: F_DOFM
+  name: Day Of Furnishing Month
+  entity: RETURN
+  data_type: NUMBER
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - F_DOF
+  checks:
+    python: 2
+    judge: 0
+  tsgs:
+  - tsg: TSG11_01
+    name: GSTR-1 / IFF
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S37_SS1_P1#TEXT
+    atom: M_FODRP_A_FIDW
+    tsgs:
+    - TSG11_01
+    check: PYTHON
+  - mkp: CGSTA17_S37_SS1#TEXT
+    atom: M_RPOSD_A_FBTDS
+    tsgs:
+    - TSG11_01
+    check: PYTHON
+- fact_id: F_DOTA
+  name: Description Of The Activity
+  entity: ACTIVITY
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 11
+  tsgs:
+  - tsg: TSG01_01
+    name: Supply with consideration
+    atoms: 2
+  - tsg: TSG01_02
+    name: Supply without consideration (Schedule I)
+    atoms: 1
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 8
+  - tsg: TSG01_06
+    name: Business test
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S7_SS2_Cb#TEXT
+    atom: M_NGANGNS_A_EAPA
+    tsgs:
+    - TSG01_03
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS1_Cc#TEXT
+    atom: M_SIAWC_A_ASISI
+    tsgs:
+    - TSG01_02
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIAQF
+    tsgs:
+    - TSG01_01
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SBPIB
+    tsgs:
+    - TSG01_01
+    - TSG01_06
+    check: JUDGE
+  - mkp: CGSTA17_SCHIII_EN4#TEXT
+    atom: M_FBCMS_A_AIFS
+    tsgs:
+    - TSG01_03
+    check: JUDGE
+  - mkp: CGSTA17_SCHIII_EN4#TEXT
+    atom: M_FBCMS_A_AIBS
+    tsgs:
+    - TSG01_03
+    check: JUDGE
+  - mkp: CGSTA17_SCHIII_EN4#TEXT
+    atom: M_FBCMS_A_AICS
+    tsgs:
+    - TSG01_03
+    check: JUDGE
+  - mkp: CGSTA17_SCHIII_EN4#TEXT
+    atom: M_FBCMS_A_AIMS
+    tsgs:
+    - TSG01_03
+    check: JUDGE
+  - mkp: CGSTA17_SCHIII_EN2#TEXT
+    atom: M_SBCOT_A_AIAS
+    tsgs:
+    - TSG01_03
+    check: JUDGE
+  - mkp: CGSTA17_SCHIII_EN3_Ca#TEXT
+    atom: M_FOEM_A_AIMF
+    tsgs:
+    - TSG01_03
+    check: JUDGE
+  - mkp: CGSTA17_SCHIII_EN3_Cc#TEXT
+    atom: M_FOEM_A_AIMF
+    tsgs:
+    - TSG01_03
+    check: JUDGE
+- fact_id: F_EIT
+  name: Extension Instrument Type
+  entity: ''
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG11_01
+    name: GSTR-1 / IFF
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S37_SS1_P2#TEXT
+    atom: M_CETLFFD_A_EMBN
+    tsgs:
+    - TSG11_01
+    check: PYTHON
+- fact_id: F_EL
+  name: Establishing Law
+  entity: ''
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_SCHIII_EN2#TEXT
+    atom: M_SBCOT_A_CEUL
+    tsgs:
+    - TSG01_03
+    check: JUDGE
+- fact_id: F_ENA
+  name: Extension Notifying Authority
+  entity: AUTHORITY
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 2
+    judge: 0
+  tsgs:
+  - tsg: TSG11_01
+    name: GSTR-1 / IFF
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S37_SS1_P3#TEXT
+    atom: M_EOTLDN_A_NBSOUC
+    tsgs:
+    - TSG11_01
+    check: PYTHON
+  - mkp: CGSTA17_S37_SS1_P2#TEXT
+    atom: M_CETLFFD_A_CHPTE
+    tsgs:
+    - TSG11_01
+    check: PYTHON
+- fact_id: F_FDT
+  name: Furnished Detail Type
+  entity: RETURN
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 3
+    judge: 0
+  tsgs:
+  - tsg: TSG11_01
+    name: GSTR-1 / IFF
+    atoms: 3
+  laws:
+  - mkp: CGSTA17_S37_SS1_P1#TEXT
+    atom: M_FODRP_A_FOSD
+    tsgs:
+    - TSG11_01
+    check: PYTHON
+  - mkp: CGSTA17_S37_SS1_P2#TEXT
+    atom: M_CETLFFD_A_ECOD
+    tsgs:
+    - TSG11_01
+    check: PYTHON
+  - mkp: CGSTA17_S37_SS1#TEXT
+    atom: M_RPOSD_A_DAOOS
+    tsgs:
+    - TSG11_01
+    check: PYTHON
+- fact_id: F_FOS
+  name: Form Of Supply
+  entity: SUPPLY
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 8
+    judge: 1
+  tsgs:
+  - tsg: TSG01_01
+    name: Supply with consideration
+    atoms: 9
+  laws:
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIAS
+    tsgs:
+    - TSG01_01
+    check: PYTHON
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIAT
+    tsgs:
+    - TSG01_01
+    check: PYTHON
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIAB
+    tsgs:
+    - TSG01_01
+    check: PYTHON
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIAE
+    tsgs:
+    - TSG01_01
+    check: PYTHON
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIALG
+    tsgs:
+    - TSG01_01
+    check: PYTHON
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIAR
+    tsgs:
+    - TSG01_01
+    check: PYTHON
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIAL
+    tsgs:
+    - TSG01_01
+    check: PYTHON
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIAD
+    tsgs:
+    - TSG01_01
+    check: PYTHON
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIAQF
+    tsgs:
+    - TSG01_01
+    check: JUDGE
+- fact_id: F_GWS
+  name: Goods Warehousing Status
+  entity: GOODS
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 1
+  tsgs:
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_SCHIII_EN8_Ca#TEXT
+    atom: M_SOWGBC_A_GAWG
+    tsgs:
+    - TSG01_03
+    check: PYTHON
+  - mkp: CGSTA17_SCHIII_EN8_Cb_E2#TEXT
+    atom: M_MOWG_A_WGCM
+    tsgs: []
+    check: JUDGE
+- fact_id: F_HCS
+  name: Home Clearance Status
+  entity: GOODS
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_SCHIII_EN8_Ca#TEXT
+    atom: M_SOWGBC_A_SBHC
+    tsgs:
+    - TSG01_03
+    check: PYTHON
+- fact_id: F_MATP
+  name: Months After Tax Period
+  entity: PERIOD
+  data_type: NUMBER
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - F_DOF
+  - F_TPOR
+  checks:
+    python: 2
+    judge: 0
+  tsgs:
+  - tsg: TSG05_05
+    name: Tax period & reporting period
+    atoms: 1
+  - tsg: TSG11_01
+    name: GSTR-1 / IFF
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S37_SS1_P1#TEXT
+    atom: M_FODRP_A_FISM
+    tsgs:
+    - TSG05_05
+    - TSG11_01
+    check: PYTHON
+  - mkp: CGSTA17_S37_SS1#TEXT
+    atom: M_RPOSD_A_FBTDS
+    tsgs:
+    - TSG11_01
+    check: PYTHON
+- fact_id: F_MOFD
+  name: Mode Of Furnishing Details
+  entity: RETURN
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 2
+    judge: 0
+  tsgs:
+  - tsg: TSG11_01
+    name: GSTR-1 / IFF
+    atoms: 1
+  - tsg: TSG11_02
+    name: GSTR-3B
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S37_SS1#TEXT
+    atom: M_RPOSD_A_DAFE
+    tsgs:
+    - TSG11_01
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS1#TEXT
+    atom: M_RPOSD_A_DAFE
+    tsgs:
+    - TSG11_02
+    check: PYTHON
+- fact_id: F_NCD
+  name: Notification Class Description
+  entity: NOTIFICATION
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG11_07
+    name: Notified Quarterly Return Filer Class
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S39_SS1_P1#TEXT
+    atom: M_GPTNQR_A_PINC
+    tsgs:
+    - TSG11_07
+    check: JUDGE
+- fact_id: F_NCM
+  name: Notified Class Membership
+  entity: ''
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG11_01
+    name: GSTR-1 / IFF
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S37_SS1_P2#TEXT
+    atom: M_CETLFFD_A_TPINC
+    tsgs:
+    - TSG11_01
+    check: JUDGE
+- fact_id: F_NIK
+  name: Notified Item Kind
+  entity: EXTENSION
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 2
+    judge: 0
+  tsgs:
+  - tsg: TSG11_01
+    name: GSTR-1 / IFF
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S37_SS1_P3#TEXT
+    atom: M_EOTLDN_A_NIITLE
+    tsgs:
+    - TSG11_01
+    check: PYTHON
+  - mkp: CGSTA17_S37_SS1_P2#TEXT
+    atom: M_EOTLDN_A_NIITLE
+    tsgs:
+    - TSG11_01
+    check: PYTHON
+- fact_id: F_NRB
+  name: Notification Recommending Body
+  entity: NOTIFICATION
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 2
+    judge: 0
+  tsgs:
+  - tsg: TSG05_05
+    name: Tax period & reporting period
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S39_SS1_P1#TEXT
+    atom: M_GPTNQR_A_NOCR
+    tsgs:
+    - TSG05_05
+    check: PYTHON
+  - mkp: CGSTA17_S7_SS2_Cb#TEXT
+    atom: M_GPTNQR_A_NOCR
+    tsgs:
+    - TSG05_05
+    check: PYTHON
+- fact_id: F_NRFF
+  name: Notified Return Filing Frequency
+  entity: NOTIFICATION
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG05_05
+    name: Tax period & reporting period
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S39_SS1_P1#TEXT
+    atom: M_GPTNQR_A_NREQ
+    tsgs:
+    - TSG05_05
+    check: PYTHON
+- fact_id: F_NSAC
+  name: Notification Specifies Any Condition
+  entity: NOTIFICATION
+  data_type: BOOL
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG05_05
+    name: Tax period & reporting period
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S39_SS1_P1#TEXT
+    atom: M_GPTNQR_A_NNCS
+    tsgs:
+    - TSG05_05
+    check: PYTHON
+- fact_id: F_PBR
+  name: Person Body Role
+  entity: PERSON
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_SCHIII_EN3_Cc#TEXT
+    atom: M_DBGBM_A_DPAOH
+    tsgs:
+    - TSG01_03
+    check: PYTHON
+- fact_id: F_PBT
+  name: Provider Body Type
+  entity: ''
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_SCHIII_EN2#TEXT
+    atom: M_SBCOT_A_PICOT
+    tsgs:
+    - TSG01_03
+    check: JUDGE
+- fact_id: F_PCAS
+  name: Person Chartered Accountant Status
+  entity: PERSON
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG14_01
+    name: General definitions
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S2_C23#TEXT
+    atom: M_DOCHA_A_PICA
+    tsgs:
+    - TSG14_01
+    check: JUDGE
+- fact_id: F_PCM
+  name: Provision Context Meaning
+  entity: ''
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 3
+  tsgs:
+  - tsg: TSG03_01
+    name: Intra / inter-State
+    atoms: 1
+  - tsg: TSG14_06
+    name: Statutory Interpretation of Definitions
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S2_C23#TEXT
+    atom: M_DOCHA_A_CDNROM
+    tsgs:
+    - TSG14_06
+    check: JUDGE
+  - mkp: CGSTA17_S2_C64#TEXT
+    atom: M_DOISOG_A_MFSE
+    tsgs:
+    - TSG03_01
+    check: JUDGE
+  - mkp: CGSTA17_S2_C64#TEXT
+    atom: M_DOISOG_A_COR
+    tsgs:
+    - TSG14_06
+    check: JUDGE
+- fact_id: F_PCR
+  name: Person Compliance Records
+  entity: PERSON
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG05_05
+    name: Tax period & reporting period
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S39_SS1_P1#TEXT
+    atom: M_GPTNQR_A_NCSBP
+    tsgs:
+    - TSG05_05
+    check: JUDGE
+- fact_id: F_PDEBC
+  name: Person Deemed Employee Before Commencement
+  entity: PERSON
+  data_type: BOOL
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_SCHIII_EN3_Cc#TEXT
+    atom: M_DBGBM_A_NDEBC
+    tsgs:
+    - TSG01_03
+    check: PYTHON
+- fact_id: F_PEO
+  name: Person Elected Office
+  entity: PERSON
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 2
+  tsgs:
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 3
+  laws:
+  - mkp: CGSTA17_SCHIII_EN3_Ca#TEXT
+    atom: M_FOEM_A_PHEO
+    tsgs:
+    - TSG01_03
+    check: PYTHON
+  - mkp: CGSTA17_SCHIII_EN3_Ca#TEXT
+    atom: M_FOEM_A_AIMF
+    tsgs:
+    - TSG01_03
+    check: JUDGE
+  - mkp: CGSTA17_SCHIII_EN3_Cc#TEXT
+    atom: M_FOEM_A_AIMF
+    tsgs:
+    - TSG01_03
+    check: JUDGE
+- fact_id: F_PPD
+  name: Person Profile Details
+  entity: PERSON
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 3
+  tsgs:
+  - tsg: TSG11_07
+    name: Notified Quarterly Return Filer Class
+    atoms: 1
+  - tsg: TSG14_01
+    name: General definitions
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S39_SS1_P1#TEXT
+    atom: M_GPTNQR_A_PINC
+    tsgs:
+    - TSG11_07
+    check: JUDGE
+  - mkp: CGSTA17_S2_C35#TEXT
+    atom: M_DOCA_A_PICAAD
+    tsgs:
+    - TSG14_01
+    check: JUDGE
+  - mkp: CGSTA17_S2_C35#TEXT
+    atom: M_DOCA_A_OCCCAD
+    tsgs:
+    - TSG14_01
+    check: JUDGE
+- fact_id: F_PPH
+  name: Person Post Held
+  entity: PERSON
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 2
+  tsgs:
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_SCHIII_EN3_Cb#TEXT
+    atom: M_DBCPH_A_HOCP
+    tsgs:
+    - TSG01_03
+    check: JUDGE
+  - mkp: CGSTA17_SCHIII_EN3_Cb#TEXT
+    atom: M_DBCPH_A_DPIC
+    tsgs:
+    - TSG01_03
+    check: JUDGE
+- fact_id: F_PPQ
+  name: Person Professional Qualification
+  entity: ''
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
+- fact_id: F_PRR
+  name: Provider Recipient Relation
+  entity: PERSON
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_SCHIII_EN1#TEXT
+    atom: M_ESTE_A_SBETE
+    tsgs:
+    - TSG01_03
+    check: PYTHON
+- fact_id: F_PRS
+  name: Person Registration Status
+  entity: PERSON
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 4
+    judge: 0
+  tsgs:
+  - tsg: TSG06_01
+    name: GSTIN validity & status
+    atoms: 4
+  laws:
+  - mkp: CGSTA17_S37_SS1_P1#TEXT
+    atom: M_FODRP_A_FIRP
+    tsgs:
+    - TSG06_01
+    check: PYTHON
+  - mkp: CGSTA17_S37_SS1#TEXT
+    atom: M_FODRP_A_FIRP
+    tsgs:
+    - TSG06_01
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS1#TEXT
+    atom: M_FODRP_A_FIRP
+    tsgs:
+    - TSG06_01
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS1_P1#TEXT
+    atom: M_FODRP_A_FIRP
+    tsgs:
+    - TSG06_01
+    check: PYTHON
+- fact_id: F_PSS
+  name: Property Sale Subject
+  entity: TRANSACTION
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 2
+    judge: 1
+  tsgs:
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_SCHIII_EN5#TEXT
+    atom: M_SOLAB_A_TISOL
+    tsgs:
+    - TSG01_03
+    check: PYTHON
+  - mkp: CGSTA17_SCHIII_EN5#TEXT
+    atom: M_SOLAB_A_TISOB
+    tsgs:
+    - TSG01_03
+    check: PYTHON
+  - mkp: CGSTA17_SCHIII_EN5#TEXT
+    atom: M_SOLAB_A_BSSTSC
+    tsgs: []
+    check: JUDGE
+- fact_id: F_PTC
+  name: Person Tax Category
+  entity: PERSON
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 10
+    judge: 0
+  tsgs:
+  - tsg: TSG06_03
+    name: Composition & special taxpayers / recipients
+    atoms: 4
+  - tsg: TSG07_04
+    name: TDS
+    atoms: 2
+  - tsg: TSG07_05
+    name: TCS
+    atoms: 2
+  - tsg: TSG11_01
+    name: GSTR-1 / IFF
+    atoms: 5
+  - tsg: TSG11_02
+    name: GSTR-3B
+    atoms: 5
+  laws:
+  - mkp: CGSTA17_S37_SS1#TEXT
+    atom: M_RPOSD_A_PIISD
+    tsgs:
+    - TSG11_01
+    check: PYTHON
+  - mkp: CGSTA17_S37_SS1#TEXT
+    atom: M_RPOSD_A_PINTP
+    tsgs:
+    - TSG06_03
+    - TSG11_01
+    check: PYTHON
+  - mkp: CGSTA17_S37_SS1#TEXT
+    atom: M_RPOSD_A_PPTUS10
+    tsgs:
+    - TSG06_03
+    - TSG11_01
+    check: PYTHON
+  - mkp: CGSTA17_S37_SS1#TEXT
+    atom: M_RPOSD_A_PPTUS51
+    tsgs:
+    - TSG07_04
+    - TSG11_01
+    check: PYTHON
+  - mkp: CGSTA17_S37_SS1#TEXT
+    atom: M_RPOSD_A_PPTUS52
+    tsgs:
+    - TSG07_05
+    - TSG11_01
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS1#TEXT
+    atom: M_RPOSD_A_PIISD
+    tsgs:
+    - TSG11_02
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS1#TEXT
+    atom: M_RPOSD_A_PINTP
+    tsgs:
+    - TSG06_03
+    - TSG11_02
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS1#TEXT
+    atom: M_RPOSD_A_PPTUS10
+    tsgs:
+    - TSG06_03
+    - TSG11_02
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS1#TEXT
+    atom: M_RPOSD_A_PPTUS51
+    tsgs:
+    - TSG07_04
+    - TSG11_02
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS1#TEXT
+    atom: M_RPOSD_A_PPTUS52
+    tsgs:
+    - TSG07_05
+    - TSG11_02
+    check: PYTHON
+- fact_id: F_RFUFF
+  name: Return Form Used For Furnishing
+  entity: RETURN
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 2
+  tsgs:
+  - tsg: TSG11_01
+    name: GSTR-1 / IFF
+    atoms: 1
+  - tsg: TSG11_02
+    name: GSTR-3B
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S37_SS1#TEXT
+    atom: M_RPOSD_A_FIPFAM
+    tsgs:
+    - TSG11_01
+    check: JUDGE
+  - mkp: CGSTA17_S39_SS1#TEXT
+    atom: M_RPOSD_A_FIPFAM
+    tsgs:
+    - TSG11_02
+    check: JUDGE
+- fact_id: F_RICD
+  name: Return Input Credit Details
+  entity: RETURN
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG11_02
+    name: GSTR-3B
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S39_SS1#TEXT
+    atom: M_RPFMR_A_RSITCA
+    tsgs:
+    - TSG11_02
+    check: PYTHON
+- fact_id: F_RISD
+  name: Return Inward Supply Details
+  entity: RETURN
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG11_01
+    name: GSTR-1 / IFF
+    atoms: 1
+  - tsg: TSG11_02
+    name: GSTR-3B
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S39_SS1#TEXT
+    atom: M_RPFMR_A_RSIOS
+    tsgs:
+    - TSG11_01
+    - TSG11_02
+    check: PYTHON
+- fact_id: F_ROP
+  name: Return Other Particulars
+  entity: RETURN
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG11_02
+    name: GSTR-3B
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S39_SS1#TEXT
+    atom: M_RPFMR_A_RHOPP
+    tsgs:
+    - TSG11_02
+    check: JUDGE
+- fact_id: F_ROSD
+  name: Return Outward Supply Details
+  entity: RETURN
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG11_01
+    name: GSTR-1 / IFF
+    atoms: 1
+  - tsg: TSG11_02
+    name: GSTR-3B
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S39_SS1#TEXT
+    atom: M_RPFMR_A_RSIOS
+    tsgs:
+    - TSG11_01
+    - TSG11_02
+    check: PYTHON
+- fact_id: F_RRF
+  name: Reason Recording Form
+  entity: ''
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG11_01
+    name: GSTR-1 / IFF
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S37_SS1_P2#TEXT
+    atom: M_CETLFFD_A_RRIW
+    tsgs:
+    - TSG11_01
+    check: PYTHON
+- fact_id: F_RSS
+  name: Recipient SEZ Status
+  entity: RECIPIENT
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs: []
+  laws:
+  - mkp: IGSTA17_S8_SS2_P1#TEXT
+    atom: M_ISESS_A_STSP
+    tsgs: []
+    check: PYTHON
+- fact_id: F_RTPD
+  name: Return Tax Payable Details
+  entity: RETURN
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG11_02
+    name: GSTR-3B
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S39_SS1#TEXT
+    atom: M_RPFMR_A_RSTP
+    tsgs:
+    - TSG11_02
+    check: PYTHON
+- fact_id: F_RTPD2
+  name: Return Tax Paid Details
+  entity: RETURN
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG11_02
+    name: GSTR-3B
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S39_SS1#TEXT
+    atom: M_RPFMR_A_RSTP2
+    tsgs:
+    - TSG11_02
+    check: PYTHON
+- fact_id: F_SCS
+  name: Supply Consideration Status
+  entity: SUPPLY
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 3
+    judge: 0
+  tsgs:
+  - tsg: TSG01_01
+    name: Supply with consideration
+    atoms: 2
+  - tsg: TSG01_02
+    name: Supply without consideration (Schedule I)
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S7_SS1_Cc#TEXT
+    atom: M_SIAWC_A_AMWC
+    tsgs:
+    - TSG01_02
+    check: PYTHON
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIMFC
+    tsgs:
+    - TSG01_01
+    check: PYTHON
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIAFC
+    tsgs:
+    - TSG01_01
+    check: PYTHON
+- fact_id: F_SCT
+  name: Supply Consideration Type
+  entity: ''
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG01_01
+    name: Supply with consideration
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S7_SS1_Cb#TEXT
+    atom: M_IOSFC_A_IMFC
+    tsgs:
+    - TSG01_01
+    check: PYTHON
+- fact_id: F_SEC
+  name: Service Employment Context
+  entity: SERVICE
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_SCHIII_EN1#TEXT
+    atom: M_ESTE_A_SIEC
+    tsgs:
+    - TSG01_03
+    check: JUDGE
+- fact_id: F_SKOT
+  name: Supply Kind Of Transaction
+  entity: ''
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 2
+    judge: 1
+  tsgs:
+  - tsg: TSG01_01
+    name: Supply with consideration
+    atoms: 2
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 1
+  - tsg: TSG03_04
+    name: Imports
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S7_SS1_Cb#TEXT
+    atom: M_IOSFC_A_TISI
+    tsgs:
+    - TSG01_01
+    - TSG03_04
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIOGOS
+    tsgs:
+    - TSG01_01
+    check: PYTHON
+  - mkp: CGSTA17_SCHIII_EN1#TEXT
+    atom: M_ESTE_A_AIAS
+    tsgs:
+    - TSG01_03
+    check: PYTHON
+- fact_id: F_SOOT
+  name: Supply Origin Of Transaction
+  entity: ''
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG01_01
+    name: Supply with consideration
+    atoms: 1
+  - tsg: TSG03_04
+    name: Imports
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S7_SS1_Cb#TEXT
+    atom: M_IOSFC_A_TISI
+    tsgs:
+    - TSG01_01
+    - TSG03_04
+    check: JUDGE
+- fact_id: F_SSS
+  name: Supplier SEZ Status
+  entity: SUPPLIER
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs: []
+  laws:
+  - mkp: IGSTA17_S8_SS2_P1#TEXT
+    atom: M_ISESS_A_SBSP
+    tsgs: []
+    check: PYTHON
+- fact_id: F_TPOR
+  name: Tax Period Of Return
+  entity: PERIOD
+  data_type: PERIOD
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 2
+  tsgs:
+  - tsg: TSG05_05
+    name: Tax period & reporting period
+    atoms: 1
+  - tsg: TSG11_01
+    name: GSTR-1 / IFF
+    atoms: 1
+  - tsg: TSG11_02
+    name: GSTR-3B
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S37_SS1#TEXT
+    atom: M_RPOSD_A_DAOOS
+    tsgs:
+    - TSG11_01
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS1#TEXT
+    atom: M_RPFMR_A_RCCMOP
+    tsgs:
+    - TSG05_05
+    - TSG11_02
+    check: JUDGE
+  - mkp: CGSTA17_S39_SS1#TEXT
+    atom: M_RPFMR_A_RFWPT
+    tsgs:
+    - TSG11_02
+    check: JUDGE
+- fact_id: F_TUC
+  name: Term Usage Context
+  entity: ''
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []

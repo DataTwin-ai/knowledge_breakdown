@@ -148,7 +148,10 @@ def ask_part(idx, citing: dict, ask: Callable[[str], str], prompt: str) -> Tuple
 def find_part(idx, citing: dict, whole_max: int, ask: Optional[Callable[[str], str]] = None,
               prompt: str = "") -> Tuple[List[str], str]:
     """The keys of the outside document this citing law needs, and how they were found.
-    citing: {key, text, mention, relation}."""
+    citing: {key, text, mention, relation, target}."""
+    target = str(citing.get("target") or "")                   # 2026-11-23: the exact part the law names
+    if target and target != idx.doc and target in idx.nodes:   # ("clause (b) of sub-section (1) of section 2")
+        return [target], "python: the exact part the law names"
     got = python_part(idx, citing["key"])                     # an amending text names the provision it changes
     if got:
         return got, "python: the part that names " + ", ".join(needles(citing["key"]))

@@ -1,0 +1,181 @@
+# GOVERNANCE MASTER TSG01_13 Construction Service Deeming Competent Authority (TG01 Supply & Taxability)
+# LAW ARC - 3 laws - status APPROVED
+name: TSG01_13 Construction Service Deeming Competent Authority - GOVERNANCE MASTER rulebook
+version: TSG01_13
+facts:
+  # ---- level 2: asked only when that law's gates pass
+  F_CAK:  # 1. 2 | 3 law(s)
+    name: Competent Authority Kind
+    type: CODE
+    options:
+    - AUTHORISED_CERT_ISSUER
+    - GOVERNMENT
+    - OTHER
+    tier: T1
+  F_CCR:  # 2. 2 | 3 law(s)
+    name: Completion Certificate Requirement
+    type: CODE
+    options:
+    - NOT_REQUIRED
+    - REQUIRED
+    tier: T1
+  F_ACR:  # 3. 2 | 1 law(s)
+    name: Architect Council Registration
+    type: CODE
+    options:
+    - REGISTERED_WITH_COA
+    - NOT_REGISTERED
+    tier: T0
+  F_PER:  # 4. 2 | 1 law(s)
+    name: Person Engineer Registration
+    type: CODE
+    options:
+    - REGISTERED_CHARTERED_ENGINEER_IEI
+    - OTHER
+    tier: T0
+  # ---- LAST: only heavy checks (free text) need these
+  F_PSLS:  # 5. LAST (heavy check only) | 1 law(s)
+    name: Person Surveyor Licence Status
+    type: CODE
+    options:
+    - LICENSED_SURVEYOR_LOCAL_BODY
+    - LICENSED_SURVEYOR_PLANNING_AUTHORITY
+    - NOT_LICENSED_SURVEYOR
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_AACA_A_CAIG:
+    statement: For the purposes of this clause the expression "competent authority" means the Government
+    order: LOW
+    rule: F_CAK = 'GOVERNMENT'
+    handler: python
+  M_AACA_A_AATIC:
+    statement: For the purposes of this clause the expression "competent authority" means any authority authorised to issue
+      completion certificate under any law for the time being in force
+    order: HIGH
+    interpretation: Is the authority authorised under any law for the time being in force to issue a completion certificate?
+    grounding:
+    - F_CAK
+    handler: light
+  M_AACA_A_CCNR:
+    statement: In case of non-requirement of such completion certificate from such authority
+    order: LOW
+    rule: F_CCR = 'NOT_REQUIRED'
+    handler: python
+  M_AACA_A_ARWC:
+    statement: The competent authority is an architect registered with the Council of Architecture constituted under the Architects
+      Act, 1972
+    order: LOW
+    rule: F_ACR = 'REGISTERED_WITH_COA'
+    handler: python
+  M_CEACA_A_CERWI:
+    statement: The competent authority is a chartered engineer registered with the Institution of Engineers (India)
+    order: LOW
+    rule: F_PER = 'REGISTERED_CHARTERED_ENGINEER_IEI'
+    handler: python
+  M_LSACA_A_GOCIA:
+    statement: The authority is the Government or any authority authorised to issue completion certificate under any law for
+      the time being in force
+    order: LOW
+    rule: F_CAK IN ['GOVERNMENT', 'AUTHORISED_CERT_ISSUER']
+    handler: python
+  M_LSACA_A_LSOLB:
+    statement: The competent authority is, from any of the following, a licensed surveyor of the respective local body of
+      the city or town or village or development or planning authority
+    order: HIGH
+    interpretation: Is the person a licensed surveyor of the respective local body of the city or town or village or of the
+      development or planning authority concerned?
+    grounding:
+    - F_PSLS
+    handler: light
+groups:
+  M_AACA_G_CAR:
+    name: Competent Authority Routes
+    logic: ANY
+    members:
+    - M_AACA_A_CAIG
+    - M_AACA_A_AATIC
+    - M_AACA_G_ARC
+    description: Any one of the three routes makes the person or body a competent authority
+  M_AACA_G_ARC:
+    name: Architect Route Conditions
+    logic: ALL
+    members:
+    - M_AACA_A_CCNR
+    - M_AACA_A_ARWC
+    description: Architect route - no completion certificate is required from the authority and the person is a registered
+      architect
+  M_CEACA_G_GOAI:
+    name: Government Or Authorised Issuer
+    logic: ANY
+    members:
+    - M_AACA_A_CAIG
+    - M_AACA_A_AATIC
+    description: Either the Government or an authority authorised to issue a completion certificate under any law in force
+  M_CEACA_G_NCACE:
+    name: No Certificate And Chartered Engineer
+    logic: ALL
+    members:
+    - M_AACA_A_CCNR
+    - M_CEACA_A_CERWI
+    description: The chartered engineer route applies only where no completion certificate is required from such authority
+      and the person is a registered chartered engineer
+  M_LSACA_G_SRC:
+    name: Surveyor Route Conditions
+    logic: ALL
+    members:
+    - M_AACA_A_CCNR
+    - M_LSACA_A_LSOLB
+    description: The surveyor route applies only when no completion certificate is required from the authority and the person
+      is a licensed surveyor of the respective local body or planning authority
+outcomes:
+  M_AACA_LE_CAD:
+    outcome: COMPETENT_AUTHORITY
+    expr: M_AACA_G_CAR
+    module: M_AACA
+    description: A person or body is a competent authority if it is the Government, or an authority authorised to issue completion
+      certificates, or - where no certificate is required - a registered architect
+  M_CEACA_LE_CADO:
+    outcome: COMPETENT_AUTHORITY_FOR_CLAUSE_5B
+    expr: M_CEACA_G_GOAI OR M_CEACA_G_NCACE
+    module: M_CEACA
+    description: A competent authority for clause 5(b) is reached only through the Government or authorised certificate-issuing
+      authority route, or through the registered chartered engineer route where no completion certificate is required.
+  M_LSACA_LE_CAIE:
+    outcome: COMPETENT_AUTHORITY_UNDER_THIS_ITEM
+    expr: M_LSACA_A_GOCIA OR M_LSACA_G_SRC
+    module: M_LSACA
+    description: The authority is the Government or an authorised completion certificate issuer, or else a licensed surveyor
+      where no certificate is required from that authority
+products:
+  M_AACA_PD_CAD:
+    statement: A person or body is a competent authority if it is the Government, or an authority authorised to issue completion
+      certificates, or - where no certificate is required - a registered architect
+  M_CEACA_PD_CADO:
+    statement: A competent authority for clause 5(b) is reached only through the Government or authorised certificate-issuing
+      authority route, or through the registered chartered engineer route where no completion certificate is required.
+  M_LSACA_PD_CAIE:
+    statement: The authority is the Government or an authorised completion certificate issuer, or else a licensed surveyor
+      where no certificate is required from that authority
+compounds:
+- id: C_SCHII_EN5_CB_E1_N1
+  question: 'Schedule II, paragraph 5(b), Explanation, item (1): which clause applies?'
+  includes:
+  - M_AACA_LE_CAD
+  - M_CEACA_LE_CADO
+  - M_LSACA_LE_CAIE
+  produces:
+  - product: M_AACA_PD_CAD
+    from:
+    - M_AACA_LE_CAD
+  - product: M_CEACA_PD_CADO
+    from:
+    - M_CEACA_LE_CADO
+  - product: M_LSACA_PD_CAIE
+    from:
+    - M_LSACA_LE_CAIE
+time:
+  law_date: F_DOI

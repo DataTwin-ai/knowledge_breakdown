@@ -28,16 +28,21 @@ from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 from kp_console import flow, log
 
-KINDS = ("NOTIFICATION", "CIRCULAR", "AMENDING_ACT")
+# 2026-11-22: every kind of outside document is searched the same way (before: only the first three; a GST Act /
+# Rules (IGSTA17) or another Act (EXT_CAWAA_1959) stayed PENDING for ever). A document already in Law/ is used as it
+# is - never searched (local_document).
+KINDS = ("NOTIFICATION", "CIRCULAR", "AMENDING_ACT", "ACT", "RULES", "OTHER_ACT")
 DONE = ("LINK_FOUND", "DOWNLOADED", "VERIFIED", "QUEUED", "INSERTED")
 
-SEARCH_PROMPT = """Find the official PDF of this Indian GST document with the web search.
+SEARCH_PROMPT = """Find the official PDF of this Indian law document with the web search.
 Document: {title}
 Kind: {kind}   Number: {number}   Year: {year}   Series: {series}
 Search only official sites: e-Gazette (egazette.gov.in), India Code (indiacode.nic.in), the Legislative
-Department (legislative.gov.in), CBIC (cbic-gst.gov.in, cbic.gov.in, taxinformation.cbic.gov.in), GST Council.
+Department (legislative.gov.in), CBIC (cbic-gst.gov.in, cbic.gov.in, taxinformation.cbic.gov.in), GST Council,
+or a site in this list: {hosts}.
 An Act of Parliament is on India Code / the Legislative Department / the e-Gazette; a notification or circular
-is on CBIC / the e-Gazette.
+is on CBIC / the e-Gazette. Kind ACT, RULES or OTHER_ACT is a principal Act / Rules: the latest updated text
+(as amended) is wanted, not an amending Act. Kind AMENDING_ACT is the amending Act itself, not the Act it amends.
 {previous}Answer with ONE JSON object only:
 {{"url": "<the DIRECT link to the PDF file, as it appears in the search results, or empty>",
   "page": "<an official web page that lists or links this document, or empty>",
@@ -53,6 +58,14 @@ def _lock(ref_id: str) -> threading.Lock:
     """One lock per document: two workers never search for the same document."""
     with _locks_guard:
         return _locks.setdefault(ref_id, threading.Lock())
+
+
+def local_document(cfg: dict, ref_id: str) -> Optional[dict]:
+    """The document in Config/documents.json whose code / ref_id is this one and whose PDF is in Law/ (or None)."""
+    for code, d in (cfg.get("documents") or {}).items():
+        if ref_id in (code, d.get("ref_id")) and not d.get("missing"):
+            return dict(d, code=code)
+    return None
 
 
 def needs_link(row: Optional[dict]) -> bool:
@@ -77,9 +90,28 @@ def claude_search(cfg: dict, key: str = "link_finder") -> Callable:
         raise RuntimeError(f"permission.json llm.{'ref_link' if key == 'link_finder' else 'ref_link_retry'} is missing")
     import kp_settings
     from llm_runtime import call_claude_search, create_llm_runtime
-    rt = dict(create_llm_runtime(role["llm"], kp_settings.build_paths(cfg)))
+    paths = kp_settings.build_paths(cfg)
+    rt = dict(create_llm_runtime(role["llm"], paths))
     rt["model"] = role["model"]
-    return lambda prompt, domains, uses: call_claude_search(rt, prompt, domains, uses)
+
+    def search(prompt, domains, uses):
+        # 2026-11-23: Claude has no credit / its key expired -> Gemini + Google Search (permission.json llm.fallback)
+        from llm_fallback import STATE, fallback_model, mark_down
+        if not STATE["down"]:
+            try:
+                return call_claude_search(rt, prompt, domains, uses)
+            except Exception as exc:
+                from llm_runtime_errors import is_fatal
+                if not (STATE["enabled"] and (is_fatal(exc) or "not available" in str(exc))):
+                    raise
+                mark_down(str(exc)[:200])
+        if not STATE["enabled"]:
+            raise RuntimeError("Claude is not available - web search skipped (permission.json llm.fallback is off)")
+        from llm_runtime import call_gemini_search
+        model = fallback_model(role["model"])
+        log(f"LINK SEARCH : Claude is down - Gemini {model} + Google Search")
+        return call_gemini_search(model, prompt, domains, paths)
+    return search
 
 
 def searchers(cfg: dict) -> List[Tuple[str, Callable, int]]:
@@ -118,7 +150,7 @@ def find(cfg: dict, ref: dict, search_with: List[Tuple[str, Callable, int]], che
                 + "; ".join(list(tried)[:8]) + "\n") if tried else ""
         prompt = SEARCH_PROMPT.format(title=ref.get("title") or ref["ref_id"], kind=ref["kind"],
                                       number=ref.get("number") or "", year=ref.get("year") or "",
-                                      series=ref.get("series") or "", previous=prev)
+                                      series=ref.get("series") or "", previous=prev, hosts=", ".join(hosts))
         text, seen = search(prompt, hosts, uses)
         ans = parse_answer(text)
         checks = 0
@@ -164,7 +196,27 @@ def on_split(cfg: dict, store, ref_ids: Iterable[str], search: Optional[Callable
             _said.add("internet")
             flow("LINKS      : not searched while splitting - permission.json access.internet is false")
         return 0
-    todo = [r for r in store.link_state(ids) if needs_link(r)]
+    todo = [r for r in store.link_state(ids) if needs_link(r) and not local_document(cfg, r["ref_id"])]
+    if not todo:
+        return 0
+    # 2026-11-23: the link register Config/ref_links.xlsx first - a link written there is used, never searched;
+    # a new document gets a NO LINK row; refs.search_empty_links = false -> nothing is searched while splitting
+    from ref_ss import register
+    with _lock("__register__"):
+        reg = register.load(cfg)
+        register.add_new(cfg, todo, reg)
+    rest = []
+    for r in todo:
+        row = reg.get(r["ref_id"]) or {}
+        if register.skipped(row):
+            continue
+        if row.get("link"):
+            store.set(r["ref_id"], link=row["link"], link_status="OK", status="LINK_FOUND",
+                      note="link from the link register (checked by ref_engine.py)")
+            flow(f"LINK       : {r['ref_id']:<16} from {register.path(cfg).name}")
+            continue
+        rest.append(r)
+    todo = rest if rc.get("search_empty_links", True) else []
     if not todo:
         return 0
     if check is None:
@@ -187,6 +239,8 @@ def on_split(cfg: dict, store, ref_ids: Iterable[str], search: Optional[Callable
                     flow(f"LINKS      : web search unavailable ({str(exc)[:100]}) - ref_engine.py will find the links")
                 continue
             store.set(ref["ref_id"], **got)
+            if got.get("link"):              # the link found goes into the Excel (status: check it)
+                register.write(cfg, {ref["ref_id"]: {"link": got["link"], "status": register.FOUND}})
             done += 1
             flow(f"LINK       : {ref['ref_id']:<16} {got['link_status']:<9} {got['link'] or got['note'][:90]}")
     return done

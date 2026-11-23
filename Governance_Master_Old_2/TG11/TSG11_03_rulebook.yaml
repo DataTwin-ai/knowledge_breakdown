@@ -1,0 +1,72 @@
+# GOVERNANCE MASTER TSG11_03 GSTR-2A / 2B (TG11 Returns & Reconciliation)
+# LAW ARC - 1 laws - status NEEDS_REVIEW
+name: TSG11_03 GSTR-2A / 2B - GOVERNANCE MASTER rulebook
+version: TSG11_03
+facts:
+  # ---- level 1: gate facts - if one is false, that law stops here
+  F_DCTR:  # 1. 1 gate | 1 law(s)
+    name: Details Communicated To Recipient
+    type: BOOLEAN
+    tier: T1
+  # ---- LAST: only heavy checks (free text) need these
+  F_CDTR:  # 2. LAST (heavy check only) | 1 law(s)
+    name: Communication Date To Recipient
+    type: DATE
+    tier: T1
+  F_CMTR:  # 3. LAST (heavy check only) | 1 law(s)
+    name: Communication Method To Recipient
+    type: TEXT
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_RPOSD_A_DCTR:
+    statement: Such details shall be communicated to the recipient of the said supplies
+    order: LOW
+    rule: F_DCTR = TRUE
+    handler: python
+  M_RPOSD_A_CIPTAM:
+    statement: The communication to the recipient shall be within such time and in such manner as may be prescribed
+    order: HIGH
+    interpretation: Was the communication to the recipient made within the time and in the manner prescribed? The prescribed
+      time and manner are not stated in this provision and must be read from the rules.
+    grounding:
+    - F_CDTR
+    - F_CMTR
+    handler: light
+groups: {}
+outcomes:
+  M_RPOSD_LE_DCTR:
+    outcome: DETAILS_COMMUNICATED_TO_RECIPIENT
+    expr: M_RPOSD_A_DCTR
+    module: M_RPOSD
+    description: Such details shall be communicated to the recipient of the said supplies (Section 37(1), part of the law)
+  M_RPOSD_LE_CIPTAM:
+    outcome: COMMUNICATED_IN_PRESCRIBED_TIME_AND_MANNER
+    expr: M_RPOSD_A_CIPTAM
+    module: M_RPOSD
+    description: The communication to the recipient shall be within such time and in such manner as may be prescribed (Section
+      37(1), part of the law)
+products:
+  M_RPOSD_PD_DCTR:
+    statement: Such details shall be communicated to the recipient of the said supplies
+  M_RPOSD_PD_CIPTAM:
+    statement: The communication to the recipient shall be within such time and in such manner as may be prescribed
+compounds:
+- id: C_RPOSD
+  question: Such details shall be communicated to the recipient of the said supplies; The communication to the recipient shall
+    be within such time and in such manner as may be prescribed? (Section 37(1))
+  includes:
+  - M_RPOSD_LE_DCTR
+  - M_RPOSD_LE_CIPTAM
+  produces:
+  - product: M_RPOSD_PD_DCTR
+    from:
+    - M_RPOSD_LE_DCTR
+  - product: M_RPOSD_PD_CIPTAM
+    from:
+    - M_RPOSD_LE_CIPTAM
+time:
+  law_date: F_DOI

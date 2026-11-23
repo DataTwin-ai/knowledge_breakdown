@@ -12,7 +12,7 @@
     "ikp": true,
     "mkp": true,
     "akp": true,
-    "gkp": true,
+    "gkp": false,
     "governance_master": true
   },
   "read": {
@@ -26,7 +26,7 @@
   },
   "scope": {
     "ask_user_input": false,
-    "default": ["section 7(2)"]
+    "default": ["section 7", "CGSTA17_SCHII"]
   },
   "workers": {
     "_about": "Worker pool: how many units run at the same time, and how many LLM calls each provider may have open at once.",
@@ -39,9 +39,9 @@
   "features": {
     "download_missing_pdfs": true,
     "cross_ref_record": true,
-    "web_scraping": true,
+    "web_scraping": false,
     "push_amending_notifications": false,
-    "gkp_create_groups": true,
+    "gkp_create_groups": false,
     "prompt_caching": true
   },
   "access": {
@@ -92,7 +92,7 @@
       "COMPLEX": {
         "generator_1": {
           "llm": "GEMINI",
-          "model": "gemini-2.5-pro"
+          "model": "gemini-2.5-flash"
         },
         "generator_2": {
           "llm": "CLAUDE",
@@ -120,17 +120,17 @@
         },
         "comparison": {
           "llm": "GEMINI",
-          "model": "gemini-2.5-pro"
+          "model": "gemini-2.5-flash"
         },
         "same": {
           "llm": "GEMINI",
-          "model": "gemini-2.5-pro"
+          "model": "gemini-2.5-flash"
         }
       },
       "COMPLEX": {
         "generator_1": {
           "llm": "GEMINI",
-          "model": "gemini-2.5-pro"
+          "model": "gemini-2.5-flash"
         },
         "generator_2": {
           "llm": "CLAUDE",
@@ -142,11 +142,11 @@
         },
         "comparison": {
           "llm": "GEMINI",
-          "model": "gemini-2.5-pro"
+          "model": "gemini-2.5-flash"
         },
         "same": {
           "llm": "GEMINI",
-          "model": "gemini-2.5-pro"
+          "model": "gemini-2.5-flash"
         }
       }
     },
@@ -172,7 +172,7 @@
       "COMPLEX": {
         "verifier_1": {
           "llm": "GEMINI",
-          "model": "gemini-2.5-pro"
+          "model": "gemini-2.5-flash"
         },
         "verifier_2": {
           "llm": "CLAUDE",
@@ -205,13 +205,13 @@
       "_about": "When Claude has no credit / the key expired or is wrong, the run does not stop: that call and every later Claude call use the Gemini model listed here. second_opinion: the other Gemini model, used when both models of a pair (generator_1 + generator_2, verifier_1 + verifier_2) would be the same.",
       "enabled": true,
       "CLAUDE": {
-        "claude-opus-5-5": "gemini-2.5-pro",
-        "claude-sonnet-5-5": "gemini-2.5-pro",
-        "claude-haiku-5-5": "gemini-2.5-flash"
+        "claude-opus-5-5": "gemini-2.5-flash",
+        "claude-sonnet-5-5": "gemini-2.5-flash",
+        "claude-haiku-5-5": "gemini-2.5-flash-lite"
       },
       "second_opinion": {
-        "gemini-2.5-pro": "gemini-2.5-flash",
-        "gemini-2.5-flash": "gemini-2.5-pro"
+        "gemini-2.5-flash": "gemini-2.5-flash-lite",
+        "gemini-2.5-flash-lite": "gemini-2.5-flash"
       }
     }
   }

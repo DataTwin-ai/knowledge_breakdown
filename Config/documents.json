@@ -9,7 +9,10 @@
   "IGST-Act.pdf": {
     "name": "IGST Act",
     "code": "IGSTA17",
-    "type": "ACT"
+    "type": "ACT",
+    "url": "https://www.indiacode.nic.in/bitstream/123456789/2251/1/A201713.pdf",
+    "ref_id": "IGSTA17",
+    "reference_only": true
   },
   "CGST-Rules-2017-Part-A.pdf": {
     "name": "CGST Rules",
@@ -56,10 +59,10 @@
     "ref_id": "CIR_47_2018"
   },
   "ACT_31_2018.pdf": {
-    "name": "Inserted by The Central Goods and Services Tax (Amendment) Act, 2018 (No. 31 of 2018)",
+    "name": "The Central Goods and Services Tax (Amendment) Act, 2018 (No. 31 of 2018)",
     "code": "ACT_31_2018",
     "type": "ACT",
-    "url": "https://cbic-gst.gov.in/pdf/CGST-Act-Updated-31082021.pdf",
+    "url": "https://prsindia.org/files/bills_acts/acts_parliament/2018/the-central-goods-and-services-tax-(amendment)-act,-2018.pdf",
     "ref_id": "ACT_31_2018"
   },
   "ACT_12_2020.pdf": {
@@ -75,5 +78,13 @@
     "type": "ACT",
     "url": "https://gstcouncil.gov.in/sites/default/files/2024-03/annexure-3_cgst-extension-to-jammu-and-kashmir-act_2017.pdf",
     "ref_id": "ACT_26_2017"
+  },
+  "ACT_32_2018.pdf": {
+    "name": "Act 32 of 2018",
+    "code": "ACT_32_2018",
+    "type": "ACT",
+    "url": "https://gstcouncil.gov.in/sites/default/files/2024-03/annexure-5-igst-amendment-act_2018_1.pdf",
+    "ref_id": "ACT_32_2018",
+    "reference_only": true
   }
 }

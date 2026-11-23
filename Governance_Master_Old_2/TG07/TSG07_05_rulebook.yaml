@@ -1,0 +1,63 @@
+# GOVERNANCE MASTER TSG07_05 TCS (TG07 Reverse Charge, TDS, TCS)
+# LAW ARC - 2 laws - status APPROVED
+name: TSG07_05 TCS - GOVERNANCE MASTER rulebook
+version: TSG07_05
+facts:
+  # ---- level 1: gate facts - if one is false, that law stops here
+  F_PTC:  # 1. 1 gate | 2 law(s)
+    name: Person Tax Category
+    type: CODE
+    options:
+    - COMPOSITION_S10
+    - ISD
+    - NON_RESIDENT
+    - REGULAR
+    - TCS_S52
+    - TDS_S51
+    tier: T0
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_RPOSD_A_PPTUS52:
+    statement: The person is a person paying tax under the provisions of section 52
+    order: LOW
+    rule: F_PTC = 'TCS_S52'
+    handler: python
+groups: {}
+outcomes:
+  M_RPOSD_LE_PPTUS52:
+    outcome: PERSON_PAYS_TAX_UNDER_SECTION_52
+    expr: M_RPOSD_A_PPTUS52
+    module: M_RPOSD
+    description: The person is a person paying tax under the provisions of section 52 (Section 37(1), part of the law)
+  M_RPOSD_LE_PPTUS52_RPFMR:
+    outcome: PERSON_PAYS_TAX_UNDER_SECTION_52
+    expr: M_RPOSD_A_PPTUS52
+    module: M_RPFMR
+    description: The person is a person paying tax under the provisions of section 52 (Section 39(1), part of the law)
+products:
+  M_RPOSD_PD_PPTUS52:
+    statement: The person is a person paying tax under the provisions of section 52
+  M_RPOSD_PD_PPTUS52_RPFMR:
+    statement: The person is paying tax under the provisions of section 52
+compounds:
+- id: C_RPOSD
+  question: The person is a person paying tax under the provisions of section 52? (Section 37(1))
+  includes:
+  - M_RPOSD_LE_PPTUS52
+  produces:
+  - product: M_RPOSD_PD_PPTUS52
+    from:
+    - M_RPOSD_LE_PPTUS52
+- id: C_RPFMR
+  question: The person is a person paying tax under the provisions of section 52? (Section 39(1))
+  includes:
+  - M_RPOSD_LE_PPTUS52_RPFMR
+  produces:
+  - product: M_RPOSD_PD_PPTUS52_RPFMR
+    from:
+    - M_RPOSD_LE_PPTUS52_RPFMR
+time:
+  law_date: F_DOI

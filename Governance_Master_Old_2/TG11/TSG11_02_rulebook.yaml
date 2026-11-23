@@ -1,0 +1,227 @@
+# GOVERNANCE MASTER TSG11_02 GSTR-3B (TG11 Returns & Reconciliation)
+# LAW ARC - 1 laws - status NEEDS_REVIEW
+name: TSG11_02 GSTR-3B - GOVERNANCE MASTER rulebook
+version: TSG11_02
+facts:
+  # ---- level 1: gate facts - if one is false, that law stops here
+  F_MOFD:  # 1. 1 gate | 1 law(s)
+    name: Mode Of Furnishing Details
+    type: CODE
+    options:
+    - ELECTRONIC
+    - OTHER
+    tier: T0
+  F_PRS:  # 2. 1 gate | 1 law(s)
+    name: Person Registration Status
+    type: CODE
+    options:
+    - CANCELLED
+    - REGISTERED
+    - SUSPENDED
+    - UNREGISTERED
+    tier: T0
+  F_PTC:  # 3. 1 gate | 1 law(s)
+    name: Person Tax Category
+    type: CODE
+    options:
+    - COMPOSITION_S10
+    - ISD
+    - NON_RESIDENT
+    - REGULAR
+    - TCS_S52
+    - TDS_S51
+    tier: T0
+  F_RICD:  # 4. 1 gate | 1 law(s)
+    name: Return Input Credit Details
+    type: TEXT
+    tier: T0
+  F_RISD:  # 5. 1 gate | 1 law(s)
+    name: Return Inward Supply Details
+    type: TEXT
+    tier: T0
+  F_ROSD:  # 6. 1 gate | 1 law(s)
+    name: Return Outward Supply Details
+    type: TEXT
+    tier: T0
+  F_RTPD:  # 7. 1 gate | 1 law(s)
+    name: Return Tax Payable Details
+    type: TEXT
+    tier: T0
+  F_RTPD2:  # 8. 1 gate | 1 law(s)
+    name: Return Tax Paid Details
+    type: TEXT
+    tier: T0
+  # ---- LAST: only heavy checks (free text) need these
+  F_DOF:  # 9. LAST (heavy check only) | 1 law(s) | asked only if M_RPFMR: F_MOFD + F_RICD + F_RISD + F_ROSD + F_RTPD + F_RTPD2
+    name: Date Of Furnishing
+    type: DATE
+    tier: T1
+  F_RFUFF:  # 10. LAST (heavy check only) | 1 law(s) | asked only if M_RPFMR: F_MOFD + F_RICD + F_RISD + F_ROSD + F_RTPD + F_RTPD2
+    name: Return Form Used For Furnishing
+    type: TEXT
+    tier: T0
+  F_ROP:  # 11. LAST (heavy check only) | 1 law(s) | asked only if M_RPFMR: F_MOFD + F_RICD + F_RISD + F_ROSD + F_RTPD + F_RTPD2
+    name: Return Other Particulars
+    type: TEXT
+    tier: T0
+  F_TPOR:  # 12. LAST (heavy check only) | 1 law(s) | asked only if M_RPFMR: F_MOFD + F_RICD + F_RISD + F_ROSD + F_RTPD + F_RTPD2
+    name: Tax Period Of Return
+    type: AMOUNT
+    tier: T0
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_RPFMR_A_RCCMOP:
+    statement: The return is furnished for every calendar month or part thereof
+    order: HIGH
+    interpretation: Does the tax period of the return cover a calendar month or a part of a calendar month?
+    grounding:
+    - F_TPOR
+    handler: light
+  M_RPFMR_A_RSIOS:
+    statement: The return contains details of inward and outward supplies of goods or services or both
+    order: LOW
+    rule: F_RISD IS_SET AND F_ROSD IS_SET
+    handler: python
+  M_RPFMR_A_RSITCA:
+    statement: The return contains details of input tax credit availed
+    order: LOW
+    rule: F_RICD IS_SET
+    handler: python
+  M_RPFMR_A_RSTP:
+    statement: The return contains details of tax payable
+    order: LOW
+    rule: F_RTPD IS_SET
+    handler: python
+  M_RPFMR_A_RSTP2:
+    statement: The return contains details of tax paid
+    order: LOW
+    rule: F_RTPD2 IS_SET
+    handler: python
+  M_RPFMR_A_RHOPP:
+    statement: The return contains such other particulars as may be prescribed
+    order: HIGH
+    interpretation: Does the return include the other particulars that the prescribed rules require? The rules are not part
+      of this provision.
+    grounding:
+    - F_ROP
+    handler: light
+  M_RPFMR_A_RFWPT:
+    statement: The return is furnished within such time as may be prescribed
+    order: HIGH
+    interpretation: Is the date of furnishing within the time prescribed for this return period?
+    grounding:
+    - F_DOF
+    - F_TPOR
+    handler: light
+  M_FODRP_A_FIRP:
+    statement: The person furnishing the details is a registered person
+    order: LOW
+    rule: F_PRS = 'REGISTERED'
+    handler: python
+  M_RPOSD_A_PIISD:
+    statement: The person is an Input Service Distributor
+    order: LOW
+    rule: F_PTC = 'ISD'
+    handler: python
+  M_RPOSD_A_PINTP:
+    statement: The person is a non-resident taxable person
+    order: LOW
+    rule: F_PTC = 'NON_RESIDENT'
+    handler: python
+  M_RPOSD_A_PPTUS10:
+    statement: The person is a person paying tax under the provisions of section 10
+    order: LOW
+    rule: F_PTC = 'COMPOSITION_S10'
+    handler: python
+  M_RPOSD_A_PPTUS51:
+    statement: The person is a person paying tax under the provisions of section 51
+    order: LOW
+    rule: F_PTC = 'TDS_S51'
+    handler: python
+  M_RPOSD_A_PPTUS52:
+    statement: The person is a person paying tax under the provisions of section 52
+    order: LOW
+    rule: F_PTC = 'TCS_S52'
+    handler: python
+  M_RPOSD_A_DAFE:
+    statement: The person shall furnish the details electronically
+    order: LOW
+    rule: F_MOFD = 'ELECTRONIC'
+    handler: python
+  M_RPOSD_A_FIPFAM:
+    statement: The person shall furnish the details in such form and manner as may be prescribed
+    order: HIGH
+    interpretation: Was the furnishing done in the form and manner prescribed for outward supply details? The prescribed form
+      and manner are not stated in this provision and must be read from the rules.
+    grounding:
+    - F_RFUFF
+    handler: light
+groups:
+  M_RPFMR_G_EPC:
+    name: Excluded Person Categories
+    logic: ANY
+    members:
+    - M_RPOSD_A_PIISD
+    - M_RPOSD_A_PINTP
+    - M_RPOSD_A_PPTUS10
+    - M_RPOSD_A_PPTUS51
+    - M_RPOSD_A_PPTUS52
+    description: Person is an Input Service Distributor or a non-resident taxable person or pays tax under section 10 or 51
+      or 52. Any one takes the person outside the duty (other than).
+  M_RPFMR_G_RCPP:
+    name: Return Core Particulars Present
+    logic: ALL
+    members:
+    - M_RPFMR_A_RSIOS
+    - M_RPFMR_A_RSITCA
+    - M_RPFMR_A_RSTP
+    - M_RPFMR_A_RSTP2
+    - M_RPFMR_A_RHOPP
+    description: The return carries the listed particulars and such other particulars as may be prescribed.
+  M_RPFMR_G_RFC:
+    name: Return Furnishing Conditions
+    logic: ALL
+    members:
+    - M_RPFMR_A_RCCMOP
+    - M_RPOSD_A_DAFE
+    - M_RPFMR_G_RCPP
+    - M_RPOSD_A_FIPFAM
+    - M_RPFMR_A_RFWPT
+    description: 'All stated requirements on the return: period, electronic mode, particulars, prescribed form and manner,
+      and prescribed time.'
+outcomes:
+  M_RPFMR_LE_ROATP:
+    outcome: RETURN_OBLIGATION_APPLIES
+    expr: M_FODRP_A_FIRP AND NOT M_RPFMR_G_EPC
+    module: M_RPFMR
+    description: The duty to furnish the return applies to a registered person who is not in any excluded category.
+  M_RPFMR_LE_RMSR:
+    outcome: RETURN_MEETS_SECTION_39_1_REQUIREMENTS
+    expr: M_RPFMR_G_RFC
+    module: M_RPFMR
+    description: The return is for the calendar month or part month, is furnished electronically, carries the stated particulars
+      and is in the prescribed form and time. It is only meaningful for a person covered by M_RPFMR_LE_ROATP.
+products:
+  M_RPFMR_PD_ROATP:
+    statement: The duty to furnish the return applies to a registered person who is not in any excluded category.
+  M_RPFMR_PD_RMSR:
+    statement: The return is for the calendar month or part month, is furnished electronically, carries the stated particulars
+      and is in the prescribed form and time. It is only meaningful for a person covered by M_RPFMR_LE_ROATP.
+compounds:
+- id: C_RPFMR
+  question: 'Section 39(1): Registered Person Furnish Monthly Return?'
+  includes:
+  - M_RPFMR_LE_ROATP
+  - M_RPFMR_LE_RMSR
+  produces:
+  - product: M_RPFMR_PD_ROATP
+    from:
+    - M_RPFMR_LE_ROATP
+  - product: M_RPFMR_PD_RMSR
+    from:
+    - M_RPFMR_LE_RMSR
+time:
+  law_date: F_DOI

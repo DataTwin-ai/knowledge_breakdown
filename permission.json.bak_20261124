@@ -1,0 +1,218 @@
+{
+  "_about": "Your switches. Every script reads them through kp_settings.py; nothing is hard-coded. Fixed paths, tables and thresholds are in Config/settings.json.",
+  "run": {
+    "ikp": true,
+    "mkp": true,
+    "akp": true,
+    "gkp": true,
+    "governance_master": true,
+    "fact_catalog": true
+  },
+  "use_cache": {
+    "ikp": true,
+    "mkp": true,
+    "akp": true,
+    "gkp": true,
+    "governance_master": true
+  },
+  "read": {
+    "acts": true,
+    "rules": false,
+    "notifications": false,
+    "circulars": false
+  },
+  "documents": {
+    "_about": "Per document on / off by code (e.g. \"CGSTA17\": false). A code not listed follows \"read\" for its kind."
+  },
+  "scope": {
+    "ask_user_input": false,
+    "default": ["section 7"]
+  },
+  "workers": {
+    "_about": "Worker pool: how many units run at the same time, and how many LLM calls each provider may have open at once.",
+    "count": 8,
+    "max_calls_at_once": {
+      "GEMINI": 6,
+      "CLAUDE": 6
+    }
+  },
+  "features": {
+    "download_missing_pdfs": true,
+    "cross_ref_record": true,
+    "web_scraping": false,
+    "push_amending_notifications": false,
+    "gkp_create_groups": false,
+    "prompt_caching": true
+  },
+  "access": {
+    "_about": "What the scripts may touch. A folder not listed here is never read or written.",
+    "read_folders": [
+      "Law",
+      "Prompt",
+      "Config",
+      "Credentials"
+    ],
+    "write_folders": [
+      "Output",
+      "Governance_Master",
+      "Law",
+      "Config"
+    ],
+    "internet": true,
+    "database_delete": true
+  },
+  "console": {
+    "_about": "FLOW = only the flow (workers, units, errors, summary). DETAIL = every engine line too.",
+    "show": "FLOW"
+  },
+  "governance_master": {
+    "tsgs": "TOUCHED",
+    "law_as_on": ""
+  },
+  "llm": {
+    "ikp": {
+      "llm": "CLAUDE",
+      "model": "claude-sonnet-5-5"
+    },
+    "mkp": {
+      "SIMPLE": {
+        "generator_1": {
+          "llm": "GEMINI",
+          "model": "gemini-2.5-flash"
+        },
+        "generator_2": {
+          "llm": "CLAUDE",
+          "model": "claude-haiku-5-5"
+        },
+        "judge": {
+          "llm": "CLAUDE",
+          "model": "claude-haiku-5-5"
+        }
+      },
+      "COMPLEX": {
+        "generator_1": {
+          "llm": "GEMINI",
+          "model": "gemini-2.5-flash"
+        },
+        "generator_2": {
+          "llm": "CLAUDE",
+          "model": "claude-haiku-5-5"
+        },
+        "judge": {
+          "llm": "CLAUDE",
+          "model": "claude-sonnet-5-5"
+        }
+      }
+    },
+    "akp": {
+      "SIMPLE": {
+        "generator_1": {
+          "llm": "GEMINI",
+          "model": "gemini-2.5-flash"
+        },
+        "generator_2": {
+          "llm": "CLAUDE",
+          "model": "claude-haiku-5-5"
+        },
+        "judge": {
+          "llm": "CLAUDE",
+          "model": "claude-haiku-5-5"
+        },
+        "comparison": {
+          "llm": "GEMINI",
+          "model": "gemini-2.5-flash"
+        },
+        "same": {
+          "llm": "GEMINI",
+          "model": "gemini-2.5-flash"
+        }
+      },
+      "COMPLEX": {
+        "generator_1": {
+          "llm": "GEMINI",
+          "model": "gemini-2.5-flash"
+        },
+        "generator_2": {
+          "llm": "CLAUDE",
+          "model": "claude-haiku-5-5"
+        },
+        "judge": {
+          "llm": "CLAUDE",
+          "model": "claude-sonnet-5-5"
+        },
+        "comparison": {
+          "llm": "GEMINI",
+          "model": "gemini-2.5-flash"
+        },
+        "same": {
+          "llm": "GEMINI",
+          "model": "gemini-2.5-flash"
+        }
+      }
+    },
+    "gkp": {
+      "SIMPLE": {
+        "verifier_1": {
+          "llm": "GEMINI",
+          "model": "gemini-2.5-flash"
+        },
+        "verifier_2": {
+          "llm": "CLAUDE",
+          "model": "claude-haiku-5-5"
+        },
+        "judge": {
+          "llm": "CLAUDE",
+          "model": "claude-haiku-5-5"
+        },
+        "proposer": {
+          "llm": "CLAUDE",
+          "model": "claude-haiku-5-5"
+        }
+      },
+      "COMPLEX": {
+        "verifier_1": {
+          "llm": "GEMINI",
+          "model": "gemini-2.5-flash"
+        },
+        "verifier_2": {
+          "llm": "CLAUDE",
+          "model": "claude-haiku-5-5"
+        },
+        "judge": {
+          "llm": "CLAUDE",
+          "model": "claude-sonnet-5-5"
+        },
+        "proposer": {
+          "llm": "CLAUDE",
+          "model": "claude-sonnet-5-5"
+        }
+      }
+    },
+    "embedding": {
+      "llm": "VERTEX",
+      "model": "text-embedding-005"
+    },
+    "ref_link": {
+      "llm": "CLAUDE",
+      "model": "claude-haiku-5-5"
+    },
+    "ref_link_retry": {
+      "_about": "Searches once more for a document's official link, only when ref_link found nothing (stronger, costs more).",
+      "llm": "CLAUDE",
+      "model": "claude-sonnet-5-5"
+    },
+    "fallback": {
+      "_about": "When Claude has no credit / the key expired or is wrong, the run does not stop: that call and every later Claude call use the Gemini model listed here. second_opinion: the other Gemini model, used when both models of a pair (generator_1 + generator_2, verifier_1 + verifier_2) would be the same.",
+      "enabled": true,
+      "CLAUDE": {
+        "claude-opus-5-5": "gemini-2.5-flash",
+        "claude-sonnet-5-5": "gemini-2.5-flash",
+        "claude-haiku-5-5": "gemini-2.5-flash-lite"
+      },
+      "second_opinion": {
+        "gemini-2.5-flash": "gemini-2.5-flash-lite",
+        "gemini-2.5-flash-lite": "gemini-2.5-flash"
+      }
+    }
+  }
+}

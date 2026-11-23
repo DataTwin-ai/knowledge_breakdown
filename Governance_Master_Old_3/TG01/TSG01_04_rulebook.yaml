@@ -1,0 +1,322 @@
+# GOVERNANCE MASTER TSG01_04 Composite & mixed supply (TG01 Supply & Taxability)
+# LAW ARC - 5 laws - status APPROVED
+name: TSG01_04 Composite & mixed supply - GOVERNANCE MASTER rulebook
+version: TSG01_04
+facts:
+  # ---- level 1: gate facts - if one is false, that law stops here
+  F_SCS:  # 1. 1 gate | 2 law(s)
+    name: Supply Consideration Status
+    type: CODE
+    options:
+    - AGREED
+    - NONE
+    - PAID
+    tier: T1
+  F_SKOT:  # 2. 1 gate | 2 law(s)
+    name: Supply Kind Of Transaction
+    type: CODE
+    options:
+    - BOTH
+    - GOODS
+    - SERVICES
+    tier: T1
+  F_SCT:  # 3. 1 gate | 1 law(s)
+    name: Supply Consideration Type
+    type: CODE
+    options:
+    - MONEY
+    - NON_MONEY
+    - NONE
+    tier: T1
+  F_SMOG:  # 4. 1 gate | 1 law(s)
+    name: Supply Manner Of Goods
+    type: CODE
+    options:
+    - BY_WAY_OF_SERVICE
+    - AS_PART_OF_SERVICE
+    - OTHER_MANNER
+    - NO_GOODS_SUPPLIED
+    tier: T1
+  # ---- level 2: asked only when that law's gates pass
+  F_FOS:  # 5. 2 | 1 law(s) | asked only if M_SIAFOS: F_SCS + F_SKOT
+    name: Form Of Supply
+    type: CODE
+    options:
+    - BARTER
+    - DISPOSAL
+    - EXCHANGE
+    - LEASE
+    - LICENCE
+    - OTHER
+    - RENTAL
+    - SALE
+    - TRANSFER
+    tier: T1
+  # ---- LAST: only heavy checks (free text) need these
+  F_DOTA:  # 6. LAST (heavy check only) | 3 law(s) | asked only if M_SIAFOS: F_SCS + F_SKOT | M_SIAWC: F_SCS
+    name: Description Of The Activity
+    type: TEXT
+    tier: T1
+  F_DOAOT:  # 7. LAST (heavy check only) | 2 law(s)
+    name: Description Of Activity Or Transaction
+    type: TEXT
+    tier: T1
+  F_SOOT:  # 8. LAST (heavy check only) | 1 law(s) | asked only if M_IOSFC: F_SCT
+    name: Supply Origin Of Transaction
+    type: CODE
+    options:
+    - IMPORT
+    - DOMESTIC
+    - EXPORT
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_SIAFOS_A_SIAS:
+    statement: The supply takes the form of a sale of goods or services or both
+    order: LOW
+    rule: F_FOS = 'SALE'
+    handler: python
+  M_SIAFOS_A_SIAT:
+    statement: The supply takes the form of a transfer of goods or services or both
+    order: LOW
+    rule: F_FOS = 'TRANSFER'
+    handler: python
+  M_SIAFOS_A_SIAB:
+    statement: The supply takes the form of a barter of goods or services or both
+    order: LOW
+    rule: F_FOS = 'BARTER'
+    handler: python
+  M_SIAFOS_A_SIAE:
+    statement: The supply takes the form of an exchange of goods or services or both
+    order: LOW
+    rule: F_FOS = 'EXCHANGE'
+    handler: python
+  M_SIAFOS_A_SIALG:
+    statement: The supply takes the form of a licence of goods or services or both
+    order: LOW
+    rule: F_FOS = 'LICENCE'
+    handler: python
+  M_SIAFOS_A_SIAR:
+    statement: The supply takes the form of a rental of goods or services or both
+    order: LOW
+    rule: F_FOS = 'RENTAL'
+    handler: python
+  M_SIAFOS_A_SIAL:
+    statement: The supply takes the form of a lease of goods or services or both
+    order: LOW
+    rule: F_FOS = 'LEASE'
+    handler: python
+  M_SIAFOS_A_SIAD:
+    statement: The supply takes the form of a disposal of goods or services or both
+    order: LOW
+    rule: F_FOS = 'DISPOSAL'
+    handler: python
+  M_SIAFOS_A_SIAQF:
+    statement: The supply is another qualifying form of supply of goods or services or both, not one of the listed forms
+    order: HIGH
+    interpretation: Is this unlisted form of supply a form of supply of the same kind as sale, transfer, barter, exchange,
+      licence, rental, lease or disposal, given that the list is only illustrative?
+    grounding:
+    - F_FOS
+    - F_DOTA
+    handler: heavy
+  M_SIAFOS_A_SIOGOS:
+    statement: The supply is of goods or services or both
+    order: LOW
+    rule: F_SKOT IN ['GOODS', 'SERVICES', 'BOTH']
+    handler: python
+  M_SIAFOS_A_SIMFC:
+    statement: The supply is made for a consideration
+    order: LOW
+    rule: F_SCS = 'PAID'
+    handler: python
+  M_SIAFOS_A_SIAFC:
+    statement: The supply is agreed to be made for a consideration
+    order: LOW
+    rule: F_SCS = 'AGREED'
+    handler: python
+  M_SIAFOS_A_SBPIB:
+    statement: The supply is made by a person in the course or furtherance of business
+    order: HIGH
+    interpretation: Is the person making the supply doing so in the course or furtherance of business, judged from the description
+      of the activity?
+    grounding:
+    - F_DOTA
+    handler: heavy
+  M_IOSFC_A_TISI:
+    statement: The transaction is an import of services
+    order: HIGH
+    interpretation: Does the documented transaction amount to an import of services under the Act, given its supply origin
+      and whether the supply is of services?
+    grounding:
+    - F_SOOT
+    - F_SKOT
+    handler: light
+  M_IOSFC_A_IMFC:
+    statement: The import of services was made for a consideration
+    order: LOW
+    rule: F_SCT IN ['MONEY', 'NON_MONEY']
+    handler: python
+  M_SIAWC_A_ASISI:
+    statement: The activity is one of the activities specified in Schedule I.
+    order: HIGH
+    interpretation: Does the described activity fall within an entry of Schedule I, read with the Schedule entry wording
+    grounding:
+    - F_DOTA
+    handler: heavy
+  M_SIAWC_A_AMWC:
+    statement: The activity was made, or agreed to be made, without a consideration.
+    order: LOW
+    rule: F_SCS = 'NONE'
+    handler: python
+  M_WCAS_A_SIACS:
+    statement: The supply is a composite supply
+    order: HIGH
+    interpretation: Does the described transaction consist of a composite supply as the term is used in this paragraph?
+    grounding:
+    - F_DOAOT
+    handler: heavy
+  M_WCAS_A_CSIWC:
+    statement: The composite supply is a works contract as defined in clause (119) of section 2
+    order: HIGH
+    interpretation: Does the described activity meet the definition of works contract in clause (119) of section 2?
+    grounding:
+    - F_DOTA
+    handler: heavy
+  M_FADCSAS_A_GSIAM:
+    statement: Goods are supplied by way of or as part of any service or in any other manner whatsoever.
+    order: LOW
+    rule: F_SMOG IN ['BY_WAY_OF_SERVICE','AS_PART_OF_SERVICE','OTHER_MANNER']
+    handler: python
+groups:
+  M_SIAFOS_G_SFA:
+    name: Supply Form Alternatives
+    logic: ANY
+    members:
+    - M_SIAFOS_A_SIAS
+    - M_SIAFOS_A_SIAT
+    - M_SIAFOS_A_SIAB
+    - M_SIAFOS_A_SIAE
+    - M_SIAFOS_A_SIALG
+    - M_SIAFOS_A_SIAR
+    - M_SIAFOS_A_SIAL
+    - M_SIAFOS_A_SIAD
+    - M_SIAFOS_A_SIAQF
+    description: Any one listed form or any other qualifying form of supply. The list after such as is illustrative and not
+      closed.
+  M_SIAFOS_G_MOAC:
+    name: Made Or Agreed Consideration
+    logic: ANY
+    members:
+    - M_SIAFOS_A_SIMFC
+    - M_SIAFOS_A_SIAFC
+    description: The supply is either made for a consideration or agreed to be made for a consideration. Both events are not
+      required.
+  M_IOSFC_G_IFCG:
+    name: Import For Consideration Group
+    logic: ALL
+    members:
+    - M_IOSFC_A_TISI
+    - M_IOSFC_A_IMFC
+    description: Both the import of services and its consideration are required for the inclusion
+  M_SIAWC_G_SAWC:
+    name: Schedule Activity Without Consideration
+    logic: ALL
+    members:
+    - M_SIAWC_A_ASISI
+    - M_SIAWC_A_AMWC
+    description: Both the Schedule I activity test and the nil consideration test must be met for this inclusion.
+  M_WCAS_G_CWCT:
+    name: Composite Works Contract Test
+    logic: ALL
+    members:
+    - M_WCAS_A_SIACS
+    - M_WCAS_A_CSIWC
+    description: both the composite supply and the works contract conditions must hold
+outcomes:
+  M_SIAFOS_LE_SIBC:
+    outcome: SUPPLY_INCLUDED
+    expr: M_SIAFOS_G_SFA AND M_SIAFOS_A_SIOGOS AND M_SIAFOS_G_MOAC AND M_SIAFOS_A_SBPIB
+    module: M_SIAFOS
+    description: The transaction is included in supply under Section 7(1)(a) when it is in a qualifying form, is of goods
+      or services or both, is made or agreed to be made for a consideration, and is by a person in the course or furtherance
+      of business.
+  M_IOSFC_LE_IOSI:
+    outcome: SUPPLY_INCLUDED
+    expr: M_IOSFC_G_IFCG
+    module: M_IOSFC
+    description: Import of services for a consideration is included in supply; the business test is not a member of this expression
+  M_SIAWC_LE_SIO:
+    outcome: SUPPLY_INCLUDED
+    expr: M_SIAWC_G_SAWC
+    module: M_SIAWC
+    description: The supply is included under this limb only when the Schedule I activity group is met.
+  M_WCAS_LE_WCDS:
+    outcome: TREATED_AS_SUPPLY_OF_SERVICES
+    expr: M_WCAS_G_CWCT
+    module: M_WCAS
+    description: a composite supply that is a works contract is treated as a supply of services
+  M_FADCSAS_LE_GSIAM:
+    outcome: GOODS_SUPPLIED_IN_ANY_MANNER
+    expr: M_FADCSAS_A_GSIAM
+    module: M_FADCSAS
+    description: Goods are supplied by way of or as part of any service or in any other manner whatsoever. (Schedule II, paragraph
+      6, part of the law)
+  M_WCAS_LE_SIACS:
+    outcome: SUPPLY_IS_COMPOSITE_SUPPLY
+    expr: M_WCAS_A_SIACS
+    module: M_FADCSAS
+    description: The supply is a composite supply (Schedule II, paragraph 6, part of the law)
+products:
+  M_SIAFOS_PD_SIBC:
+    statement: The transaction is included in supply under Section 7(1)(a) when it is in a qualifying form, is of goods or
+      services or both, is made or agreed to be made for a consideration, and is by a person in the course or furtherance
+      of business.
+  M_IOSFC_PD_IOSI:
+    statement: Import of services for a consideration is included in supply; the business test is not a member of this expression
+  M_SIAWC_PD_SIO:
+    statement: The supply is included under this limb only when the Schedule I activity group is met.
+  M_WCAS_PD_WCDS:
+    statement: a composite supply that is a works contract is treated as a supply of services
+  M_FADCSAS_PD_GSIAM:
+    statement: Goods are supplied by way of or as part of any service or in any other manner whatsoever.
+  M_WCAS_PD_SIACS:
+    statement: The supply is a composite supply.
+compounds:
+- id: C_S7_SS1
+  question: 'Section 7(1): which clause applies?'
+  includes:
+  - M_SIAFOS_LE_SIBC
+  - M_IOSFC_LE_IOSI
+  - M_SIAWC_LE_SIO
+  produces:
+  - product: M_SIAFOS_PD_SIBC
+    from:
+    - M_SIAFOS_LE_SIBC
+  - product: M_IOSFC_PD_IOSI
+    from:
+    - M_IOSFC_LE_IOSI
+  - product: M_SIAWC_PD_SIO
+    from:
+    - M_SIAWC_LE_SIO
+- id: C_SCHII_EN6
+  question: 'Schedule II, paragraph 6: which clause applies?'
+  includes:
+  - M_WCAS_LE_WCDS
+  - M_FADCSAS_LE_GSIAM
+  - M_WCAS_LE_SIACS
+  produces:
+  - product: M_WCAS_PD_WCDS
+    from:
+    - M_WCAS_LE_WCDS
+  - product: M_FADCSAS_PD_GSIAM
+    from:
+    - M_FADCSAS_LE_GSIAM
+  - product: M_WCAS_PD_SIACS
+    from:
+    - M_WCAS_LE_SIACS
+time:
+  law_date: F_DOI

@@ -184,7 +184,9 @@ def guess_type(file_name: str) -> str:
 
 
 def discover_documents(perm: dict, settings: dict, write_registry: bool = True) -> Dict[str, dict]:
-    """{code: {name, code, file, type, read}} for every PDF under the Law kind folders."""
+    """{code: {name, code, file, type, read}} for every PDF under the Law kind folders. A document fetched only
+    because a law cites it (documents.json reference_only, 2026-11-22) is not read as a main document - only the
+    part each citing law needs runs - unless permission.json documents.<code> is true."""
     law_dir = resolve(settings["paths"]["law_dir"])
     reg_path = resolve(settings["files"]["documents_registry"])
     registry = _read(reg_path) if reg_path.is_file() else {}
@@ -235,7 +237,7 @@ def discover_documents(perm: dict, settings: dict, write_registry: bool = True) 
             docs[code] = {"name": info["name"], "code": code, "file": f"{spec['folder']}/{pdf.name}",
                           "type": str(info.get("type") or spec["type"]).upper(), "url": str(info.get("url") or ""),
                           "ref_id": info["ref_id"], "missing": False,
-                          "read": per_doc.get(code, wanted.get(kind, False))}
+                          "read": per_doc.get(code, False if info.get("reference_only") else wanted.get(kind, False))}
     # registry entries whose PDF is not in the folder yet: downloaded at start when they have a url
     folders = {spec["type"]: (kind, spec["folder"]) for kind, spec in settings["law_folders"].items()}
     for file_name, info in registry.items():
@@ -249,7 +251,7 @@ def discover_documents(perm: dict, settings: dict, write_registry: bool = True) 
         docs[code] = {"name": info.get("name", code), "code": code, "file": f"{folder}/{file_name}",
                       "type": str(info["type"]).upper(), "url": str(info.get("url") or ""),
                       "ref_id": info.get("ref_id") or "", "missing": True,
-                      "read": per_doc.get(code, wanted.get(kind, False))}
+                      "read": per_doc.get(code, False if info.get("reference_only") else wanted.get(kind, False))}
     if added and write_registry:
         reg_path.parent.mkdir(parents=True, exist_ok=True)
         reg_path.write_text(json.dumps(registry, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

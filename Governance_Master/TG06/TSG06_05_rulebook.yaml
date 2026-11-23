@@ -1,0 +1,55 @@
+# GOVERNANCE MASTER TSG06_05 Taxable Person Cessation Status (TG06 Parties & Registration)
+# LAW ARC - 2 laws - status APPROVED
+name: TSG06_05 Taxable Person Cessation Status - GOVERNANCE MASTER rulebook
+version: TSG06_05
+facts:
+  # ---- level 1: gate facts - if one is false, that law stops here
+  F_PCS:  # 1. 1 gate | 2 law(s)
+    name: Person Cessation Status
+    type: CODE
+    options:
+    - CEASED_TAXABLE_PERSON
+    - CONTINUING_TAXABLE_PERSON
+    tier: T0
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_COTPBTE_A_PCTBT:
+    statement: Where any person ceases to be a taxable person
+    order: LOW
+    rule: F_PCS = 'CEASED_TAXABLE_PERSON'
+    handler: python
+groups: {}
+outcomes:
+  M_COTPBTE_LE_PCTBT:
+    outcome: PERSON_CEASES_TO_BE_TAXABLE
+    expr: M_COTPBTE_A_PCTBT
+    module: M_COTPBTE
+    description: Where any person ceases to be a taxable person (Schedule II, paragraph 4(c), part of the law)
+  M_COTPBTE_LE_PCTBT_COTPRE:
+    outcome: PERSON_CEASES_TO_BE_TAXABLE
+    expr: M_COTPBTE_A_PCTBT
+    module: M_COTPRE
+    description: Where any person ceases to be a taxable person (Schedule II, paragraph 4(c), part of the law)
+products:
+  M_COTPBTE_PD_PCTBT:
+    statement: Where any person ceases to be a taxable person
+  M_COTPBTE_PD_PCTBT_COTPRE:
+    statement: Any person ceases to be a taxable person
+compounds:
+- id: C_SCHII_EN4_CC
+  question: 'Schedule II, paragraph 4(c): which clause applies?'
+  includes:
+  - M_COTPBTE_LE_PCTBT
+  - M_COTPBTE_LE_PCTBT_COTPRE
+  produces:
+  - product: M_COTPBTE_PD_PCTBT
+    from:
+    - M_COTPBTE_LE_PCTBT
+  - product: M_COTPBTE_PD_PCTBT_COTPRE
+    from:
+    - M_COTPBTE_LE_PCTBT_COTPRE
+time:
+  law_date: F_DOI

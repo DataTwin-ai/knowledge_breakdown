@@ -414,6 +414,74 @@ def call_claude_search(runtime: dict, prompt: str, allowed_domains: Optional[Lis
 	return "".join(texts).strip(), list(dict.fromkeys(links))
 
 
+# 2026-11-23: Claude's web search has a Gemini fallback too (Google Search grounding on Vertex). Gemini cannot be
+# limited to our sites, so Python keeps only the links on refs.allowed_hosts (after opening Google's redirect links).
+def _final_url(url: str, timeout: int = 20) -> str:
+	"""The real address behind a Google grounding redirect link ('' when it does not open)."""
+	import urllib.request
+	for method in ("HEAD", "GET"):
+		try:
+			req = urllib.request.Request(url, method=method, headers={"User-Agent": "Mozilla/5.0", "Range": "bytes=0-0"})
+			with urllib.request.urlopen(req, timeout=timeout) as resp:
+				return resp.geturl()
+		except Exception:
+			continue
+	return ""
+
+
+def grounded_links(response, allowed_domains: Optional[List[str]] = None, resolve=_final_url) -> List[str]:
+	"""The web links Gemini's Google Search used (grounding chunks + links in its text), only on allowed hosts."""
+	import re
+	from urllib.parse import urlparse
+	hosts = {clean(d).lower() for d in (allowed_domains or []) if clean(d)}
+	raw: List[Tuple[str, str]] = []
+	for cand in getattr(response, "candidates", None) or []:
+		meta = getattr(cand, "grounding_metadata", None)
+		for chunk in getattr(meta, "grounding_chunks", None) or []:
+			web = getattr(chunk, "web", None)
+			if web is not None and getattr(web, "uri", ""):
+				raw.append((web.uri, clean(getattr(web, "title", "") or "").lower()))
+	text = ""
+	try:
+		text = response.text or ""
+	except Exception:
+		pass
+	raw += [(u.rstrip(".,);]"), "") for u in re.findall(r"https?://[^\s\"'<>]+", text)]
+	out: List[str] = []
+	for url, site in raw:
+		host = (urlparse(url).hostname or "").lower()
+		if "vertexaisearch.cloud.google.com" in host or "grounding-api-redirect" in url:
+			if hosts and site and not any(site == h or site.endswith("." + h) or h.endswith(site) for h in hosts):
+				continue                       # Google names the site: skip a site we do not allow, without opening
+			url = resolve(url)
+			host = (urlparse(url).hostname or "").lower()
+		if url and (not hosts or host in hosts) and url not in out:
+			out.append(url)
+	return out
+
+
+def call_gemini_search(model: str, prompt: str, allowed_domains: Optional[List[str]] = None,
+                       paths: Optional[dict] = None) -> Tuple[str, List[str]]:
+	"""Claude is down: the same search with Gemini + Google Search. Returns (answer text, result links on our sites)."""
+	rt = _gemini_runtime(paths)
+	sites = ", ".join(sorted({clean(d) for d in (allowed_domains or []) if clean(d)}))
+	ask = prompt + (f"\nSearch only these sites (use site: in the search): {sites}" if sites else "")
+	with _gate("GEMINI"):
+		response = rt["client"].models.generate_content(
+			model=model, contents=plain_prompt(ask),
+			config=types.GenerateContentConfig(temperature=0, tools=[types.Tool(google_search=types.GoogleSearch())]))
+	try:
+		import kp_usage
+		kp_usage.add("GEMINI", model, *kp_usage.gemini_usage(response))
+	except Exception:
+		pass
+	try:
+		text = clean(response.text or "")
+	except Exception:
+		text = ""
+	return text, grounded_links(response, allowed_domains)
+
+
 def _to_gemini(runtime: dict, model: str, prompt: str) -> Tuple[str, int]:
 	"""One Claude call answered by its Gemini fallback model (Claude is down)."""
 	rt = _gemini_runtime(runtime.get("paths"))

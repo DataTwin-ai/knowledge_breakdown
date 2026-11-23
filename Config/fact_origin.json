@@ -1,0 +1,63 @@
+{
+  "_about": "Fact origin (fact_origin_engine.py, 2026-11-23): for every fact AKP made, WHERE its value comes from and HOW to get it, so the validation engine knows which document to ask for and what to do with it. One row per fact in the table below (fact_id = akp_fact_new.fact_id); a fact reused by many laws keeps one origin. Rows with reviewed = true are never changed by the AI. documents = the only documents (and fields) a fact may point to - review this list first, everything depends on it.",
+  "table": "fact_origin",
+  "model": {"llm": "CLAUDE", "model": "claude-sonnet-5-5"},
+  "batch_size": 15,
+  "laws_per_fact": 3,
+  "review_file": "Output/fact_origin_review.xlsx",
+  "documents": {
+    "SALE_INVOICE": {
+      "about": "Tax invoice / bill of supply / e-invoice (INV-01) issued by the supplier",
+      "fields": ["invoice_no", "invoice_date", "invoice_type", "supplier_gstin", "supplier_name", "supplier_state",
+                 "recipient_gstin", "recipient_name", "recipient_state", "place_of_supply", "reverse_charge",
+                 "line_description", "hsn_sac", "quantity", "unit", "unit_price", "taxable_value", "discount",
+                 "cgst_rate", "cgst_amount", "sgst_rate", "sgst_amount", "igst_rate", "igst_amount", "cess_amount",
+                 "total_value", "irn", "irn_date", "eway_bill_no", "ship_to_state", "export_type", "port_code"]
+    },
+    "PURCHASE_INVOICE": {
+      "about": "Invoice received from a supplier (the same fields as a sale invoice, seen by the recipient)",
+      "fields": ["invoice_no", "invoice_date", "supplier_gstin", "recipient_gstin", "place_of_supply", "hsn_sac",
+                 "line_description", "taxable_value", "igst_amount", "cgst_amount", "sgst_amount", "receipt_date"]
+    },
+    "GST_RETURN": {
+      "about": "GSTR-1 / GSTR-3B / other returns and their filing acknowledgement (ARN)",
+      "fields": ["return_type", "gstin", "ret_period", "filing_frequency", "arn", "arn_date", "filing_mode",
+                 "outward_supplies", "inward_supplies_rcm", "itc_claimed", "itc_reversed", "tax_payable", "tax_paid",
+                 "interest_paid", "late_fee_paid", "other_particulars"]
+    },
+    "GST_REGISTRATION": {
+      "about": "Registration details of a GSTIN (GST portal / GSP search taxpayer API, or certificate REG-06)",
+      "fields": ["gstin", "legal_name", "trade_name", "registration_status", "registration_date",
+                 "cancellation_date", "taxpayer_type", "constitution_of_business", "state", "sez_unit",
+                 "sez_developer", "composition", "filing_frequency", "principal_place", "nature_of_business"]
+    },
+    "CUSTOMS": {
+      "about": "Bill of entry / shipping bill / warehouse papers",
+      "fields": ["be_no", "be_date", "be_type", "warehouse_code", "warehoused", "cleared_for_home_consumption",
+                 "port_code", "importer_iec", "assessable_value", "igst_paid"]
+    },
+    "CONTRACT": {
+      "about": "Agreement / work order / sale deed / employment papers between the parties",
+      "fields": ["parties", "relation_between_parties", "subject", "consideration", "consideration_type",
+                 "start_date", "end_date", "employment_terms", "property_description"]
+    },
+    "NOTIFICATION": {
+      "about": "Government notifications / circulars - looked up on our side (Law/), never asked from the user",
+      "fields": ["notification_no", "notification_date", "notified_class", "conditions", "recommended_by",
+                 "extended_due_date", "notified_items", "effective_from"]
+    },
+    "PROFILE": {
+      "about": "Details of a person or body (KYC, certificates, membership) - from the user or their records",
+      "fields": ["person_type", "designation", "post_held", "elected_office", "professional_qualification",
+                 "membership_no", "body_type", "established_by", "establishing_law"]
+    },
+    "USER": {
+      "about": "No document has it - asked from the user as a question",
+      "fields": []
+    },
+    "SYSTEM": {
+      "about": "Worked out by the engine itself from the law (e.g. the meaning of a term in context) - never asked",
+      "fields": []
+    }
+  }
+}

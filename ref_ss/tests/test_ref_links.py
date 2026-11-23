@@ -49,6 +49,8 @@ def _cfg(internet=True, on=True):
     cfg = copy.deepcopy(kp_settings.load())
     cfg["access"]["internet"] = internet
     cfg["refs"]["link_on_split"] = on
+    import tempfile                       # 2026-11-23: never the real Config/ref_links.xlsx
+    cfg["refs"]["link_register"] = str(Path(tempfile.mkdtemp()) / "ref_links.xlsx")
     return cfg
 
 
@@ -192,3 +194,83 @@ def test_claude_search_reads_the_answer_and_the_result_links():
     assert links == [URL] and URL in text
     tool = Client.seen["tools"][0]
     assert tool["type"] == L.WEB_SEARCH_TOOL and tool["allowed_domains"] == ["egazette.gov.in"] and tool["max_uses"] == 2
+
+
+def test_gemini_search_links_are_resolved_and_kept_only_on_allowed_sites():
+    """2026-11-23: Claude's credit ran out -> the link search was skipped. Gemini + Google Search is the fallback; its
+    links are Google redirects: Python opens them and keeps only our sites."""
+    from types import SimpleNamespace as NS
+    import llm_runtime
+    chunks = [NS(web=NS(uri="https://vertexaisearch.cloud.google.com/grounding-api-redirect/AAA", title="indiacode.nic.in")),
+              NS(web=NS(uri="https://vertexaisearch.cloud.google.com/grounding-api-redirect/BBB", title="example.com")),
+              NS(web=NS(uri="https://www.indiacode.nic.in/handle/123/1552", title="indiacode.nic.in"))]
+    resp = NS(candidates=[NS(grounding_metadata=NS(grounding_chunks=chunks))],
+              text='{"url": "https://cbic-gst.gov.in/pdf/x.pdf", "page": ""}')
+    opened = []
+
+    def resolve(u):
+        opened.append(u)
+        return "https://www.indiacode.nic.in/bitstream/123/1552/1/A1949-38.pdf"
+    links = llm_runtime.grounded_links(resp, ["www.indiacode.nic.in", "cbic-gst.gov.in"], resolve)
+    assert links == ["https://www.indiacode.nic.in/bitstream/123/1552/1/A1949-38.pdf",
+                     "https://www.indiacode.nic.in/handle/123/1552", "https://cbic-gst.gov.in/pdf/x.pdf"]
+    assert len(opened) == 1                                  # example.com is never opened
+
+
+def test_link_search_falls_back_to_gemini_when_claude_has_no_credit(monkeypatch):
+    import kp_settings
+    import llm_fallback
+    import llm_runtime
+    monkeypatch.setattr(kp_settings, "build_paths", lambda cfg: {})
+    monkeypatch.setattr(llm_runtime, "create_llm_runtime", lambda llm, paths: {"provider": "CLAUDE", "client": object()})
+
+    def no_credit(*a):
+        raise RuntimeError("Error code: 400 - Your credit balance is too low to access the Anthropic API")
+    monkeypatch.setattr(llm_runtime, "call_claude_search", no_credit)
+    asked = []
+    monkeypatch.setattr(llm_runtime, "call_gemini_search",
+                        lambda model, prompt, domains, paths: (asked.append(model) or ("", ["https://a.gov.in/x.pdf"])))
+    llm_fallback.configure({"enabled": True, "CLAUDE": {"claude-haiku-5-5": "gemini-2.5-flash"}})
+    try:
+        search = link.claude_search({"refs": {"link_finder": {"llm": "CLAUDE", "model": "claude-haiku-5-5"}}})
+        assert search("find", ["a.gov.in"], 3) == ("", ["https://a.gov.in/x.pdf"])
+        assert asked == ["gemini-2.5-flash"] and llm_fallback.claude_down()
+        llm_fallback.configure({"enabled": False})
+        import pytest
+        with pytest.raises(Exception):
+            link.claude_search({"refs": {"link_finder": {"llm": "CLAUDE", "model": "claude-haiku-5-5"}}})("f", [], 1)
+    finally:
+        llm_fallback.configure(None)
+
+
+# ---------------------------------------------------------------- 2026-11-23 the link register first
+def test_register_link_is_used_and_not_searched():
+    from ref_ss import register
+    cfg, calls, st = _cfg(), [], FakeStore([ACT])
+    register.write(cfg, {"ACT_31_2018": {"link": "https://egazette.gov.in/my.pdf", "status": "TO CHECK"}})
+    link.on_split(cfg, st, ["ACT_31_2018"], _search(URL, calls), lambda *a: (True, ""))
+    assert calls == [] and st.rows["ACT_31_2018"]["link"] == "https://egazette.gov.in/my.pdf"
+    assert st.rows["ACT_31_2018"]["status"] == "LINK_FOUND"
+
+
+def test_new_document_gets_a_row_and_search_off_searches_nothing():
+    from ref_ss import register
+    cfg, calls, st = _cfg(), [], FakeStore([ACT])
+    cfg["refs"]["search_empty_links"] = False
+    assert link.on_split(cfg, st, ["ACT_31_2018"], _search(URL, calls), lambda *a: (True, "")) == 0
+    assert calls == [] and register.load(cfg)["ACT_31_2018"]["status"] == register.NO_LINK
+
+
+def test_search_writes_its_link_into_the_register():
+    from ref_ss import register
+    cfg, calls, st = _cfg(), [], FakeStore([ACT])
+    link.on_split(cfg, st, ["ACT_31_2018"], _search(URL, calls), lambda *a: (True, ""))
+    row = register.load(cfg)["ACT_31_2018"]
+    assert row["link"] == URL and row["status"] == register.FOUND
+
+
+def test_skip_row_is_never_searched():
+    from ref_ss import register
+    cfg, calls, st = _cfg(), [], FakeStore([ACT])
+    register.write(cfg, {"ACT_31_2018": {"status": "SKIP - same as X"}})
+    assert link.on_split(cfg, st, ["ACT_31_2018"], _search(URL, calls), lambda *a: (True, "")) == 0 and calls == []

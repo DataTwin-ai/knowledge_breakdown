@@ -26,7 +26,7 @@ def _sheet(wb, title, columns, rows, widths=None):
     ws.freeze_panes = "A2"
 
 
-def write(path: Path, pack: dict, report: dict, id_map: list, problems: list, status: str) -> Path:
+def write(path: Path, pack: dict, report: dict, id_map: list, problems: list, status: str, hierarchy=None) -> Path:
     """report.xlsx: why each law is in the governance master, what is inside it, and anything to review."""
     wb = Workbook()
     wb.remove(wb.active)
@@ -52,6 +52,16 @@ def write(path: Path, pack: dict, report: dict, id_map: list, problems: list, st
     _sheet(wb, "Review", ["Kind", "Message"], [("PROBLEM", x) for x in problems] +
            [("BLOCKING", x) for x in report.get("blocking", [])] + [("UNRESOLVED", x) for x in report.get("unresolved", [])] +
            [("WARNING", x) for x in report.get("warnings", [])], {"Kind": 14, "Message": 110})
+    if hierarchy:                       # 2026-11-21: which fact to get first (governance_master_ss/hierarchy.py)
+        tsg_rows, law_rows = hierarchy
+        _sheet(wb, "Fact hierarchy", ["Order", "Level", "Fact", "Name", "Source", "Laws", "Law ids", "Asked only if"],
+               [(r["order"], r["level"], r["fact"], r["name"], r["source"], r["laws"], r["law_ids"], r["asked_only_if"])
+                for r in tsg_rows], {"Level": 24, "Name": 40, "Law ids": 50, "Asked only if": 80})
+        _sheet(wb, "Fact hierarchy by law", ["Law", "Outcome", "Question", "Order", "Level", "Fact", "Name", "Source",
+                                             "Asked only if"],
+               [(r["law"], r["outcome"], r["question"], r["order"], r["level"], r["fact"], r["name"], r["source"],
+                 r["asked_only_if"]) for r in law_rows],
+               {"Outcome": 26, "Question": 50, "Level": 24, "Name": 40, "Asked only if": 40})
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(path)

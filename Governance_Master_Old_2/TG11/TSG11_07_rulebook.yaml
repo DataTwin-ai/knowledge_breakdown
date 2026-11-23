@@ -1,0 +1,50 @@
+# GOVERNANCE MASTER TSG11_07 Notified Quarterly Return Filer Class (TG11 Returns & Reconciliation)
+# LAW ARC - 1 laws - status APPROVED
+name: TSG11_07 Notified Quarterly Return Filer Class - GOVERNANCE MASTER rulebook
+version: TSG11_07
+facts:
+  # ---- LAST: only heavy checks (free text) need these
+  F_NCD:  # 1. LAST (heavy check only) | 1 law(s)
+    name: Notification Class Description
+    type: TEXT
+    tier: T1
+  F_PPD:  # 2. LAST (heavy check only) | 1 law(s)
+    name: Person Profile Details
+    type: TEXT
+    tier: T0
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_GPTNQR_A_PINC:
+    statement: The person belongs to a certain class of registered persons notified by the Government
+    order: HIGH
+    interpretation: Does the description of the class in the notification cover this person, given the person's registration
+      and return profile details?
+    grounding:
+    - F_NCD
+    - F_PPD
+    handler: heavy
+groups: {}
+outcomes:
+  M_GPTNQR_LE_PINC:
+    outcome: PERSON_IN_NOTIFIED_CLASS
+    expr: M_GPTNQR_A_PINC
+    module: M_GPTNQR
+    description: The person belongs to a certain class of registered persons notified by the Government (Section 39(1), proviso,
+      part of the law)
+products:
+  M_GPTNQR_PD_PINC:
+    statement: The person belongs to a certain class of registered persons notified by the Government
+compounds:
+- id: C_GPTNQR
+  question: The person belongs to a certain class of registered persons notified by the Government? (Section 39(1), proviso)
+  includes:
+  - M_GPTNQR_LE_PINC
+  produces:
+  - product: M_GPTNQR_PD_PINC
+    from:
+    - M_GPTNQR_LE_PINC
+time:
+  law_date: F_DOI

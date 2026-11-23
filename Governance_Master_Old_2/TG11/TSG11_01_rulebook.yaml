@@ -1,0 +1,402 @@
+# GOVERNANCE MASTER TSG11_01 GSTR-1 / IFF (TG11 Returns & Reconciliation)
+# LAW ARC - 5 laws - status NEEDS_REVIEW
+name: TSG11_01 GSTR-1 / IFF - GOVERNANCE MASTER rulebook
+version: TSG11_01
+facts:
+  # ---- level 1: gate facts - if one is false, that law stops here
+  F_FDT:  # 1. 1 gate | 3 law(s)
+    name: Furnished Detail Type
+    type: CODE
+    options:
+    - INWARD_SUPPLIES
+    - OTHER
+    - OUTWARD_SUPPLIES
+    tier: T0
+  F_DOFM:  # 2. 1 gate | 2 law(s)
+    name: Day Of Furnishing Month
+    type: AMOUNT
+    tier: T1
+  F_ENA:  # 3. 1 gate | 2 law(s)
+    name: Extension Notifying Authority
+    type: CODE
+    options:
+    - COMMISSIONER
+    - OTHER
+    - STATE_TAX_COMMISSIONER
+    - UT_TAX_COMMISSIONER
+    tier: T1
+  F_MATP:  # 4. 1 gate | 2 law(s)
+    name: Months After Tax Period
+    type: AMOUNT
+    tier: T1
+  F_NIK:  # 5. 1 gate | 2 law(s)
+    name: Notified Item Kind
+    type: CODE
+    options:
+    - OTHER
+    - TIME_LIMIT_EXTENSION
+    tier: T1
+  F_PRS:  # 6. 1 gate | 2 law(s)
+    name: Person Registration Status
+    type: CODE
+    options:
+    - CANCELLED
+    - REGISTERED
+    - SUSPENDED
+    - UNREGISTERED
+    tier: T0
+  F_DCTR:  # 7. 1 gate | 1 law(s)
+    name: Details Communicated To Recipient
+    type: BOOLEAN
+    tier: T1
+  F_EIT:  # 8. 1 gate | 1 law(s)
+    name: Extension Instrument Type
+    type: CODE
+    options:
+    - NOTIFICATION
+    - OTHER_ORDER
+    tier: T1
+  F_MOFD:  # 9. 1 gate | 1 law(s)
+    name: Mode Of Furnishing Details
+    type: CODE
+    options:
+    - ELECTRONIC
+    - OTHER
+    tier: T0
+  F_PTC:  # 10. 1 gate | 1 law(s)
+    name: Person Tax Category
+    type: CODE
+    options:
+    - COMPOSITION_S10
+    - ISD
+    - NON_RESIDENT
+    - REGULAR
+    - TCS_S52
+    - TDS_S51
+    tier: T0
+  F_RISD:  # 11. 1 gate | 1 law(s)
+    name: Return Inward Supply Details
+    type: TEXT
+    tier: T0
+  F_ROSD:  # 12. 1 gate | 1 law(s)
+    name: Return Outward Supply Details
+    type: TEXT
+    tier: T0
+  F_RRF:  # 13. 1 gate | 1 law(s)
+    name: Reason Recording Form
+    type: CODE
+    options:
+    - IN_WRITING
+    - NOT_IN_WRITING
+    tier: T1
+  F_TPOR:  # 14. 1 gate | 1 law(s)
+    name: Tax Period Of Return
+    type: AMOUNT
+    tier: T0
+  # ---- LAST: only heavy checks (free text) need these
+  F_CDTR:  # 15. LAST (heavy check only) | 1 law(s) | asked only if M_RPOSD: F_FDT + F_PRS + F_DCTR + F_PTC + F_TPOR
+    name: Communication Date To Recipient
+    type: DATE
+    tier: T1
+  F_CMTR:  # 16. LAST (heavy check only) | 1 law(s) | asked only if M_RPOSD: F_FDT + F_PRS + F_DCTR + F_PTC + F_TPOR
+    name: Communication Method To Recipient
+    type: TEXT
+    tier: T1
+  F_NCM:  # 17. LAST (heavy check only) | 1 law(s) | asked only if M_CETLFFD: F_FDT + F_ENA + F_NIK + F_EIT + F_RRF
+    name: Notified Class Membership
+    type: CODE
+    options:
+    - IN_NOTIFIED_CLASS
+    - OUTSIDE_NOTIFIED_CLASS
+    tier: T1
+  F_RFUFF:  # 18. LAST (heavy check only) | 1 law(s) | asked only if M_RPOSD: F_FDT + F_DOFM + F_MATP + F_PRS + F_MOFD + F_PTC + F_TPOR
+    name: Return Form Used For Furnishing
+    type: TEXT
+    tier: T0
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_EOTLDN_A_NIITLE:
+    statement: The item notified is an extension of time limit
+    order: LOW
+    rule: F_NIK = 'TIME_LIMIT_EXTENSION'
+    handler: python
+  M_EOTLDN_A_NBSOUC:
+    statement: The extension was notified by the Commissioner of State tax or by the Commissioner of Union territory tax
+    order: LOW
+    rule: F_ENA IN ['STATE_TAX_COMMISSIONER', 'UT_TAX_COMMISSIONER']
+    handler: python
+  M_FODRP_A_FIRP:
+    statement: The person furnishing the details is a registered person
+    order: LOW
+    rule: F_PRS = 'REGISTERED'
+    handler: python
+  M_FODRP_A_FOSD:
+    statement: The registered person furnishes the details of outward supplies
+    order: LOW
+    rule: F_FDT = 'OUTWARD_SUPPLIES'
+    handler: python
+  M_FODRP_A_FISM:
+    statement: The details are furnished during the month succeeding the tax period
+    order: LOW
+    rule: F_MATP = 1
+    handler: python
+  M_FODRP_A_FIDW:
+    statement: The details are furnished during the period from the eleventh day to the fifteenth day of that month
+    order: LOW
+    rule: F_DOFM >= 11 AND F_DOFM <= 15
+    handler: python
+  M_CETLFFD_A_CHPTE:
+    statement: The Commissioner is the authority that may extend the time limit under this proviso
+    order: LOW
+    if_false: F_ENA is not COMMISSIONER
+    rule: F_ENA = 'COMMISSIONER'
+    handler: python
+  M_CETLFFD_A_RRIW:
+    statement: The reasons for the extension are recorded in writing
+    order: LOW
+    rule: F_RRF = 'IN_WRITING'
+    handler: python
+  M_CETLFFD_A_EMBN:
+    statement: The extension is made by notification
+    order: LOW
+    rule: F_EIT = 'NOTIFICATION'
+    handler: python
+  M_CETLFFD_A_ECOD:
+    statement: The time limit extended is the time limit for furnishing details of outward supplies
+    order: LOW
+    if_false: F_FDT is not OUTWARD_SUPPLIES
+    rule: F_FDT = 'OUTWARD_SUPPLIES'
+    handler: python
+  M_CETLFFD_A_TPINC:
+    statement: The taxable person belongs to such class of taxable persons as may be specified in the notification
+    order: HIGH
+    interpretation: Does the taxable person fall within the class of taxable persons specified in the extension notification?
+    grounding:
+    - F_NCM
+    handler: light
+  M_RPOSD_A_PIISD:
+    statement: The person is an Input Service Distributor
+    order: LOW
+    rule: F_PTC = 'ISD'
+    handler: python
+  M_RPOSD_A_PINTP:
+    statement: The person is a non-resident taxable person
+    order: LOW
+    rule: F_PTC = 'NON_RESIDENT'
+    handler: python
+  M_RPOSD_A_PPTUS10:
+    statement: The person is a person paying tax under the provisions of section 10
+    order: LOW
+    rule: F_PTC = 'COMPOSITION_S10'
+    handler: python
+  M_RPOSD_A_PPTUS51:
+    statement: The person is a person paying tax under the provisions of section 51
+    order: LOW
+    rule: F_PTC = 'TDS_S51'
+    handler: python
+  M_RPOSD_A_PPTUS52:
+    statement: The person is a person paying tax under the provisions of section 52
+    order: LOW
+    rule: F_PTC = 'TCS_S52'
+    handler: python
+  M_RPOSD_A_DAOOS:
+    statement: The details are details of outward supplies of goods or services or both effected during a tax period
+    order: LOW
+    rule: F_FDT = 'OUTWARD_SUPPLIES' AND F_TPOR IS_SET
+    handler: python
+  M_RPOSD_A_DAFE:
+    statement: The person shall furnish the details electronically
+    order: LOW
+    rule: F_MOFD = 'ELECTRONIC'
+    handler: python
+  M_RPOSD_A_FIPFAM:
+    statement: The person shall furnish the details in such form and manner as may be prescribed
+    order: HIGH
+    interpretation: Was the furnishing done in the form and manner prescribed for outward supply details? The prescribed form
+      and manner are not stated in this provision and must be read from the rules.
+    grounding:
+    - F_RFUFF
+    handler: light
+  M_RPOSD_A_FBTDS:
+    statement: The person shall furnish the details on or before the tenth day of the month succeeding the said tax period
+    order: LOW
+    if_false: furnished after the tenth day of the month succeeding the tax period
+    rule: F_MATP < 1 OR (F_MATP = 1 AND F_DOFM <= 10)
+    handler: python
+  M_RPOSD_A_DCTR:
+    statement: Such details shall be communicated to the recipient of the said supplies
+    order: LOW
+    rule: F_DCTR = TRUE
+    handler: python
+  M_RPOSD_A_CIPTAM:
+    statement: The communication to the recipient shall be within such time and in such manner as may be prescribed
+    order: HIGH
+    interpretation: Was the communication to the recipient made within the time and in the manner prescribed? The prescribed
+      time and manner are not stated in this provision and must be read from the rules.
+    grounding:
+    - F_CDTR
+    - F_CMTR
+    handler: light
+  M_RPFMR_A_RSIOS:
+    statement: The return contains details of inward and outward supplies of goods or services or both
+    order: LOW
+    rule: F_RISD IS_SET AND F_ROSD IS_SET
+    handler: python
+groups:
+  M_FODRP_G_RFT:
+    name: Restricted Furnishing Test
+    logic: ALL
+    members:
+    - M_FODRP_A_FIRP
+    - M_FODRP_A_FOSD
+    - M_FODRP_G_RWT
+    description: All tests must hold together for the restriction to apply
+  M_FODRP_G_RWT:
+    name: Restricted Window Test
+    logic: ALL
+    members:
+    - M_FODRP_A_FISM
+    - M_FODRP_A_FIDW
+    description: The furnishing must fall in the eleventh to fifteenth day window of the month succeeding the tax period
+  M_CETLFFD_G_EPR:
+    name: Extension Process Requirements
+    logic: ALL
+    members:
+    - M_CETLFFD_A_CHPTE
+    - M_CETLFFD_A_RRIW
+    - M_CETLFFD_A_EMBN
+    description: Commissioner power, written reasons and notification form all required for the extension process
+  M_CETLFFD_G_ESR:
+    name: Extension Scope Requirements
+    logic: ALL
+    members:
+    - M_EOTLDN_A_NIITLE
+    - M_CETLFFD_A_ECOD
+    - M_CETLFFD_A_TPINC
+    description: The notification must extend the time limit for outward supply details for the specified class
+  M_RPOSD_G_ETC:
+    name: Excluded Taxpayer Categories
+    logic: ANY
+    members:
+    - M_RPOSD_A_PIISD
+    - M_RPOSD_A_PINTP
+    - M_RPOSD_A_PPTUS10
+    - M_RPOSD_A_PPTUS51
+    - M_RPOSD_A_PPTUS52
+    description: Any one of these categories takes the person outside section 37(1) - the list is introduced by other than
+      and is closed.
+  M_RPOSD_G_FMATC:
+    name: Furnishing Mode And Time Conditions
+    logic: ALL
+    members:
+    - M_RPOSD_A_DAFE
+    - M_RPOSD_A_FIPFAM
+    - M_RPOSD_A_FBTDS
+    description: The details must be furnished electronically, in the prescribed form and manner, and on or before the due
+      day.
+  M_RPOSD_G_RCC:
+    name: Recipient Communication Conditions
+    logic: ALL
+    members:
+    - M_RPOSD_A_DCTR
+    - M_RPOSD_A_CIPTAM
+    description: The details must be communicated to the recipient and within the prescribed time and manner.
+outcomes:
+  M_EOTLDN_LE_DNBC:
+    outcome: DEEMED_NOTIFIED_BY_COMMISSIONER
+    expr: M_EOTLDN_A_NIITLE AND M_EOTLDN_A_NBSOUC
+    module: M_EOTLDN
+    description: An extension of time limit notified by a State or UT Commissioner is deemed to be notified by the Commissioner.
+  M_FODRP_LE_RFO:
+    outcome: FURNISHING_NOT_ALLOWED
+    expr: M_FODRP_G_RFT
+    module: M_FODRP
+    description: The furnishing is not allowed under this proviso when all restriction tests hold
+  M_CETLFFD_LE_EUPV:
+    outcome: EXTENSION_GRANTED
+    expr: M_CETLFFD_G_EPR AND M_CETLFFD_G_ESR
+    module: M_CETLFFD
+    description: The time limit extension is granted only when the process and scope requirements are all met
+  M_RPOSD_LE_FOCW:
+    outcome: FURNISHING_OBLIGATION_COMPLIED
+    expr: M_FODRP_A_FIRP AND NOT M_RPOSD_G_ETC AND M_RPOSD_A_DAOOS AND M_RPOSD_G_FMATC
+    module: M_RPOSD
+    description: A registered person outside the excluded categories has furnished the outward supply details electronically,
+      in the prescribed form and manner, on or before the tenth day of the succeeding month.
+  M_RPOSD_LE_RCOCW:
+    outcome: COMMUNICATION_OBLIGATION_COMPLIED
+    expr: M_FODRP_A_FIRP AND NOT M_RPOSD_G_ETC AND M_RPOSD_A_DAOOS AND M_RPOSD_G_RCC
+    module: M_RPOSD
+    description: The same outward supply details have been communicated to the recipient within the prescribed time and in
+      the prescribed manner.
+  M_RPFMR_LE_RSIOS:
+    outcome: RETURN_SHOWS_INWARD_OUTWARD_SUPPLIES
+    expr: M_RPFMR_A_RSIOS
+    module: M_RPFMR
+    description: The return contains details of inward and outward supplies of goods or services or both (Section 39(1), part
+      of the law)
+products:
+  M_EOTLDN_PD_DNBC:
+    statement: An extension of time limit notified by a State or UT Commissioner is deemed to be notified by the Commissioner.
+  M_FODRP_PD_RFO:
+    statement: The furnishing is not allowed under this proviso when all restriction tests hold
+  M_CETLFFD_PD_EUPV:
+    statement: The time limit extension is granted only when the process and scope requirements are all met
+  M_RPOSD_PD_FOCW:
+    statement: A registered person outside the excluded categories has furnished the outward supply details electronically,
+      in the prescribed form and manner, on or before the tenth day of the succeeding month.
+  M_RPOSD_PD_RCOCW:
+    statement: The same outward supply details have been communicated to the recipient within the prescribed time and in the
+      prescribed manner.
+  M_RPFMR_PD_RSIOS:
+    statement: The return contains details of inward and outward supplies of goods or services or both
+compounds:
+- id: C_EOTLDN
+  question: 'Section 37(1), third proviso: Extension Of Time Limit Deemed Notified?'
+  includes:
+  - M_EOTLDN_LE_DNBC
+  produces:
+  - product: M_EOTLDN_PD_DNBC
+    from:
+    - M_EOTLDN_LE_DNBC
+- id: C_FODRP
+  question: 'Section 37(1), proviso: Furnishing Outward Details Restricted Period?'
+  includes:
+  - M_FODRP_LE_RFO
+  produces:
+  - product: M_FODRP_PD_RFO
+    from:
+    - M_FODRP_LE_RFO
+- id: C_CETLFFD
+  question: 'Section 37(1), second proviso: Commissioner Extends Time Limit For Furnishing Details?'
+  includes:
+  - M_CETLFFD_LE_EUPV
+  produces:
+  - product: M_CETLFFD_PD_EUPV
+    from:
+    - M_CETLFFD_LE_EUPV
+- id: C_RPOSD
+  question: 'Section 37(1): Registered Person Outward Supply Details?'
+  includes:
+  - M_RPOSD_LE_FOCW
+  - M_RPOSD_LE_RCOCW
+  produces:
+  - product: M_RPOSD_PD_FOCW
+    from:
+    - M_RPOSD_LE_FOCW
+  - product: M_RPOSD_PD_RCOCW
+    from:
+    - M_RPOSD_LE_RCOCW
+- id: C_RPFMR
+  question: The return contains details of inward and outward supplies of goods or services or both? (Section 39(1))
+  includes:
+  - M_RPFMR_LE_RSIOS
+  produces:
+  - product: M_RPFMR_PD_RSIOS
+    from:
+    - M_RPFMR_LE_RSIOS
+time:
+  law_date: F_DOI

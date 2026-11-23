@@ -343,4 +343,84 @@ def test_amending_act_check_and_folder(monkeypatch, tmp_path):
     assert not fetch.verify_pdf(tmp_path / "x.pdf", 32, 2018, "AMENDING_ACT")[0]
     assert ref_engine._folder_type({"kind": "AMENDING_ACT"}) == ("ACT", "AMENDMENT")
     assert ref_engine._folder_type({"kind": "CIRCULAR"}) == ("CIRCULAR", "CIRCULAR")
-    assert ref_engine._check_content({}, {"ref_id": "ACT_31_2018"}, "text", []) == (True, "no citing law text to compare with")
+    assert ref_engine._check_content({}, {"ref_id": "ACT_31_2018"}, "text", [])[0] is True
+
+
+def test_content_check_keeps_the_right_act_even_if_one_citation_is_weak():
+    """2026-11-22: ACT_31_2018 was the genuine Act but was refused because 2(35)'s TEXT row (cites it only through a
+    footnote) was not confirmed. Now: refused only when it is not the document asked for."""
+    import ref_engine
+    assert ref_engine.place_words("CGSTA17_S2_C35#TEXT") == "section 2, clause (35)"
+    assert ref_engine.place_words("CGSTA17_SCHIII_EN8_Cb_E2#TEXT") == "Schedule III, paragraph 8, clause (b), Explanation 2"
+    ref = {"ref_id": "ACT_31_2018"}
+    needs = [{"mkp": "CGSTA17_S2_C35#AMD1"}, {"mkp": "CGSTA17_S2_C35#TEXT"}]
+    right = '{"same_document": true, "confirmed": ["CGSTA17_S2_C35#AMD1"], "reason": "genuine Act 31 of 2018"}'
+    assert ref_engine._content_verdict(ref, right, needs) == (True, "genuine Act 31 of 2018")
+    wrong = '{"same_document": false, "confirmed": [], "reason": "consolidated CGST Act, not Act 31 of 2018"}'
+    assert ref_engine._content_verdict(ref, wrong, needs)[0] is False
+    assert ref_engine._content_verdict(ref, '{"match": true, "reason": "old answer"}', needs)[0] is True
+
+
+def test_every_outside_document_gets_an_id_and_a_search():
+    """2026-11-22 standard flow: other Acts got no ID (2(35) skipped the Cost and Works Accountants Act) and GST Acts /
+    Rules were never searched (2(64) stayed PENDING without the IGST PDF)."""
+    from ref_ss.detect import detect
+    from ref_ss.ids import parse
+    from ref_ss import link
+    assert parse("section 92A of the Income-tax Act, 1961")[:2] == ("EXT_IA_1961", "OTHER_ACT")
+    assert parse("the Central Goods and Services Tax Act, 2017") is None                 # corpus: its own code
+    assert parse("The Central Goods and Services Tax (Amendment) Act, 2018 (No. 31 of 2018)")[1] == "AMENDING_ACT"
+    t = 'means a cost accountant as defined in clause (b) of sub-section (1) of section 2 of the Cost and Works ' \
+        'Accountants Act, 1959;'
+    refs = detect("CGSTA17", t)
+    assert [(r["ref_id"], r["kind"], r["target_key"]) for r in refs] == [("EXT_CAWAA_1959", "OTHER_ACT",
+                                                                          "EXT_CAWAA_1959_S2_SS1_Cb")]
+    refs = detect("CGSTA17", "same meaning as assigned to it in section 8 of the Integrated Goods and Services Tax Act;")
+    assert [(r["ref_id"], r["kind"], r["target_key"]) for r in refs] == [("IGSTA17", "ACT", "IGSTA17_S8")]
+    assert {"ACT", "RULES", "OTHER_ACT", "AMENDING_ACT", "NOTIFICATION", "CIRCULAR"} <= set(link.KINDS)
+    assert link.needs_link({"kind": "ACT", "link": "", "link_status": "", "status": "PENDING", "doc_code": ""})
+
+
+def test_local_pdf_first_and_the_right_folder_per_kind():
+    import ref_engine
+    from ref_ss import link
+    cfg = {"documents": {"IGSTA17": {"file": "Acts/IGST-Act.pdf", "missing": False, "ref_id": "IGSTA17"},
+                         "N_CT_01_2019": {"file": "Notifications/N1.pdf", "missing": True, "ref_id": "N_CT_01_2019"}},
+           "law_folders": {"acts": {"folder": "Acts", "type": "ACT"}, "rules": {"folder": "Rules", "type": "RULES"},
+                           "notifications": {"folder": "Notifications", "type": "NOTIFICATION"},
+                           "circulars": {"folder": "Circulars", "type": "CIRCULAR"},
+                           "amendments": {"folder": "Amendments", "type": "ACT"}}}
+    assert link.local_document(cfg, "IGSTA17")["code"] == "IGSTA17"
+    assert link.local_document(cfg, "N_CT_01_2019") is None               # listed, but its PDF is not in Law/ yet
+    f = ref_engine._folders(cfg)
+    where = {k: f[ref_engine._folder_type({"kind": k})[1]] for k in
+             ("ACT", "OTHER_ACT", "RULES", "AMENDING_ACT", "NOTIFICATION", "CIRCULAR")}
+    assert where == {"ACT": "Acts", "OTHER_ACT": "Acts", "RULES": "Rules", "AMENDING_ACT": "Amendments",
+                     "NOTIFICATION": "Notifications", "CIRCULAR": "Circulars"}
+    assert "updated" in ref_engine.DOC_RULE["ACT"] and "not a consolidated" in ref_engine.DOC_RULE["AMENDING_ACT"]
+
+
+def test_the_exact_clause_of_the_other_act_is_recorded():
+    """2026-11-23: 'clause (b) of sub-section (1) of section 2 of the X Act' -> X_S2_SS1_Cb, not the whole section 2."""
+    from ref_ss.detect import detect
+    t = '(23) "chartered accountant" means a chartered accountant as defined in clause (b) of sub-section (1) of ' \
+        'section 2 of the Chartered Accountants Act, 1949;'
+    r = detect("CGSTA17", t)
+    assert [(x["ref_id"], x["target_key"]) for x in r] == [("EXT_CAA_1949", "EXT_CAA_1949_S2_SS1_Cb")]
+    assert r[0]["mention"].startswith("clause (b) of sub-section (1) of section 2")
+    r = detect("CGSTA17", "a banking company within the meaning of clause (a) of section 45A of the Reserve Bank of "
+                          "India Act, 1934; or")
+    assert r[0]["target_key"] == "EXT_RBOIA_1934_S45A_Ca"
+    r = detect("CGSTA17", "same meaning as assigned to it in section 8 of the Integrated Goods and Services Tax Act;")
+    assert r[0]["target_key"] == "IGSTA17_S8"                       # no lead-in: as before
+
+
+def test_part_picker_takes_the_exact_part_first():
+    from types import SimpleNamespace
+    from ref_ss import auto
+    idx = SimpleNamespace(doc="EXT_CAA_1949", order=["EXT_CAA_1949"] + [f"EXT_CAA_1949_S{i}" for i in range(1, 60)]
+                          + ["EXT_CAA_1949_S2_SS1_Cb"],
+                          nodes={k: {} for k in ["EXT_CAA_1949", "EXT_CAA_1949_S2", "EXT_CAA_1949_S2_SS1_Cb"]})
+    keys, how = auto.find_part(idx, {"key": "CGSTA17_S2_C23", "text": "", "mention": "x", "relation": "REFERS",
+                                     "target": "EXT_CAA_1949_S2_SS1_Cb"}, 40)
+    assert keys == ["EXT_CAA_1949_S2_SS1_Cb"] and how.startswith("python: the exact part")

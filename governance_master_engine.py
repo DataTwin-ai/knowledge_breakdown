@@ -30,6 +30,7 @@ import yaml
 from governance_master_ss import excel as excel_mod
 from governance_master_ss import pack as pack_mod
 from governance_master_ss.build import Built, GovernanceMasterError, build
+from governance_master_ss.hierarchy import hierarchy as fact_hierarchy
 from governance_master_ss.source import Snapshot, from_db
 from governance_master_ss.store import GovernanceMasterStore
 from kp_console import log, say
@@ -41,12 +42,21 @@ PACK_FILE = "{tsg}_rulebook.yaml"      # one file per TSG in its TG folder (note
 REPORT_FILE = "{tsg}_report.xlsx"
 REPORT_DIR = "report"
 # part of every fingerprint: a change in how the governance master is built rewrites each one once (not only new laws)
-BUILD_VERSION = "2026-11-15c"                  # Governance_Master/<TG>/report/<TSG>_report.xlsx
+BUILD_VERSION = "2026-11-21b"            # 2026-11-21: self reference wiring fixes + fact hierarchy sheets                  # Governance_Master/<TG>/report/<TSG>_report.xlsx
 
 
 def _permission() -> dict:
     from kp_settings import load
     return load()
+
+
+def fact_kinds(permission: dict) -> dict:
+    """Config/fact_kinds.json (people review it; the fact catalog reads the same file): how each fact is obtained."""
+    p = _path((permission.get("fact_catalog") or {}).get("fact_kinds_file", "Config/fact_kinds.json"))
+    if not p.is_file():
+        return {}
+    data = json.loads(p.read_text(encoding="utf-8-sig"))
+    return {k: v for k, v in data.items() if not k.startswith("_") and isinstance(v, dict)}
 
 
 def _path(v) -> Path:
@@ -162,6 +172,41 @@ def _comment_partners(text: str, partners: List[dict]) -> str:
     return text
 
 
+LEVEL_HEAD = {"1 gate": "level 1: gate facts - if one is false, that law stops here",
+              "2": "level 2: asked only when that law's gates pass",
+              "3": "level 3: facts of the laws this one refers to",
+              "LAST (heavy check only)": "LAST: only heavy checks (free text) need these"}
+
+
+def _facts_in_order(facts: dict, tsg_rows: List[dict]) -> dict:
+    """2026-11-21: the facts section in ask order (governance_master_ss/hierarchy.py); a fact no law asks for
+    (e.g. the law date) keeps its place at the end. Key order does not matter to the engine."""
+    first = [r["fact"] for r in tsg_rows if r["fact"] in facts]
+    return {f: facts[f] for f in first + [f for f in facts if f not in first]}
+
+
+def _comment_facts(text: str, tsg_rows: List[dict]) -> str:
+    """2026-11-21: in the facts section, a header line before each level and the level of each fact as a yaml
+    comment (the engine ignores comments)."""
+    by = {r["fact"]: r for r in tsg_rows}
+    lines, out, inside, last = text.split("\n"), [], False, None
+    for line in lines:
+        if re.match(r"^\S", line):
+            inside = line.startswith("facts:")
+        m = re.match(r"^  (F_[A-Z0-9_]+):\s*$", line) if inside else None
+        r = by.get(m.group(1)) if m else None
+        if r:
+            if r["level"] != last:
+                out.append(f"  # ---- {LEVEL_HEAD.get(r['level'], r['level'])}")
+                last = r["level"]
+            note = f"{r['order']}. {r['level']} | {r['laws']} law(s)"
+            if r["asked_only_if"]:
+                note += f" | asked only if {r['asked_only_if']}"
+            line = f"{line}  # {note}"
+        out.append(line)
+    return "\n".join(out)
+
+
 def build_governance_master(tsg: str, snapshot: Snapshot, conn, permission: dict, s: dict) -> dict:
     names = taxonomy_names(permission)
     if tsg not in names:
@@ -183,6 +228,10 @@ def build_governance_master(tsg: str, snapshot: Snapshot, conn, permission: dict
     built = build(snapshot, tsg, n["tsg_name"], n["tg"], n["tg_name"], cfg, spine, f"{tsg}", s["prerequisite_depth"],
                   s["law_as_on"])
     rep = built.report
+    order = fact_hierarchy(built.rulebook, fact_kinds(permission),
+                           {f["fact"]: f.get("derived_from") for f in rep.get("facts", [])})
+    if built.rulebook.get("facts"):
+        built.rulebook["facts"] = _facts_in_order(built.rulebook["facts"], order[0])
     fp = fingerprint(snapshot, built, tsg, cfg, spine, s)
     folder = pack_folder(s, n)
     pack = pack_file(s, n)
@@ -202,8 +251,8 @@ def build_governance_master(tsg: str, snapshot: Snapshot, conn, permission: dict
     status = "APPROVED" if not problems and not rep["blocking"] else "NEEDS_REVIEW"
     text = (f"# GOVERNANCE MASTER {tsg} {n['tsg_name']} ({n['tg']} {n['tg_name']})\n"
             f"# LAW ARC - {len(built.included)} laws" + (" + the spine" if spine else "") + f" - status {status}\n"
-            + _comment_partners(yaml.safe_dump(built.rulebook, sort_keys=False, allow_unicode=True, width=120),
-                                rep.get("spine_partners", [])))
+            + _comment_facts(_comment_partners(yaml.safe_dump(built.rulebook, sort_keys=False, allow_unicode=True,
+                                                              width=120), rep.get("spine_partners", [])), order[0]))
     rows = pack_mod.rows(built.rulebook, rep, built.id_map, spine, n, status)
     partners = {}
     for x in rep.get("spine_partners", []):
@@ -220,7 +269,8 @@ def build_governance_master(tsg: str, snapshot: Snapshot, conn, permission: dict
     if file_changed or not s["use_cache"]:
         pack.write_text(text, encoding="utf-8")
     (folder / REPORT_DIR).mkdir(parents=True, exist_ok=True)
-    excel_mod.write(folder / REPORT_DIR / REPORT_FILE.format(tsg=tsg), built.rulebook, rep, built.id_map, problems, status)
+    excel_mod.write(folder / REPORT_DIR / REPORT_FILE.format(tsg=tsg), built.rulebook, rep, built.id_map, problems, status,
+                    order)
     version = None
     if store and (ch["added"] or ch["changed"] or ch["removed"] or not latest or not s["use_cache"]
                   or latest["fingerprint"] != fp):

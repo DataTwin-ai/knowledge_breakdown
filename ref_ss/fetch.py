@@ -108,8 +108,32 @@ def first_pages_text(path: Path, pages: int = 2) -> str:
         doc.close()
 
 
-def verify_pdf(path: Path, number: Optional[int], year: Optional[int], kind: str) -> Tuple[bool, str]:
-    """The number and year of the notification / circular must be in its first pages."""
+_TITLE_SKIP = {"the", "and", "of", "act", "rules", "section", "rule", "for", "to", "on", "in", "with", "tax", "goods",
+               "services"}
+
+
+def title_words(title: str) -> List[str]:
+    """The words that name an Act / Rules: 'section 8 of the Integrated Goods and Services Tax Act' -> ['integrated'];
+    'The Cost and Works Accountants Act, 1959' -> ['cost', 'works', 'accountants']."""
+    name = re.sub(r"(?i)^.*?\bof\s+the\s+", "", title or "")
+    return [w for w in re.findall(r"[a-z]{4,}", name.lower()) if w not in _TITLE_SKIP]
+
+
+def verify_pdf(path: Path, number: Optional[int], year: Optional[int], kind: str, title: str = "") -> Tuple[bool, str]:
+    """The number and year of the notification / circular must be in its first pages. 2026-11-22: an Act / Rules
+    (GST or another Act) has no number to check: the words of its name (and its year, when given) must be there."""
+    if kind in ("ACT", "RULES", "OTHER_ACT"):
+        try:
+            text = " ".join(first_pages_text(path, 3).split()).lower()
+        except Exception as exc:
+            return False, f"could not read the PDF ({type(exc).__name__})"
+        words = title_words(title)
+        missing = [w for w in words if w not in text]
+        if words and len(missing) > len(words) // 3:
+            return False, f"the name is not in the first pages (missing: {', '.join(missing[:5])})"
+        if kind == "OTHER_ACT" and year and str(year) not in text:
+            return False, f"the year {year} is not in the first pages"
+        return True, "the name is in the first pages"
     if not number or not year:
         return True, "no number / year to check"
     try:

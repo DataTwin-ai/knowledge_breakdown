@@ -1,0 +1,3 @@
+﻿time,document,unit,stage,worker,error,retries,status
+2026-11-22 17:02:41,ACT_31_2018,ACT_31_2018,IKP,,"RuntimeError: ACT_31_2018: IKP quality gate FAILED: ['13 list markers out of sequence (kept as text, see review)', 'chapter ACT_31_2018_FRONT FAILED']",0,FAILED
+2026-11-22 17:02:41,ACT_31_2018,ACT_31_2018,MKP_LOAD,,RuntimeError: ACT_31_2018: no IKP saved - run IKP first,0,FAILED

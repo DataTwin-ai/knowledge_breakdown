@@ -318,7 +318,7 @@ def _references(cfg: dict, paths: dict, run: dict, mkp_settings: dict, totals: d
                         keys, how = saved, "found before (mkp_ref.source_key)"
                     else:
                         keys, how = auto.find_part(idx, {"key": citing_key, "text": "", "mention": r["mention"],
-                                                         "relation": r["relation"]},
+                                                         "relation": r["relation"], "target": r.get("target_key")},
                                                    int(rc["whole_document_max_parts"]), ask, prompt)
                     if not keys:
                         flow(f"REFERENCES : {ref_id} for {citing_key} - {how} - stays PENDING")

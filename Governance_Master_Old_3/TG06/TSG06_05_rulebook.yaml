@@ -1,0 +1,120 @@
+# GOVERNANCE MASTER TSG06_05 Taxable Person Cessation Status (TG06 Parties & Registration)
+# LAW ARC - 2 laws - status APPROVED
+name: TSG06_05 Taxable Person Cessation Status - GOVERNANCE MASTER rulebook
+version: TSG06_05
+facts:
+  # ---- level 1: gate facts - if one is false, that law stops here
+  F_BAS:  # 1. 1 gate | 2 law(s)
+    name: Business Asset Status
+    type: CODE
+    options:
+    - PART_OF_BUSINESS_ASSETS
+    - NOT_PART_OF_BUSINESS_ASSETS
+    tier: T1
+  F_PCS:  # 2. 1 gate | 2 law(s)
+    name: Person Cessation Status
+    type: CODE
+    options:
+    - CEASED_TAXABLE_PERSON
+    - CONTINUING_TAXABLE_PERSON
+    tier: T0
+  # ---- LAST: only heavy checks (free text) need these
+  F_BCR:  # 3. LAST (heavy check only) | 1 law(s) | asked only if M_COTPRE: F_BAS + F_PCS
+    name: Business Carrier Role
+    type: CODE
+    options:
+    - DEEMED_TAXABLE_PERSONAL_REPRESENTATIVE
+    - OTHER
+    tier: T0
+  F_BTM:  # 4. LAST (heavy check only) | 1 law(s) | asked only if M_COTPBTE: F_BAS + F_PCS
+    name: Business Transfer Mode
+    type: CODE
+    options:
+    - GOING_CONCERN_TO_ANOTHER_PERSON
+    - OTHER_TRANSFER_OR_NO_TRANSFER
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_COTPBTE_A_PCTBT:
+    statement: Where any person ceases to be a taxable person
+    order: LOW
+    rule: F_PCS = 'CEASED_TAXABLE_PERSON'
+    handler: python
+  M_COTPBTE_A_BTAGC:
+    statement: The business is transferred as a going concern to another person, the exception stated by unless
+    order: HIGH
+    interpretation: Does the transfer pass the business to another person as a going concern, so that the deeming does not
+      apply?
+    grounding:
+    - F_BTM
+    handler: heavy
+  M_TOBASOG_A_GFBA:
+    statement: Goods forming part of the assets of a business
+    order: LOW
+    rule: F_BAS = 'PART_OF_BUSINESS_ASSETS'
+    handler: python
+  M_COTPRE_A_BCBDR:
+    statement: The business is carried on by a personal representative who is deemed to be a taxable person
+    order: HIGH
+    interpretation: Is the business carried on by a personal representative who is deemed to be a taxable person?
+    grounding:
+    - F_BCR
+    handler: heavy
+groups:
+  M_COTPBTE_G_DCG:
+    name: Deeming Conditions Group
+    logic: ALL
+    members:
+    - M_COTPBTE_A_PCTBT
+    - M_TOBASOG_A_GFBA
+    description: The person has ceased to be a taxable person and the goods form part of the assets of a business carried
+      on by him.
+  M_COTPRE_G_CAAG:
+    name: Cessation And Assets Group
+    logic: ALL
+    members:
+    - M_COTPBTE_A_PCTBT
+    - M_TOBASOG_A_GFBA
+    description: The person has ceased to be a taxable person and the goods are part of the assets of a business carried on
+      by him.
+outcomes:
+  M_COTPBTE_LE_DSOC:
+    outcome: Goods forming part of the business assets are deemed to be supplied by the person in the course or furtherance
+      of his business immediately before he ceases to be a taxable person
+    expr: M_COTPBTE_G_DCG AND NOT M_COTPBTE_A_BTAGC
+    module: M_COTPBTE
+    description: The deeming applies when the person has ceased to be a taxable person and the goods are business assets,
+      and the business is not transferred as a going concern to another person.
+  M_COTPRE_LE_DSOC:
+    outcome: DEEMED_SUPPLY_OF_GOODS_IN_COURSE_OR_FURTHERANCE_OF_BUSINESS_IMMEDIATELY_BEFORE_CESSATION
+    expr: M_COTPRE_G_CAAG AND NOT M_COTPRE_A_BCBDR
+    module: M_COTPRE
+    description: Where the person ceases to be a taxable person and the goods are business assets, the goods are deemed supplied
+      by him in the course or furtherance of his business immediately before cessation, unless the business is carried on
+      by a personal representative who is deemed to be a taxable person.
+products:
+  M_COTPBTE_PD_DSOC:
+    statement: The deeming applies when the person has ceased to be a taxable person and the goods are business assets, and
+      the business is not transferred as a going concern to another person.
+  M_COTPRE_PD_DSOC:
+    statement: Where the person ceases to be a taxable person and the goods are business assets, the goods are deemed supplied
+      by him in the course or furtherance of his business immediately before cessation, unless the business is carried on
+      by a personal representative who is deemed to be a taxable person.
+compounds:
+- id: C_SCHII_EN4_CC
+  question: 'Schedule II, paragraph 4(c): which clause applies?'
+  includes:
+  - M_COTPBTE_LE_DSOC
+  - M_COTPRE_LE_DSOC
+  produces:
+  - product: M_COTPBTE_PD_DSOC
+    from:
+    - M_COTPBTE_LE_DSOC
+  - product: M_COTPRE_PD_DSOC
+    from:
+    - M_COTPRE_LE_DSOC
+time:
+  law_date: F_DOI

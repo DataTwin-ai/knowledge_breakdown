@@ -1,11 +1,24 @@
 # GOVERNANCE MASTER TSG01_06 Business test (TG01 Supply & Taxability)
-# LAW ARC - 1 laws - status APPROVED
+# LAW ARC - 5 laws - status APPROVED
 name: TSG01_06 Business test - GOVERNANCE MASTER rulebook
 version: TSG01_06
 facts:
-  F_DOTA:
+  # ---- LAST: only heavy checks (free text) need these
+  F_DOTA:  # 1. LAST (heavy check only) | 3 law(s)
     name: Description Of The Activity
     type: TEXT
+    tier: T1
+  F_PBAD:  # 2. LAST (heavy check only) | 1 law(s)
+    name: Person Business Activity Description
+    type: TEXT
+    tier: T1
+  F_PLP:  # 3. LAST (heavy check only) | 1 law(s)
+    name: Property Letting Purpose
+    type: CODE
+    options:
+    - BUSINESS_OR_COMMERCE_WHOLLY
+    - BUSINESS_OR_COMMERCE_PARTLY
+    - OTHER
     tier: T1
   F_DOI:
     name: Date Of Invoice
@@ -20,24 +33,107 @@ predicates:
     grounding:
     - F_DOTA
     handler: heavy
+  M_PUOBGIS_A_PCOAB:
+    statement: The person by whom or under whose direction the goods are used or made available is a person carrying on a
+      business
+    order: HIGH
+    interpretation: Does the described activity of the person amount to carrying on a business?
+    grounding:
+    - F_PBAD
+    handler: heavy
+  M_BLSOS_A_LIFBOC:
+    statement: The lease or letting out of the building is for business or commerce, either wholly or partly
+    order: HIGH
+    interpretation: Is the building leased or let out for business or commerce, either wholly or partly, judged from the stated
+      or actual use? Use wholly or partly for business or commerce satisfies the test.
+    grounding:
+    - F_PLP
+    handler: light
 groups: {}
 outcomes:
-  M_SIAFOS_LE_SBPIB:
+  M_SIAFOS_LE_SBPIB_SIAFOS:
     outcome: SUPPLY_BY_PERSON_IN_BUSINESS
     expr: M_SIAFOS_A_SBPIB
     module: M_SIAFOS
     description: The supply is made by a person in the course or furtherance of business (Section 7(1), part of the law)
+  M_SIAFOS_LE_SBPIB:
+    outcome: SUPPLY_IN_COURSE_OF_BUSINESS
+    expr: M_SIAFOS_A_SBPIB
+    module: M_SBRODP
+    description: The supply is made by a person in the course or furtherance of business (Schedule I, paragraph 2, part of
+      the law)
+  M_PUOBGIS_LE_PCOAB:
+    outcome: PERSON_CARRIES_ON_A_BUSINESS
+    expr: M_PUOBGIS_A_PCOAB
+    module: M_PUOBGIS
+    description: The person by whom or under whose direction the goods are used or made available is a person carrying on
+      a business (Schedule II, paragraph 4, part of the law)
+  M_SIAFOS_LE_SBPIB_IOSFRP:
+    outcome: IMPORT_IS_IN_COURSE_OF_BUSINESS
+    expr: M_SIAFOS_A_SBPIB
+    module: M_IOSFRP
+    description: The supply is made by a person in the course or furtherance of business (Schedule I, paragraph 4, part of
+      the law)
+  M_BLSOS_LE_LIFBOC:
+    outcome: LETTING_IS_FOR_BUSINESS_OR_COMMERCE
+    expr: M_BLSOS_A_LIFBOC
+    module: M_BLSOS
+    description: The lease or letting out of the building is for business or commerce, either wholly or partly (Schedule II,
+      paragraph 2, part of the law)
 products:
-  M_SIAFOS_PD_SBPIB:
+  M_SIAFOS_PD_SBPIB_SIAFOS:
     statement: The supply is made by a person in the course or furtherance of business
+  M_SIAFOS_PD_SBPIB:
+    statement: The supply is made in the course or furtherance of business.
+  M_PUOBGIS_PD_PCOAB:
+    statement: The person by whom or under whose direction the goods are used or made available is a person carrying on a
+      business
+  M_SIAFOS_PD_SBPIB_IOSFRP:
+    statement: The import of services is in the course or furtherance of business
+  M_BLSOS_PD_LIFBOC:
+    statement: The lease or letting out of the building is for business or commerce, either wholly or partly
 compounds:
 - id: C_SIAFOS
   question: The supply is made by a person in the course or furtherance of business? (Section 7(1))
+  includes:
+  - M_SIAFOS_LE_SBPIB_SIAFOS
+  produces:
+  - product: M_SIAFOS_PD_SBPIB_SIAFOS
+    from:
+    - M_SIAFOS_LE_SBPIB_SIAFOS
+- id: C_SBRODP
+  question: The supply is made by a person in the course or furtherance of business? (Schedule I, paragraph 2)
   includes:
   - M_SIAFOS_LE_SBPIB
   produces:
   - product: M_SIAFOS_PD_SBPIB
     from:
     - M_SIAFOS_LE_SBPIB
+- id: C_PUOBGIS
+  question: The person by whom or under whose direction the goods are used or made available is a person carrying on a business?
+    (Schedule II, paragraph 4)
+  includes:
+  - M_PUOBGIS_LE_PCOAB
+  produces:
+  - product: M_PUOBGIS_PD_PCOAB
+    from:
+    - M_PUOBGIS_LE_PCOAB
+- id: C_IOSFRP
+  question: The supply is made by a person in the course or furtherance of business? (Schedule I, paragraph 4)
+  includes:
+  - M_SIAFOS_LE_SBPIB_IOSFRP
+  produces:
+  - product: M_SIAFOS_PD_SBPIB_IOSFRP
+    from:
+    - M_SIAFOS_LE_SBPIB_IOSFRP
+- id: C_BLSOS
+  question: The lease or letting out of the building is for business or commerce, either wholly or partly? (Schedule II, paragraph
+    2)
+  includes:
+  - M_BLSOS_LE_LIFBOC
+  produces:
+  - product: M_BLSOS_PD_LIFBOC
+    from:
+    - M_BLSOS_LE_LIFBOC
 time:
   law_date: F_DOI

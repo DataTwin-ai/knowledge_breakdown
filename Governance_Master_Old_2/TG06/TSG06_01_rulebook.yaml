@@ -1,0 +1,91 @@
+# GOVERNANCE MASTER TSG06_01 GSTIN validity & status (TG06 Parties & Registration)
+# LAW ARC - 4 laws - status APPROVED
+name: TSG06_01 GSTIN validity & status - GOVERNANCE MASTER rulebook
+version: TSG06_01
+facts:
+  # ---- level 1: gate facts - if one is false, that law stops here
+  F_PRS:  # 1. 1 gate | 4 law(s)
+    name: Person Registration Status
+    type: CODE
+    options:
+    - CANCELLED
+    - REGISTERED
+    - SUSPENDED
+    - UNREGISTERED
+    tier: T0
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_FODRP_A_FIRP:
+    statement: The person furnishing the details is a registered person
+    order: LOW
+    rule: F_PRS = 'REGISTERED'
+    handler: python
+groups: {}
+outcomes:
+  M_FODRP_LE_FIRP:
+    outcome: FURNISHER_IS_REGISTERED_PERSON
+    expr: M_FODRP_A_FIRP
+    module: M_FODRP
+    description: The person furnishing the details is a registered person (Section 37(1), proviso, part of the law)
+  M_FODRP_LE_FIRP_RPOSD:
+    outcome: PERSON_IS_A_REGISTERED_PERSON
+    expr: M_FODRP_A_FIRP
+    module: M_RPOSD
+    description: The person furnishing the details is a registered person (Section 37(1), part of the law)
+  M_FODRP_LE_FIRP_GPTNQR:
+    outcome: PERSON_IS_REGISTERED_PERSON
+    expr: M_FODRP_A_FIRP
+    module: M_GPTNQR
+    description: The person furnishing the details is a registered person (Section 39(1), proviso, part of the law)
+  M_FODRP_LE_FIRP_RPFMR:
+    outcome: PERSON_IS_A_REGISTERED_PERSON
+    expr: M_FODRP_A_FIRP
+    module: M_RPFMR
+    description: The person furnishing the details is a registered person (Section 39(1), part of the law)
+products:
+  M_FODRP_PD_FIRP:
+    statement: The person furnishing the details is a registered person
+  M_FODRP_PD_FIRP_RPOSD:
+    statement: The person is a registered person
+  M_FODRP_PD_FIRP_GPTNQR:
+    statement: The person is a registered person
+  M_FODRP_PD_FIRP_RPFMR:
+    statement: The person is a registered person
+compounds:
+- id: C_FODRP
+  question: The person furnishing the details is a registered person? (Section 37(1), proviso)
+  includes:
+  - M_FODRP_LE_FIRP
+  produces:
+  - product: M_FODRP_PD_FIRP
+    from:
+    - M_FODRP_LE_FIRP
+- id: C_RPOSD
+  question: The person furnishing the details is a registered person? (Section 37(1))
+  includes:
+  - M_FODRP_LE_FIRP_RPOSD
+  produces:
+  - product: M_FODRP_PD_FIRP_RPOSD
+    from:
+    - M_FODRP_LE_FIRP_RPOSD
+- id: C_GPTNQR
+  question: The person furnishing the details is a registered person? (Section 39(1), proviso)
+  includes:
+  - M_FODRP_LE_FIRP_GPTNQR
+  produces:
+  - product: M_FODRP_PD_FIRP_GPTNQR
+    from:
+    - M_FODRP_LE_FIRP_GPTNQR
+- id: C_RPFMR
+  question: The person furnishing the details is a registered person? (Section 39(1))
+  includes:
+  - M_FODRP_LE_FIRP_RPFMR
+  produces:
+  - product: M_FODRP_PD_FIRP_RPFMR
+    from:
+    - M_FODRP_LE_FIRP_RPFMR
+time:
+  law_date: F_DOI

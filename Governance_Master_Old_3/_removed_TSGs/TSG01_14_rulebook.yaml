@@ -1,0 +1,89 @@
+# GOVERNANCE MASTER TSG01_14 Construction Service Deeming Work Forms (TG01 Supply & Taxability)
+# LAW ARC - 1 laws - status APPROVED
+name: TSG01_14 Construction Service Deeming Work Forms - GOVERNANCE MASTER rulebook
+version: TSG01_14
+facts:
+  # ---- level 1: gate facts - if one is false, that law stops here
+  F_SS:  # 1. 1 gate | 1 law(s)
+    name: Structure Status
+    type: CODE
+    options:
+    - EXISTING_CIVIL_STRUCTURE
+    - NOT_EXISTING
+    - OTHER
+    tier: T1
+  F_WF:  # 2. 1 gate | 1 law(s)
+    name: Work Form
+    type: CODE
+    options:
+    - ADDITION
+    - ALTERATION
+    - REPLACEMENT
+    - REMODELLING
+    - OTHER
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_CIAAA_A_WCOA:
+    statement: The work consists of additions to a civil structure
+    order: LOW
+    if_false: F_WF is not ADDITION
+    rule: F_WF = 'ADDITION'
+    handler: python
+  M_CIAAA_A_AFOW:
+    statement: The work consists of alterations to a civil structure
+    order: LOW
+    if_false: F_WF is not ALTERATION
+    rule: F_WF = 'ALTERATION'
+    handler: python
+  M_CIAAA_A_ROP:
+    statement: The work consists of replacements to a civil structure
+    order: LOW
+    if_false: F_WF is not REPLACEMENT
+    rule: F_WF = 'REPLACEMENT'
+    handler: python
+  M_CIAAA_A_ROS:
+    statement: The work consists of remodelling of a civil structure
+    order: LOW
+    if_false: F_WF is not REMODELLING
+    rule: F_WF = 'REMODELLING'
+    handler: python
+  M_CIAAA_A_WOES:
+    statement: The work is done on a civil structure that already exists
+    order: LOW
+    if_false: F_SS is NOT_EXISTING or OTHER
+    rule: F_SS = 'EXISTING_CIVIL_STRUCTURE'
+    handler: python
+groups:
+  M_CIAAA_G_LWF:
+    name: Listed Work Forms
+    logic: ANY
+    members:
+    - M_CIAAA_A_WCOA
+    - M_CIAAA_A_AFOW
+    - M_CIAAA_A_ROP
+    - M_CIAAA_A_ROS
+    description: Any one of the four listed forms of work, joined by or
+outcomes:
+  M_CIAAA_LE_CFO:
+    outcome: IS_CONSTRUCTION_FOR_CLAUSE_5B
+    expr: M_CIAAA_G_LWF AND M_CIAAA_A_WOES
+    module: M_CIAAA
+    description: A listed form of work on an existing civil structure counts as construction for this clause
+products:
+  M_CIAAA_PD_CFO:
+    statement: A listed form of work on an existing civil structure counts as construction for this clause
+compounds:
+- id: C_CIAAA
+  question: 'Schedule II, paragraph 5(b), Explanation, item (2): Construction Includes Additions And Alterations?'
+  includes:
+  - M_CIAAA_LE_CFO
+  produces:
+  - product: M_CIAAA_PD_CFO
+    from:
+    - M_CIAAA_LE_CFO
+time:
+  law_date: F_DOI

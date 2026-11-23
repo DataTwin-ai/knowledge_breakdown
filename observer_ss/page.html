@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>LAW ARC Observer</title>
+<style>
+:root{--bg:#0a0f15;--panel:#0f161f;--line:#1f2c3b;--txt:#d7e1ec;--dim:#7d8ea3;--fact:#3a7bd5;--atom:#e8c547;--grp:#9bd36a;
+--le:#57c7a8;--ov:#ff8a65;--pd:#f2a93b;--self:#22d3c5;--cross:#ff4fa3;--user:#c48cff;--route:#ffd84a;--mol:#8f7cff}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font:12.5px/1.35 "Segoe UI",Inter,system-ui,sans-serif;overflow:hidden}
+#top{position:fixed;left:10px;right:10px;top:8px;height:62px;background:linear-gradient(90deg,#111a25,#0d141d);border:1px solid var(--line);border-radius:12px;padding:8px 14px;z-index:5;display:flex;align-items:center;gap:14px}
+.brand{font-size:18px;font-weight:700;white-space:nowrap}.brand b{color:#4fd1ff}
+.ctl small{display:block;color:var(--dim);font-size:9.5px;text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px}
+select{background:#0b121a;color:var(--txt);border:1px solid #2c3d52;border-radius:7px;padding:6px 8px;font:inherit;font-weight:600;max-width:270px}
+.seg{display:flex;border:1px solid #2c3d52;border-radius:7px;overflow:hidden}.seg button{border:0;background:#0b121a;color:var(--dim);padding:7px 11px;font:inherit;cursor:pointer}
+.seg button.on{background:#1b3a55;color:#fff;font-weight:700}
+.btn{padding:7px 11px;border-radius:7px;border:1px solid #2c3d52;background:#0b121a;color:var(--txt);font:inherit;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn.hot{border-color:#6b4fd8;background:#211a44;color:#cfc4ff}.btn.on{background:#6b4fd8;color:#fff}
+#chips{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto;max-width:520px;justify-content:flex-end}
+.chip{font-size:10.5px;padding:2px 8px;border-radius:20px;background:#0b121a;border:1px solid #26364a;color:#b8c7d8;white-space:nowrap}.chip b{color:#fff}
+.chip.self{border-color:#167d75;color:#8ff7ee}.chip.cross{border-color:#8a2e5e;color:#ffb3d8}.chip.warn{border-color:#7a5a1d;color:#ffd58a}
+#main{position:fixed;left:10px;top:78px;right:400px;bottom:10px;border:1px solid var(--line);border-radius:12px;overflow:auto;background:radial-gradient(ellipse at 35% 25%,#0f1924 0%,#0a0f15 70%)}
+#canvas{position:relative;transform-origin:0 0}#links{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+.colh{position:absolute;top:12px;font-size:10.5px;color:var(--dim);letter-spacing:1.6px;font-weight:700;white-space:nowrap}.colh.hub{color:#4fd1ff}
+.n{position:absolute;height:24px;border-radius:7px;padding:3px 8px;font-size:11px;font-weight:700;border:1.5px solid;background:#0e1620;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.2px;transition:opacity .12s}
+.n:hover{filter:brightness(1.3)}.n .k{font-weight:600;opacity:.75;margin-left:5px;font-size:9.5px}
+.F{border-color:var(--fact);color:#9cc4ff;background:#0e1a2a}.F.ext{border-style:dashed;opacity:.75}
+.A{border-color:var(--atom);color:var(--atom);background:#1b180b}.A.heavy{background:#2a1408;border-color:#ff8a3d;color:#ffb27a}
+.G{border-color:var(--grp);color:var(--grp);background:#111e10}
+.R{border-color:var(--self);color:#8ff7ee;background:#06302d;box-shadow:0 0 0 2px #22d3c533}.R.cross{border-color:var(--cross);color:#ffb3d8;background:#3a0b24;box-shadow:0 0 0 2px #ff4fa333}
+.LE{border-color:var(--le);color:var(--le);background:#0c1f1d}.OV{border-color:var(--ov);color:var(--ov);background:#28130c}
+.PD{border-color:var(--pd);color:var(--pd);background:#23180a}.PD.refd{border-color:var(--self);box-shadow:inset 3px 0 0 var(--self)}.PD.refx{border-color:var(--cross);box-shadow:inset 3px 0 0 var(--cross)}
+.DF{border-color:#26364a;color:#c9d6e4;background:#0b1118;font-weight:600;border-width:1px}.DF.user{border-color:#5b3d80;color:#dcc2ff}
+.doc{position:absolute;border:1px solid #243446;border-radius:10px;background:#0d151e}.doc .h{position:absolute;left:9px;top:5px;font-size:11px;font-weight:700;color:#cfe0f2;white-space:nowrap}.doc .h em{font-style:normal;color:var(--dim);font-weight:400;font-size:9.5px;margin-left:5px}
+.mol{position:absolute;border:1.5px dashed #6b4fd8aa;border-radius:12px;background:#120f2240}.mol.ref{border-color:#22d3c5aa;background:#06221f40}.mol.xref{border-color:#ff4fa3aa;background:#2a0a1a40}
+.mol .h{position:absolute;left:10px;top:5px;font-size:11px;color:#cfc4ff;white-space:nowrap;font-weight:600}.mol .h b{color:#fff}
+.tag{display:inline-block;font-size:9px;font-weight:800;padding:0 6px;border-radius:8px;margin-left:6px;letter-spacing:.3px}
+.t-self{background:#06302d;color:#8ff7ee;border:1px solid var(--self)}.t-cross{background:#3a0b24;color:#ffb3d8;border:1px solid var(--cross)}.t-pend{background:#3b2a0b;color:#ffcf7a;border:1px solid #a7791f}.t-same{background:#3a3110;color:#ffe08a}
+.band{position:absolute;border-left:4px solid;border-radius:3px;pointer-events:none}.band span{position:absolute;left:-17px;top:0;writing-mode:vertical-rl;transform:rotate(180deg);font-size:9px;font-weight:800;letter-spacing:1px;color:#8aa3bd;white-space:nowrap}
+.on-route{outline:2.5px solid var(--route);outline-offset:1px}.sel{box-shadow:0 0 0 4px #ffd84a55,0 0 22px #ffd84a88!important}
+.dim{opacity:.14}
+#side{position:fixed;right:10px;top:78px;width:382px;bottom:10px;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:12px 14px;overflow:auto}
+#side h3{margin:0 0 2px;font-size:14px}.sub{color:var(--dim);font-size:11px}
+.step{position:relative;margin:10px 0 0 14px;padding:8px 10px 8px 14px;border-radius:9px;background:#0b121a;border:1px solid #223041}
+.step:before{content:"";position:absolute;left:-15px;top:-11px;bottom:-11px;border-left:2px solid #2b3d52}
+.step .no{position:absolute;left:-26px;top:7px;width:22px;height:22px;border-radius:50%;text-align:center;line-height:22px;font-size:10.5px;font-weight:800;color:#0a0f15}
+.step .tt{font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.it{padding:5px 7px;border-radius:7px;border:1px solid #1f2c3b;background:#0e1620;margin-top:4px;cursor:pointer;font-size:11.5px}
+.it:hover{border-color:#3a5878}.it .id{font-weight:800}.it .d{color:#c3d0de;margin-top:1px}.it .x{color:var(--dim);font-size:10.5px;margin-top:2px;white-space:pre-wrap}
+.kv{display:grid;grid-template-columns:84px 1fr;gap:2px 8px;font-size:11.5px;margin-top:4px}.kv>div:nth-child(odd){color:var(--dim)}
+.c{font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;margin-right:5px}.py{background:#13311e;color:#8be3a4}.ai{background:#3a1b0d;color:#ffb27a}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;font-size:11px;color:#b8c7d8;margin-top:8px}.legend i{display:inline-block;width:22px;border-top:3px solid;vertical-align:middle;margin-right:6px}
+.flow{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:8px;font-size:11px}.flow span{padding:2px 7px;border-radius:6px;border:1.5px solid;font-weight:700}
+.empty{position:absolute;left:40px;top:60px;color:var(--dim);font-size:14px}
+</style></head><body>
+<div id="top"><div class="brand">LAW ARC · <b>Observer</b></div>
+ <div class="ctl"><small>Document</small><select id="doc"></select></div>
+ <div class="ctl"><small>View by TG / TSG</small><select id="tsg"></select></div>
+ <div class="ctl"><small>Centre line</small><div class="seg" id="centre"><button data-v="F" class="on">Fact</button><button data-v="M">Molecule</button><button data-v="A">Atom</button><button data-v="PD">Product</button></div></div>
+ <button class="btn" id="back">⟲ Back to TSG</button><button class="btn hot" id="full">⛓ Full connect</button>
+ <div class="ctl"><small>Zoom</small><div class="seg"><button id="zo">−</button><button id="zi">+</button></div></div>
+ <div id="chips"></div></div>
+<div id="main"><div id="canvas"><svg id="links"></svg></div></div>
+<div id="side"></div>
+<script>
+const D=/*DATA*/null;
+const S={tsg:(D.tsgs[0]||{}).id||'ALL',doc:'ALL',centre:'F',full:false,sel:null,zoom:1};
+const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const N=D.nodes,MOD=D.modules,NAME={F:'Fact',A:'Atom',G:'Group',R:'Referred steps',LE:'Law expression',OV:'Override',PD:'Product'};
+const short=id=>{const n=N[id];return n&&n.module&&id.startsWith(n.module+'_')?id.slice(n.module.length+1):id};
+(function(){const d=$('doc');d.innerHTML='<option value="ALL">All documents</option>'+Object.keys(D.documents).map(k=>`<option value="${k}">${k}</option>`).join('')+'<option value="UNTAGGED">Not tagged yet</option>';
+ const t=$('tsg');const by={};D.tsgs.forEach(x=>(by[x.tg+' '+x.tg_name]=by[x.tg+' '+x.tg_name]||[]).push(x));
+ t.innerHTML='<option value="ALL">All TSGs</option>'+Object.entries(by).map(([g,xs])=>`<optgroup label="${esc(g)}">`+xs.map(x=>`<option value="${x.id}">${x.id} · ${esc(x.name)}</option>`).join('')+'</optgroup>').join('');t.value=S.tsg;
+ d.onchange=()=>{S.doc=d.value;S.sel=null;draw(1)};t.onchange=()=>{S.tsg=t.value;S.full=false;S.sel=null;draw(1)};
+ document.querySelectorAll('#centre button').forEach(b=>b.onclick=()=>{S.centre=b.dataset.v;document.querySelectorAll('#centre button').forEach(x=>x.classList.toggle('on',x==b));draw(1)});
+ $('back').onclick=()=>{S.full=false;S.sel=null;if(S.tsg=='ALL')S.tsg=(D.tsgs[0]||{}).id||'ALL';$('tsg').value=S.tsg;draw(1)};
+ $('full').onclick=()=>{S.full=!S.full;S.sel=null;draw(1)};
+ const z=v=>{S.zoom=Math.max(.3,Math.min(1.8,v));$('canvas').style.transform=`scale(${S.zoom})`};$('zi').onclick=()=>z(S.zoom+.15);$('zo').onclick=()=>z(S.zoom-.15);
+ $('main').onclick=()=>{if(S.sel){S.sel=null;draw()}};
+})();
+// ---------------------------------------------------------------- the visible graph
+function graph(){
+ const inT=ts=>S.full||S.tsg=='ALL'||ts.includes(S.tsg);
+ let E=D.edges.filter(e=>inT(e[3])).map(e=>({a:e[0],b:e[1],k:e[2],n:e[3].length}));
+ const vis=new Set();E.forEach(e=>{vis.add(e.a);vis.add(e.b)});Object.values(N).forEach(n=>{if(n.type=='F'&&inT(n.tsgs))vis.add(n.id)});
+ const ext=new Set();
+ if(S.doc!='ALL'){const seed=[...vis].filter(id=>N[id]&&N[id].type=='F'&&(S.doc=='UNTAGGED'?!N[id].origin:(N[id].origin||{}).document==S.doc));
+  const out={};E.forEach(e=>(out[e.a]=out[e.a]||[]).push(e.b));const keep=new Set(seed),st=[...seed];
+  while(st.length){const x=st.pop();(out[x]||[]).forEach(y=>{if(!keep.has(y)){keep.add(y);st.push(y)}})}
+  E.forEach(e=>{if(N[e.a]&&N[e.a].type=='F'&&keep.has(e.b)&&!keep.has(e.a)){keep.add(e.a);ext.add(e.a)}});
+  E=E.filter(e=>keep.has(e.a)&&keep.has(e.b));vis.clear();keep.forEach(x=>vis.add(x))}
+ const DN={};let untagged=0;
+ [...vis].filter(id=>N[id]&&N[id].type=='F').forEach(f=>{const o=N[f].origin;if(!o){untagged++;return}
+  if(o.method=='ASK'||o.document=='USER'){const q='Q:'+f;DN[q]={id:q,doc:'USER',label:'Q · '+f,user:1};E.push({a:q,b:f,k:'in',n:1});return}
+  let linked=0;String(o.uses||'').split(/[,;]/).map(s=>s.trim()).filter(Boolean).forEach(u=>{if(/^F_/.test(u)){if(vis.has(u)){E.push({a:u,b:f,k:'dv',n:1});linked=1}}
+   else if(u.includes('.')){const id='DF:'+u,[dd,ff]=u.split('.');DN[id]=DN[id]||{id,doc:dd,label:ff};E.push({a:id,b:f,k:'in',n:1});linked=1}});
+  if(!linked){const id='DF:'+o.document+'.*';DN[id]=DN[id]||{id,doc:o.document,label:'(document)'};E.push({a:id,b:f,k:'in',n:1})}});
+ const seen=new Set();E=E.filter(e=>{const k=e.a+'>'+e.b+'>'+e.k;if(seen.has(k))return false;seen.add(k);return true});
+ return{E,vis,DN,ext,untagged};
+}
+// ---------------------------------------------------------------- layout: inputs | facts | molecules (volumes) | products
+const RH=30,NW=170,TOP=44;
+const XI=20,WI=190,XF=XI+WI+90,WF=180,XM=XF+WF+110,AW=170,GW=176,WM=AW+GW+80,XP=XM+WM+110,WP=180;
+let G=null;
+function draw(reset){
+ const g=graph(),{E,vis,DN,ext}=g;G=g;
+ const nb={},out={},inn={};E.forEach(e=>{(nb[e.a]=nb[e.a]||[]).push(e.b);(nb[e.b]=nb[e.b]||[]).push(e.a);(out[e.a]=out[e.a]||[]).push(e.b);(inn[e.b]=inn[e.b]||[]).push(e.a)});
+ const facts=[...vis].filter(id=>N[id]&&N[id].type=='F'),prods=[...vis].filter(id=>N[id]&&N[id].type=='PD');
+ const mols={};[...vis].forEach(id=>{const n=N[id];if(!n||n.type=='F'||n.type=='PD')return;const m=n.module||'(other)';(mols[m]=mols[m]||{id:m,a:[],r:[]});(n.type=='A'?mols[m].a:mols[m].r).push(id)});
+ const lvl=id=>{const n=N[id];return(!S.full&&S.tsg!='ALL'&&n.level_by_tsg&&n.level_by_tsg[S.tsg])||n.level||'L?'};const LV={L1:0,L2:1,L3:2,LAST:3,'L?':4};
+ const Y={},X={},W={};const avg=a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:1e9;
+ // inside a molecule: atoms left, groups / referred steps / law expressions right (groups first, then by depth)
+ const depth=id=>{let d=0,x=id,seen=0;while(seen++<6){const nx=(out[x]||[]).find(y=>N[y]&&N[y].module==N[id].module&&['G','R','LE','OV'].includes(N[y].type));if(!nx)break;d++;x=nx}return -d};
+ Object.values(mols).forEach(m=>{m.a.sort();m.r.sort((a,b)=>depth(a)-depth(b)||({G:0,R:1,OV:2,LE:3}[N[a].type]-{G:0,R:1,OV:2,LE:3}[N[b].type])||a.localeCompare(b));m.h=30+Math.max(m.a.length,m.r.length,1)*RH+8});
+ const place=m=>{m.a.forEach((id,i)=>{Y[id]=m.y+30+i*RH;X[id]=XM+14;W[id]=AW});const off=Math.max(0,(m.a.length-m.r.length)*RH/2);m.r.forEach((id,i)=>{Y[id]=m.y+30+off+i*RH;X[id]=XM+14+AW+66;W[id]=GW})};
+ const packMols=(order)=>{let y=TOP;order.forEach(m=>{m.y=Math.max(y,m.want??y);place(m);y=m.y+m.h+16})};
+ const packCol=(ids,want,x,w)=>{let y=TOP;ids.sort((a,b)=>want(a)-want(b)||a.localeCompare(b)).forEach(id=>{Y[id]=Math.max(y,isFinite(want(id))?want(id):y);X[id]=x;W[id]=w;y=Y[id]+RH})};
+ const ML=Object.values(mols);let bands=[],hub;
+ if(S.centre=='F'){hub='F';let y=TOP,prev=null;facts.sort((a,b)=>LV[lvl(a)]-LV[lvl(b)]||(nb[b]||[]).length-(nb[a]||[]).length||a.localeCompare(b)).forEach(f=>{const l=lvl(f);if(prev!==null&&l!==prev)y+=16;if(l!==prev)bands.push({l,y});prev=l;Y[f]=y;X[f]=XF;W[f]=WF;y+=RH});bands.forEach((b,i)=>b.e=(bands[i+1]?bands[i+1].y-16:y));
+  ML.forEach(m=>{const fy=m.a.flatMap(a=>(inn[a]||[]).filter(f=>Y[f]!=null).map(f=>Y[f]));m.want=fy.length?avg(fy)-m.h/2+30:1e9});packMols(ML.sort((a,b)=>a.want-b.want||a.id.localeCompare(b.id)));
+  packCol(prods,p=>avg((inn[p]||[]).filter(x=>Y[x]!=null).map(x=>Y[x])),XP,WP)}
+ else if(S.centre=='PD'){hub='PD';let y=TOP;const feeds=p=>(out[p]||[]).some(x=>N[x]&&N[x].type=='R');prods.sort((a,b)=>feeds(b)-feeds(a)||a.localeCompare(b)).forEach(p=>{Y[p]=y;X[p]=XP;W[p]=WP;y+=RH});
+  ML.forEach(m=>{const py=m.r.flatMap(r=>(out[r]||[]).filter(p=>N[p]&&N[p].type=='PD').map(p=>Y[p]));m.want=py.length?avg(py)-m.h/2:1e9});packMols(ML.sort((a,b)=>a.want-b.want||a.id.localeCompare(b.id)));
+  packCol(facts,f=>avg((out[f]||[]).filter(x=>Y[x]!=null).map(x=>Y[x])),XF,WF)}
+ else{hub='M';const key=m=>S.centre=='A'?[-(m.a.filter(a=>N[a].shared_with).length),m.id]:[0,(MOD[m.id]||{}).mkp||m.id];
+  packMols(ML.sort((a,b)=>{const x=key(a),y=key(b);return x[0]-y[0]||String(x[1]).localeCompare(String(y[1]))}));
+  packCol(facts,f=>avg((out[f]||[]).filter(x=>Y[x]!=null).map(x=>Y[x])),XF,WF);packCol(prods,p=>avg((inn[p]||[]).filter(x=>Y[x]!=null).map(x=>Y[x])),XP,WP)}
+ // inputs: one card per document, its fields next to the facts they feed
+ const docs={};Object.values(DN).forEach(d=>(docs[d.doc]=docs[d.doc]||[]).push(d.id));let yi=TOP;const cards=[];
+ Object.keys(docs).sort((a,b)=>avg(docs[a].flatMap(i=>(out[i]||[]).map(f=>Y[f])))-avg(docs[b].flatMap(i=>(out[i]||[]).map(f=>Y[f])))).forEach(d=>{
+  const ids=docs[d].sort((a,b)=>avg((out[a]||[]).map(f=>Y[f]))-avg((out[b]||[]).map(f=>Y[f])));const want=avg(ids.flatMap(i=>(out[i]||[]).map(f=>Y[f])))-ids.length*RH/2;
+  const y0=Math.max(yi,isFinite(want)?want:yi);ids.forEach((id,i)=>{Y[id]=y0+26+i*RH;X[id]=XI+10;W[id]=WI-20});cards.push({d,y:y0,h:30+ids.length*RH});yi=y0+30+ids.length*RH+14});
+ // ---------------------------------------------------------------- render
+ const cv=$('canvas');cv.querySelectorAll('.n,.mol,.doc,.band,.colh,.empty').forEach(x=>x.remove());
+ const maxY=Math.max(TOP+300,...Object.keys(Y).map(id=>Y[id]+RH),...ML.map(m=>m.y+m.h),...cards.map(c=>c.y+c.h))+50,cw=XP+WP+40;
+ cv.style.width=cw+'px';cv.style.height=maxY+'px';const svg=$('links');svg.setAttribute('width',cw);svg.setAttribute('height',maxY);
+ svg.innerHTML='<defs><filter id="glow"><feGaussianBlur stdDeviation="2.3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
+ [['① WHERE IT COMES FROM',XI,0],['② FACTS',XF,'F'],['③ MOLECULES · ATOMS → GROUPS → LAW EXPRESSIONS',XM,'M'],['④ PRODUCTS',XP,'PD']].forEach(([t,x,h])=>{const d=document.createElement('div');d.className='colh'+(h==hub?' hub':'');d.style.left=x+'px';d.textContent=t+(h==hub?' · CENTRE':'');cv.appendChild(d)});
+ bands.forEach(b=>{const d=document.createElement('div');d.className='band';Object.assign(d.style,{left:XF-10+'px',top:b.y+'px',height:b.e-b.y-4+'px',borderColor:{L1:'#4fd1ff',L2:'#3a7bd5',L3:'#6b4fd8',LAST:'#c070c8'}[b.l]||'#445'});d.innerHTML=`<span>${{L1:'L1 GATE',L2:'L2',L3:'L3',LAST:'LAST',"L?":'—'}[b.l]}</span>`;cv.appendChild(d)});
+ cards.forEach(c=>{const d=document.createElement('div');d.className='doc';Object.assign(d.style,{left:XI+'px',top:c.y+'px',width:WI+'px',height:c.h+'px'});d.innerHTML=`<div class="h">${c.d=='USER'?'<span style="color:var(--user)">ASK THE USER</span>':esc(c.d)}</div>`;cv.appendChild(d)});
+ if(g.untagged){const d=document.createElement('div');d.className='doc';Object.assign(d.style,{left:XI+'px',top:yi+'px',width:WI+'px',height:'44px'});d.innerHTML=`<div class="h" style="color:#ffd58a">${g.untagged} fact(s) not tagged<br><em style="margin:0">python fact_origin_engine.py</em></div>`;cv.appendChild(d)}
+ ML.forEach(m=>{const M=MOD[m.id]||{};const refIn=Object.values(M.why||{}).find(w=>/^REFERENCE/.test(w));const isX=refIn&&M.doc&&M.doc!=='CGSTA17'||M.doc&&M.doc!=='CGSTA17'&&m.r.length==0;
+  const d=document.createElement('div');d.className='mol'+(refIn?(M.doc&&M.doc!='CGSTA17'?' xref':' ref'):'');Object.assign(d.style,{left:XM+'px',top:m.y+'px',width:WM+'px',height:m.h+'px'});
+  const refs=M.refs||[],pend=refs.filter(r=>r.scope=='CROSS'&&r.target_status!='INSERTED').length;
+  d.innerHTML=`<div class="h"><b>${esc(m.id)}</b> · ${esc(M.cite||'')}${refIn?`<span class="tag ${M.doc!='CGSTA17'?'t-cross':'t-self'}">${M.doc!='CGSTA17'?'⇢ CROSS-REF PART':'⟳ CAME IN BY SELF-REF'}</span>`:''}${m.r.some(r=>N[r].type=='R')?`<span class="tag ${m.r.some(r=>N[r].ref_kind=='cross')?'t-cross':'t-self'}">${m.r.some(r=>N[r].ref_kind=='cross')?'⇢ USES CROSS REF':'⟳ USES SELF REF'}</span>`:''}${pend?`<span class="tag t-pend">${pend} CROSS PENDING</span>`:''}</div>`;cv.appendChild(d)});
+ const nerve=S.sel?nerveOf(S.sel,E,out,inn):null;
+ const node=(id,cls,txt,title)=>{if(Y[id]==null)return;const e=document.createElement('div');e.id='n_'+id;e.className='n '+cls;Object.assign(e.style,{left:X[id]+'px',top:Y[id]+'px',width:W[id]+'px'});e.innerHTML=txt;e.title=title||id;
+  if(nerve){if(!nerve.n.has(id))e.classList.add('dim');else e.classList.add('on-route');if(id==S.sel)e.classList.add('sel')}
+  e.onclick=ev=>{ev.stopPropagation();S.sel=S.sel==id?null:id;draw()};cv.appendChild(e)};
+ Object.values(DN).forEach(d=>node(d.id,'DF'+(d.user?' user':''),esc(d.label),d.user?(N[d.id.slice(2)].origin||{}).how_to_get:d.doc+'.'+d.label));
+ const refProd=new Set(E.filter(e=>e.k=='self').map(e=>e.a)),xProd=new Set(E.filter(e=>e.k=='cross').map(e=>e.a));
+ [...vis].forEach(id=>{const n=N[id];if(!n)return;let c=n.type;if(ext.has(id))c+=' ext';if(n.type=='A'&&(n.handler=='heavy'||n.order=='HIGH'))c+=' heavy';if(n.type=='R'&&n.ref_kind=='cross')c+=' cross';if(refProd.has(id))c+=' refd';if(xProd.has(id))c+=' refx';
+  let t=esc(short(id));if(n.type=='R')t=(n.ref_kind=='cross'?'⇢ ':'⟳ ')+t;if(n.shared_with)t+=`<span class="k">SAME×${n.shared_with.length+1}</span>`;if(n.type=='G'&&n.logic)t+=`<span class="k">${n.logic}</span>`;
+  node(id,c,t,id+'\n'+(n.label||n.description||''))});
+ // edges
+ const col={in:'#4d6a88',dv:'#4d6a88',fa:'#3a7bd5',ag:'#8b96a5',al:'#8b96a5',lp:'#f2a93b',self:'#22d3c5',cross:'#ff4fa3'};
+ const P=id=>({x:X[id],y:Y[id]+12,w:W[id]});
+ E.forEach(e=>{if(Y[e.a]==null||Y[e.b]==null)return;const a=P(e.a),b=P(e.b);let d;
+  if(e.k=='self'||e.k=='cross'){const x1=a.x,x2=b.x+b.w,mx=Math.max(x2+60,(x1+x2)/2);d=`M${x1},${a.y} C${x1-70},${a.y} ${mx+40},${b.y} ${x2},${b.y}`}
+  else if(X[e.a]==X[e.b]){const x=a.x+a.w,o=Math.min(60,18+Math.abs(b.y-a.y)/6);d=`M${x},${a.y} C${x+o},${a.y} ${x+o},${b.y} ${x},${b.y}`}
+  else if(X[e.a]>X[e.b]){const x1=a.x,x2=b.x+b.w;d=`M${x1},${a.y} C${x1-50},${a.y} ${x2+50},${b.y} ${x2},${b.y}`}
+  else{const x1=a.x+a.w,x2=b.x,dx=Math.max(30,(x2-x1)*.5);d=`M${x1},${a.y} C${x1+dx},${a.y} ${x2-dx},${b.y} ${x2},${b.y}`}
+  const on=nerve&&nerve.e.has(e.a+'>'+e.b),ref=e.k=='self'||e.k=='cross';const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+  let c=col[e.k]||'#8b96a5';if(e.k=='fa'&&N[e.b]&&N[e.b].handler=='heavy')c='#ff8a3d';if(on&&!ref)c='#ffd84a';
+  p.setAttribute('d',d);p.setAttribute('fill','none');p.setAttribute('stroke',c);p.setAttribute('stroke-linecap','round');
+  p.setAttribute('stroke-width',(ref?2.4:1.2)+(on?1.4:0)+Math.min(2.4,(e.n-1)*.6));if(ref||e.k=='dv')p.setAttribute('stroke-dasharray',ref?'7 5':'4 4');
+  p.setAttribute('opacity',nerve?(on?1:.05):(ref?.95:.6));if(on||ref)p.setAttribute('filter','url(#glow)');svg.appendChild(p)});
+ chips(g,ML);side(nerve,E,out,inn);
+ if(reset){$('main').scrollTop=0;$('main').scrollLeft=hub=='PD'?Math.max(0,XM*S.zoom-60):0}
+}
+function nerveOf(id,E,out,inn){const n=new Set([id]),es=new Set();const walk=(m,fwd)=>{const st=[id],seen=new Set([id]);while(st.length){const x=st.pop();(m[x]||[]).forEach(y=>{es.add(fwd?x+'>'+y:y+'>'+x);if(!seen.has(y)){seen.add(y);n.add(y);st.push(y)}})}};
+ walk(out,1);if(!(N[id]&&N[id].type=='F'))walk(inn,0);else (inn[id]||[]).forEach(x=>{n.add(x);es.add(x+'>'+id)});return{n,e:es}}
+function chips(g,ML){const ids=[...g.vis],cnt=t=>ids.filter(id=>(N[id]||{}).type==t).length;const self=g.E.filter(e=>e.k=='self').length,cross=g.E.filter(e=>e.k=='cross').length;
+ const user=ids.filter(id=>((N[id]||{}).origin||{}).method=='ASK').length;
+ $('chips').innerHTML=`<div class="chip"><b>${cnt('F')}</b> facts</div><div class="chip"><b>${ML.length}</b> molecules</div><div class="chip"><b>${cnt('A')}</b> atoms</div><div class="chip"><b>${cnt('LE')+cnt('OV')}</b> LE</div><div class="chip"><b>${cnt('PD')}</b> products</div><div class="chip self">⟳ <b>${self}</b> self ref</div><div class="chip cross">⇢ <b>${cross}</b> cross ref</div><div class="chip">ask user <b>${user}</b></div>${g.untagged?`<div class="chip warn"><b>${g.untagged}</b> untagged</div>`:''}${S.full?'<div class="chip warn"><b>FULL CONNECT</b></div>':''}`;$('full').classList.toggle('on',S.full)}
+// ---------------------------------------------------------------- side: the flow of the clicked node, step by step
+const it=(id,html)=>`<div class="it" onclick="event.stopPropagation();S.sel='${id}';draw()">${html}</div>`;
+function stepHTML(no,color,title,body){return body?`<div class="step"><div class="no" style="background:${color}">${no}</div><div class="tt" style="color:${color}">${title}</div>${body}</div>`:''}
+function side(nerve,E,out,inn){const el=$('side');
+ if(!S.sel){const t=D.tsgs.find(x=>x.id==S.tsg);
+  el.innerHTML=`<h3>${S.full?'Full connect · every TSG':t&&S.tsg!='ALL'?esc(t.id+' · '+t.name):'All TSGs'}</h3><div class="sub">${t&&!S.full&&S.tsg!='ALL'?esc(t.tg+' '+t.tg_name)+' · '+t.status+' · '+t.laws.length+' laws':''}</div>
+  <div class="flow"><span style="border-color:#4d6a88">Document</span>→<span style="border-color:var(--fact);color:#9cc4ff">Fact</span>→<span style="border-color:var(--atom);color:var(--atom)">Atom</span>→<span style="border-color:var(--self);color:#8ff7ee">⟳ Self ref</span>→<span style="border-color:var(--grp);color:var(--grp)">Group</span>→<span style="border-color:var(--le);color:var(--le)">LE</span>→<span style="border-color:var(--pd);color:var(--pd)">Product</span></div>
+  <div class="sub" style="margin-top:8px">Click any id to see its full flow here, step by step: the fact's data → the atoms (AKP) that check it → any self / cross reference → the groups → the law expressions → the products it decides.</div>
+  <div class="legend"><span><i style="border-color:#4d6a88"></i>document field → fact</span><span><i style="border-color:var(--fact)"></i>fact → atom</span><span><i style="border-color:#ff8a3d"></i>fact → AI-judge atom</span><span><i style="border-color:#8b96a5"></i>atom → group → LE</span><span><i style="border-color:var(--pd)"></i>LE → product</span><span><i style="border-color:var(--self);border-top-style:dashed"></i>⟳ self reference</span><span><i style="border-color:var(--cross);border-top-style:dashed"></i>⇢ cross reference</span><span><i style="border-color:var(--route)"></i>route of the click</span></div>
+  <div class="sub" style="margin-top:8px">Dashed boxes = molecules (one law each). Teal box = came in by self reference; pink = an outside document's part. Facts on the left are ordered L1 (gate, checked first) → LAST.</div>`+
+  (t&&!S.full&&S.tsg!='ALL'?`<div class="step" style="margin-left:0"><div class="tt" style="color:var(--mol)">Molecules in this TSG</div>`+t.laws.map(l=>`<div class="it"><span class="id">${esc(l.module||'')}</span> · ${esc((MOD[l.module]||{}).cite||l.mkp)}<div class="x">${esc(l.why)}</div></div>`).join('')+'</div>':'');return}
+ const id=S.sel,n=N[id]||{},pick=t=>[...nerve.n].filter(x=>(N[x]||{}).type==t).sort();
+ const molOf=x=>N[x]&&N[x].module?`<span style="color:var(--dim)"> · ${esc(N[x].module)}</span>`:'';
+ let h=`<h3>${esc(id)}</h3><div class="sub">${NAME[n.type]||'input'}${n.module&&MOD[n.module]?' · '+esc(MOD[n.module].cite):''}${n.tsgs?' · '+n.tsgs.length+' TSG(s)':''}</div>`;
+ const F=pick('F'),A=pick('A'),R=pick('R'),Gs=pick('G'),L=pick('LE').concat(pick('OV')),PD=pick('PD');
+ const fact=f=>{const x=N[f],o=x.origin;return it(f,`<span class="id" style="color:#9cc4ff">${f}</span> · ${esc(x.label)}<div class="kv"><div>type</div><div>${esc(x.dtype||'')}${x.options?' · '+x.options.map(esc).join(', '):''}</div><div>level</div><div>${esc(x.level)}</div>${o?`<div>from</div><div><b>${esc(o.document)}</b> · ${esc(o.method)}${o.uses?' · '+esc(o.uses):''}</div><div>AI to get</div><div>${esc(o.ai_level||'—')}</div><div>how</div><div>${esc(o.how_to_get||'')}</div><div>if missing</div><div>${esc(o.when_missing||'')} ${esc(o.fallback||'')}</div>`:'<div>from</div><div style="color:#ffd58a">not tagged yet</div>'}</div>`)};
+ h+=stepHTML(1,'#3a7bd5','Fact · the data',F.map(fact).join(''));
+ h+=stepHTML(2,'#e8c547','Atoms (AKP) · the yes / no checks',A.map(a=>{const x=N[a];return it(a,`<span class="c ${x.handler=='heavy'?'ai':'py'}">${x.handler=='heavy'?'AI JUDGE':'PYTHON'}</span><span class="id" style="color:var(--atom)">${short(a)}</span>${molOf(a)}${x.shared_with?' <span class="tag t-same">SAME</span>':''}<div class="d">${esc(x.label)}</div><div class="x">${esc(x.rule||x.interpretation||'')}</div>`)}).join(''));
+ h+=stepHTML('⟳',R.some(r=>N[r].ref_kind=='cross')?'#ff4fa3':'#22d3c5','Self / cross reference',R.map(r=>{const x=N[r],ps=(inn[r]||[]).filter(p=>N[p]&&N[p].type=='PD');return it(r,`<span class="id" style="color:${x.ref_kind=='cross'?'#ffb3d8':'#8ff7ee'}">${x.ref_kind=='cross'?'⇢ CROSS':'⟳ SELF'} · ${short(r)}</span>${molOf(r)}<div class="d">TRUE when any decision of the referred law is TRUE (${ps.length}):</div><div class="x">${ps.map(p=>p+' · '+((MOD[N[p].module]||{}).cite||'')).join('\n')}</div>`)}).join(''));
+ h+=stepHTML(3,'#9bd36a','Groups · join the answers',Gs.map(x=>it(x,`<span class="id" style="color:var(--grp)">${short(x)}</span>${molOf(x)} · <b>${esc(N[x].logic||'')}</b><div class="d">${esc(N[x].label||'')}</div><div class="x">${(N[x].members||[]).map(short).join(' · ')}</div>`)).join(''));
+ h+=stepHTML(4,'#57c7a8','Law expressions · the full rule',L.map(x=>it(x,`<span class="id" style="color:${N[x].type=='OV'?'var(--ov)':'var(--le)'}">${short(x)}</span>${molOf(x)} → <b>${esc(N[x].label)}</b><div class="x">${esc(N[x].expr||'')}</div>${N[x].type=='OV'?'<div class="x" style="color:var(--ov)">overrides: '+esc(N[x].overrides_in||'another law')+'</div>':''}`)).join(''));
+ h+=stepHTML(5,'#f2a93b','Products · what the law decides',PD.map(x=>it(x,`<span class="id" style="color:var(--pd)">${short(x)}</span>${molOf(x)}<div class="d">${esc(N[x].label||'')}</div>${N[x].question?`<div class="x">${esc(N[x].question)}</div>`:''}${(out[x]||[]).some(y=>N[y]&&N[y].type=='R')?'<div class="x" style="color:#8ff7ee">⟳ also answers: '+(out[x]||[]).filter(y=>N[y]&&N[y].type=='R').join(', ')+'</div>':''}`)).join(''));
+ if(!F.length&&!A.length&&!PD.length)h+='<div class="sub" style="margin-top:10px">No connected flow in this view.</div>';
+ el.innerHTML=h}
+draw(1);
+</script></body></html>

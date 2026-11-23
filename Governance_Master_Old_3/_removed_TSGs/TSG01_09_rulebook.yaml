@@ -1,0 +1,194 @@
+# GOVERNANCE MASTER TSG01_09 Statutory Deeming of Land Interests as Services (TG01 Supply & Taxability)
+# LAW ARC - 3 laws - status APPROVED
+name: TSG01_09 Statutory Deeming of Land Interests as Services - GOVERNANCE MASTER rulebook
+version: TSG01_09
+facts:
+  # ---- level 1: gate facts - if one is false, that law stops here
+  F_GTT:  # 1. 1 gate | 1 law(s)
+    name: Goods Title Transferred
+    type: BOOLEAN
+    tier: T1
+  F_LIF:  # 2. 1 gate | 1 law(s)
+    name: Land Interest Form
+    type: CODE
+    options:
+    - LEASE
+    - TENANCY
+    - EASEMENT
+    - LICENCE_TO_OCCUPY
+    - OTHER
+    tier: T1
+  # ---- LAST: only heavy checks (free text) need these
+  F_PSS:  # 3. LAST (heavy check only) | 2 law(s) | asked only if M_LISOS: F_LIF
+    name: Property Sale Subject
+    type: CODE
+    options:
+    - BUILDING
+    - LAND
+    - LAND_AND_BUILDING
+    - OTHER
+    tier: T1
+  F_FOS:  # 4. LAST (heavy check only) | 1 law(s)
+    name: Form Of Supply
+    type: CODE
+    options:
+    - BARTER
+    - DISPOSAL
+    - EXCHANGE
+    - LEASE
+    - LICENCE
+    - OTHER
+    - RENTAL
+    - SALE
+    - TRANSFER
+    tier: T1
+  F_GTS:  # 5. LAST (heavy check only) | 1 law(s) | asked only if M_TORISOS: F_GTT
+    name: Goods Transfer Subject
+    type: CODE
+    options:
+    - RIGHT_IN_GOODS
+    - UNDIVIDED_SHARE_IN_GOODS
+    - OTHER
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_LISOS_A_IILL:
+    statement: The transaction is a lease to occupy land
+    order: LOW
+    rule: F_LIF = 'LEASE'
+    handler: python
+  M_LISOS_A_IILT:
+    statement: The transaction is a tenancy to occupy land
+    order: LOW
+    rule: F_LIF = 'TENANCY'
+    handler: python
+  M_LISOS_A_IILE:
+    statement: The transaction is an easement in land
+    order: LOW
+    rule: F_LIF = 'EASEMENT'
+    handler: python
+  M_LISOS_A_IILL2:
+    statement: The transaction is a licence to occupy land
+    order: LOW
+    rule: F_LIF = 'LICENCE_TO_OCCUPY'
+    handler: python
+  M_LISOS_A_ICL:
+    statement: The lease, tenancy, easement or licence to occupy concerns land
+    order: HIGH
+    interpretation: Does the interest concern land, as opposed to a building or other property only?
+    grounding:
+    - F_PSS
+    handler: light
+  M_ROIPIS_A_TIR:
+    statement: The transaction is a renting of the property
+    order: HIGH
+    interpretation: Is the transaction a renting of property? RENTAL is a renting. LEASE and OTHER need reading of the contract
+      before deciding. Other forms are not treated as renting unless the contract shows a renting.
+    grounding:
+    - F_FOS
+    handler: light
+  M_ROIPIS_A_RPII:
+    statement: The property that is rented is immovable property
+    order: HIGH
+    interpretation: Is the rented property immovable property, such as land or a building? LAND, BUILDING and LAND_AND_BUILDING
+      are read as immovable property. OTHER needs reading of the property description and is UNKNOWN if the description does
+      not show it.
+    grounding:
+    - F_PSS
+    handler: light
+  M_TORISOS_A_TOROSIG:
+    statement: The transaction is a transfer of a right in goods or of an undivided share in goods
+    order: HIGH
+    interpretation: Does the transaction transfer a right in goods or an undivided share in goods, as distinct from other
+      subject matter?
+    grounding:
+    - F_GTS
+    handler: light
+  M_TORISOS_A_TWTOG:
+    statement: The transfer of the right or share in goods is made without the transfer of title in those goods
+    order: LOW
+    rule: F_GTT = FALSE
+    handler: python
+groups:
+  M_LISOS_G_LIKG:
+    name: Land Interest Kinds Group
+    logic: ANY
+    members:
+    - M_LISOS_A_IILL
+    - M_LISOS_A_IILT
+    - M_LISOS_A_IILE
+    - M_LISOS_A_IILL2
+    description: Any one listed kind satisfies the interest test. The source does not state the list as open or closed, so
+      an unlisted kind goes to CT review and is not decided here.
+  M_ROIPIS_G_ROIP:
+    name: Renting Of Immovable Property
+    logic: ALL
+    members:
+    - M_ROIPIS_A_TIR
+    - M_ROIPIS_A_RPII
+    description: Both the renting and the immovable property character are required
+outcomes:
+  M_LISOS_LE_LIDO:
+    outcome: DEEMED_SUPPLY_OF_SERVICES
+    expr: M_LISOS_G_LIKG AND M_LISOS_A_ICL
+    module: M_LISOS
+    description: The listed interest in land is deemed a supply of services, with no consideration or value test.
+  M_ROIPIS_LE_DSOS:
+    outcome: DEEMED_SUPPLY_OF_SERVICES
+    expr: M_ROIPIS_G_ROIP
+    module: M_ROIPIS
+    description: The renting of immovable property is treated as a supply of services
+  M_TORISOS_LE_TDSS:
+    outcome: SUPPLY_OF_SERVICES_DEEMED
+    expr: M_TORISOS_A_TOROSIG AND M_TORISOS_A_TWTOG
+    module: M_TORISOS
+    description: A transfer of a right or of an undivided share in goods, made without the transfer of title, is deemed a
+      supply of services.
+triggers:
+  M_LISOS_CT_LWBR:
+    question: Does the interest cover land together with a building, so that it is unclear whether it concerns land?
+    trigger: F_PSS = 'LAND_AND_BUILDING'
+    beside: M_LISOS_LE_LIDO
+  M_LISOS_CT_ULIR:
+    question: Is the interest in land of a kind not listed, such as another right over land, and does it fall within the same
+      deeming?
+    trigger: F_LIF = 'OTHER'
+    beside: M_LISOS_LE_LIDO
+products:
+  M_LISOS_PD_LIDO:
+    statement: The listed interest in land is deemed a supply of services, with no consideration or value test.
+  M_ROIPIS_PD_DSOS:
+    statement: The renting of immovable property is treated as a supply of services
+  M_TORISOS_PD_TDSS:
+    statement: A transfer of a right or of an undivided share in goods, made without the transfer of title, is deemed a supply
+      of services.
+compounds:
+- id: C_LISOS
+  question: 'Schedule II, paragraph 2(a): Land Interests Supply Of Services?'
+  includes:
+  - M_LISOS_LE_LIDO
+  produces:
+  - product: M_LISOS_PD_LIDO
+    from:
+    - M_LISOS_LE_LIDO
+- id: C_ROIPIS
+  question: 'Schedule II, paragraph 5(a): Renting Of Immovable Property Is Services?'
+  includes:
+  - M_ROIPIS_LE_DSOS
+  produces:
+  - product: M_ROIPIS_PD_DSOS
+    from:
+    - M_ROIPIS_LE_DSOS
+- id: C_TORISOS
+  question: 'Schedule II, paragraph 1(b): Transfer Of Right Is Supply Of Services?'
+  includes:
+  - M_TORISOS_LE_TDSS
+  produces:
+  - product: M_TORISOS_PD_TDSS
+    from:
+    - M_TORISOS_LE_TDSS
+time:
+  law_date: F_DOI

@@ -351,3 +351,9 @@
 2026-11-21 14:33:55,CGSTA17,CGSTA17_SCHIII_EN7,AKP,W5,comparison FALSE for CGSTA17_SCHIII_EN7#TEXT (other MKPs of the unit saved),0,FAILED
 2026-11-21 14:36:56,CGSTA17,CGSTA17_SCHIII_EN8,MKP_GATE,W8,"GateError: MKP GATE: judge row is not seven columns: C_CGSTA17_SCHIII_EN8|MKP|CGSTA17_SCHIII_EN8_Cb#TEXT|concept: ""Supply Of Goods By Consignee Before Ho",0,SPLIT
 2026-11-21 14:41:46,CGSTA17,CGSTA17_SCHIII_EN8_Cb,MKP_GATE,W4,"GateError: MKP GATE: judge row is not seven columns: C_CGSTA17_SCHIII_EN8|MKP|CGSTA17_SCHIII_EN8_Cb#AMD1|concept: ""Amendment Inserting Supply By Consigne",0,SPLIT
+2026-11-23 23:38:50,CGSTA17,CGSTA17_S12,ALL,W1,finished on a later run,0,DONE
+2026-11-23 23:39:06,CGSTA17,CGSTA17_S12_SS2_Cb_E2,MKP_GATE,W7,GateError: MKP GATE: phrases do not rejoin to the text CGSTA17_S12_SS2_Cb_E2#TEXT,0,FAILED
+2026-11-23 23:53:56,CGSTA17,CGSTA17_SCHI,MKP_GATE,W1,"GateError: MKP GATE: judge row is not seven columns: C_CGSTA17_SCHI|MKP|CGSTA17_SCHI_EN2_P1#TEXT|concept: ""Gifts To Employee Not Supply""; citation: ""Sche",0,SPLIT
+2026-11-24 00:08:19,CGSTA17,CGSTA17_SCHII,MKP_GATE,W3,"GateError: MKP GATE: judge row is not seven columns: C_CGSTA17_SCHII|MKP|CGSTA17_SCHII_EN2_Cb#TEXT|concept: ""Lease Of Building Is Services""; citation: ""S",0,SPLIT
+2026-11-24 00:13:35,CGSTA17,CGSTA17_SCHII_EN4,MKP_GATE,W4,GateError: MKP GATE: judge row is not seven columns: C_CGSTA17_SCHII_EN4|SP|C,0,SPLIT
+2026-11-24 00:13:56,CGSTA17,CGSTA17_SCHII_EN5,MKP_GATE,W6,"GateError: MKP GATE: judge row is not seven columns: C_CGSTA17_SCHII_EN5|MKP|CGSTA17_SCHII_EN5_Cb_E1_N1_SCii#TEXT|concept: ""Competent Authority Engineer || judge row is not seven columns: C_CGSTA17_SCHII_EN5|MKP|CGSTA17_SCHII_EN5_Cb_E1_N1_SCiii#TEXT|concept: ""Competent Authority Surveyor || judge row is not seven columns: C_CGSTA17_SCHII_EN5|MKP|CGSTA17_SCHII_EN5_Cc#TEXT|concept: ""IPR Use Or Enjoyment Services""; citation",0,SPLIT
