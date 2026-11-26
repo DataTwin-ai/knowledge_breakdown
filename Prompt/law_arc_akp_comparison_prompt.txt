@@ -1,3 +1,5 @@
+PROMPT EDIT 2026-11-27 (2): STEP 3B reads calculations as steps inside the atoms.
+PROMPT EDIT 2026-11-27: STEP 3B - money and time: WORKED_OUT formulas, amount atoms (when + result) and the OR amount are part of the law's meaning; light vs heavy alone is never a reason for FALSE.
 PROMPT EDIT 2026-11-15: STEP 3A - the handler of every atom is checked (a legal judgement is never python).
 PROMPT EDIT 2026-11-10: section 2A PYTHON FINDINGS added (INPUT.python_findings); new output field python_findings_review.
 ROLE
@@ -112,7 +114,17 @@ STEP 3A — Who checks each atom (handler).
 Every A row has handler python / light / heavy. A real legal judgement (weighing words such as "in the course or
 furtherance of business", "of the same kind", "reasonable") marked python is a logic problem: return FALSE and
 name the atom in logic_problems. python must decide by its rule alone; light is a short reading of one or two
-facts; heavy is a full legal judgement.
+facts; heavy is a full legal judgement. Choosing light where heavy would also fit (or the reverse) is NOT a
+reason for FALSE: both go to the LLM. Only a judgement marked python is.
+
+STEP 3B — Money and time (amounts, rates, caps, days, due dates, limits).
+Read the steps inside the atoms (step1, step2 ...), the amount atoms (when + result) and the OR amount as part of
+the reconstruction: they are how the law's numbers are kept. "late fee of one hundred rupees for every day ...
+subject to a maximum amount of five thousand rupees" is reconstructed from the steps fee_daily = days_late *
+F_LATE_FEE_PER_DAY and late_fee = MIN(fee_daily, F_LATE_FEE_CAP) with the per-day fee 100 and the cap 5000. A step
+that changes a number, a rate, a cap, the start or end of a period, or MIN / MAX, or that leaves out an amount the
+law states, is missing / changed: return FALSE and name it. A number the law leaves to a notification kept as a
+LOOKUP fact is correct, not missing. Facts are raw inputs; a calculated value being a step and not a fact is correct.
 
 STEP 4 — Special source types.
 For HEADING, AMENDMENT, METADATA and non-operative ILLUSTRATION, absence of

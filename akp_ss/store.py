@@ -170,15 +170,16 @@ class AkpStore:
         return {x[0]: dict(zip(cols, x)) for x in r}
 
     def outside_refs(self, link_table: str, version, source_mkp) -> List[dict]:
-        """The outside documents this MKP names (mkp_ref, scope CROSS): [{ref_id, mention}] - reference design item 7."""
+        """The outside documents this MKP names (mkp_ref, scope CROSS): [{ref_id, mention, target_key, relation}] -
+        reference design item 7 (target_key / relation 2026-11-25: the exact part of an Act / Rules, PRESCRIBED_BY)."""
         try:
-            r = self.run(sql.SQL("SELECT DISTINCT ref_id, mention FROM {} WHERE version_id=%s AND mkp_element=%s "
-                                 "AND scope='CROSS' ORDER BY ref_id").format(self.t(link_table)),
-                         (version, source_mkp), fetch=True)
+            r = self.run(sql.SQL("SELECT DISTINCT ref_id, mention, target_key, relation FROM {} WHERE version_id=%s "
+                                 "AND mkp_element=%s AND scope='CROSS' ORDER BY ref_id, target_key").format(
+                self.t(link_table)), (version, source_mkp), fetch=True)
         except Exception:
             self.conn.rollback()
             return []
-        return [{"ref_id": a, "mention": b or ""} for a, b in r]
+        return [{"ref_id": a, "mention": b or "", "target_key": c or "", "relation": d or ""} for a, b, c, d in r]
 
     def cache_put(self, instrument, version, source_mkp, fingerprint, data: dict, commit: bool = True) -> None:
         self.run(sql.SQL("""INSERT INTO {} (instrument, version_id, source_mkp, input_sha256, results_json)

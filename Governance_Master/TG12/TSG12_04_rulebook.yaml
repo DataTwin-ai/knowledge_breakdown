@@ -1,0 +1,149 @@
+# GOVERNANCE MASTER TSG12_04 Late fee (TG12 Payment, Interest & Fees)
+# LAW ARC - 1 laws - status APPROVED
+name: TSG12_04 Late fee - GOVERNANCE MASTER rulebook
+version: TSG12_04
+facts:
+  # ---- level 1: gate facts - if one is false, that law stops here
+  F_ARDD:  # 1. 1 gate | 1 law(s)
+    name: Annual Return Due Date
+    type: DATE
+    tier: T1
+    source_kind: LOOKUP
+  F_ARFD:  # 2. 1 gate | 1 law(s)
+    name: Annual Return Furnishing Date
+    type: DATE
+    tier: T0
+    origin:
+      document: GST_RETURN
+      method: FIELD
+      uses: [GST_RETURN.arn_date, GST_RETURN.return_type]
+      how_to_get: From the GST_RETURN document where 'return_type' is 'Annual Return' (e.g., GSTR-9 or GSTR-9C), take the value of the 'arn_date' field.
+      fallback: UNKNOWN
+      when_missing: UNKNOWN
+      as_of: Date of furnishing
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: '2023-12-31'
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_ARIF:  # 3. 1 gate | 1 law(s)
+    name: Annual Return Is Furnished
+    type: BOOLEAN
+    tier: T0
+    source_kind: DOCUMENT
+  F_DOTC:  # 4. 1 gate | 1 law(s)
+    name: Date Of The Check
+    type: DATE
+    tier: T1
+    source_kind: LOOKUP
+  F_PRS:  # 5. 1 gate | 1 law(s)
+    name: Person Registration Status
+    type: CODE
+    options:
+    - CANCELLED
+    - REGISTERED
+    - SUSPENDED
+    - UNREGISTERED
+    tier: T0
+    origin:
+      document: GST_REGISTRATION
+      method: LOOKUP
+      uses: [GST_RETURN.gstin, SALE_INVOICE.supplier_gstin, GST_REGISTRATION.registration_status, GST_REGISTRATION.cancellation_date]
+      how_to_get: Take the GSTIN of the person from GST_RETURN.gstin or SALE_INVOICE.supplier_gstin. Look it up in the GST portal or GSP search taxpayer API and take registration_status. Active gives REGISTERED, Cancelled gives CANCELLED, and Suspended gives SUSPENDED. If the GSTIN is not found, the value is UNREGISTERED. If the status is Cancelled, check that cancellation_date is on or before the as-of date. If cancellation_date is later, the value is REGISTERED.
+      fallback: 'Read the registration certificate (REG-06) if the user has one. Otherwise ask: ''Is the person registered under GST? What is the GSTIN?'''
+      when_missing: ASK
+      as_of: end of the tax period or date of the return
+      level: TAXPAYER
+      ai_level: NONE
+      cost: MEDIUM
+      example: REGISTERED
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_LFDR:
+    name: Late Fee Daily Rate
+    type: AMOUNT
+    tier: T1
+    source_kind: LOOKUP
+    unit: INR
+  F_TISOU:
+    name: Turnover In State Or UT
+    type: AMOUNT
+    tier: T0
+    source_kind: DOCUMENT
+    unit: INR
+  F_LFCP:
+    name: Late Fee Cap Percentage
+    type: AMOUNT
+    tier: T1
+    source_kind: LOOKUP
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_LFFFTFR_A_ARNFBDD:
+    statement: The person fails to furnish the return required under section 44 by the due date
+    order: LOW
+    facts:
+    - F_ARDD
+    - F_ARFD
+    - F_ARIF
+    - F_DOTC
+    compute:
+      failure_end: IF(F_ARIF = TRUE, F_ARFD, F_DOTC)
+      days_late: MAX(0, DAYS_BETWEEN(F_ARDD, failure_end))
+    rule: days_late > 0
+    handler: python
+    how: Due date from the due-date table for the annual return (s.44); filing date and status from the return acknowledgement
+      (ARN); the check date is the run date; days between the due date and the filing date, or the check date when not filed.
+  M_LFFFTFR_A_LFFAR:
+    statement: The person shall be liable to pay a late fee of one hundred rupees for every day during which such failure
+      continues subject to a maximum of an amount calculated at a quarter per cent. of his turnover in the State or Union
+      territory.
+    order: LOW
+    facts:
+    - F_LFDR
+    - F_TISOU
+    - F_LFCP
+    compute:
+      fee_daily: M_LFFFTFR_A_ARNFBDD.days_late * F_LFDR
+      fee_cap: ROUND(F_TISOU * F_LFCP / 100, 2)
+      late_fee: MIN(fee_daily, fee_cap)
+    rule: late_fee > 0
+    handler: python
+    how: Days late from M_LFFFTFR_A_ARNFBDD times the daily fee from s.47(2) (or notified lower fee), capped at the maximum
+      calculated as a quarter per cent of the turnover in the State/UT from the annual return.
+    when: M_LFFFTFR_A_ARNFBDD
+    result: late_fee
+  M_FODRP_A_FIRP:
+    statement: The person furnishing the details is a registered person
+    order: LOW
+    rule: F_PRS = 'REGISTERED'
+    handler: python
+groups: {}
+outcomes:
+  M_LFFFTFR_LE_LFIP:
+    outcome: LATE_FEE_PAYABLE
+    expr: M_FODRP_A_FIRP AND M_LFFFTFR_A_ARNFBDD
+    module: M_LFFFTFR
+    amount: M_LFFFTFR_A_LFFAR.late_fee
+    unit: INR
+products:
+  M_LFFFTFR_PD_LFIP:
+    statement: LATE_FEE_PAYABLE
+compounds:
+- id: C_LFFFTFR
+  question: 'Section 47(2): Late Fee For Failure To Furnish Return?'
+  includes:
+  - M_LFFFTFR_LE_LFIP
+  produces:
+  - product: M_LFFFTFR_PD_LFIP
+    from:
+    - M_LFFFTFR_LE_LFIP
+time:
+  law_date: F_DOI

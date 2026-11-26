@@ -7,6 +7,12 @@
     python fact_origin_engine.py --export            Output/fact_origin_review.xlsx - every row, for review
     python fact_origin_engine.py --import            read that Excel back: rows with reviewed = yes are saved as the
                                                      person's (origin_by PERSON) and the AI never changes them again
+    python fact_origin_engine.py --yaml              only write the origins into the governance master yaml files
+
+2026-11-26: after tagging (and after --import) every fact of every Governance_Master/<TG>/<TSG>_rulebook.yaml gets
+an `origin:` block (document, method, uses, how_to_get, fallback ...) from this table, so the validation engine needs
+the yaml only (fact_origin_ss/yaml_origin.py; Config/fact_origin.json write_yaml). The governance master writes the
+same block when it rebuilds a yaml.
 
 Reads the facts AKP made (akp_fact_new), the laws that use them (akp_atom_fact_new -> MKP text) and their TSGs
 (approved GKP). Writes ONE row per fact in the table fact_origin (Config/fact_origin.json): document, method
@@ -61,7 +67,10 @@ def _facts(conn, schema: str, cfg: dict, per_fact: int) -> tuple:
 
 
 def _model(st: dict, cfg: dict):
+    import llm_runtime
     from llm_runtime import call_llm, create_llm_runtime
+    # 2026-11-27: run alone, too - Claude no credit / key expired -> the Gemini model of permission.json llm.fallback
+    llm_runtime.configure(None, cfg.get("features", {}).get("prompt_caching", True), cfg.get("llm_fallback"))
     m = st.get("model") or {}
     rt = dict(create_llm_runtime(m.get("llm", "CLAUDE"), kp_settings.build_paths(cfg)))
     rt["model"] = m.get("model", "claude-sonnet-5-5")
@@ -91,6 +100,8 @@ def tag(facts: Optional[List[str]] = None, redo: bool = False, dry_run: bool = F
                 flow(f"FACT ORIGIN : not facts in {cfg['governance_master']['tables']['fact']}: {', '.join(sorted(missing))}")
         flow(f"FACT ORIGIN : {len(catalog)} fact(s), {len(have)} with an origin - {len(todo)} to tag now")
         if not todo:
+            if not dry_run:
+                write_yaml(have)
             return []
         if ask is None:
             ask, model = _model(st, cfg)
@@ -120,11 +131,41 @@ def tag(facts: Optional[List[str]] = None, redo: bool = False, dry_run: bool = F
             if not dry_run:
                 store.save(rows)
             saved += rows
+        if not dry_run:
+            write_yaml(store.rows())
         flow(f"FACT ORIGIN : {len(saved)} fact(s) tagged" + (" (dry run - nothing written)" if dry_run else
              f" - review them: python fact_origin_engine.py --export"))
         return saved
     finally:
         conn.close()
+
+
+def write_yaml(rows: Optional[Dict[str, dict]] = None) -> int:
+    """Every fact origin into every governance master yaml (comments kept, an older block replaced)."""
+    cfg, st = kp_settings.load(), settings()
+    if not st.get("write_yaml", True):
+        flow("FACT ORIGIN : write_yaml is false in Config/fact_origin.json - the yaml files are not changed")
+        return 0
+    if rows is None:
+        from db_insert import get_connection, get_db_schema
+        from fact_origin_ss.store import OriginStore
+        conn = get_connection()
+        try:
+            store = OriginStore(conn, get_db_schema(), st.get("table", "fact_origin"))
+            store.ensure()
+            rows = store.rows()
+        finally:
+            conn.close()
+    from fact_origin_ss.yaml_origin import apply_dir
+    out_dir = (cfg.get("governance_master") or {}).get("output_dir")
+    if not out_dir:
+        flow("FACT ORIGIN : no governance_master.output_dir in Config/settings.json - the yaml files are not changed")
+        return 0
+    folder = kp_settings.resolve(out_dir)
+    kp_settings.require(cfg, "WRITE", folder)
+    changed, blocks = apply_dir(folder, rows)
+    flow(f"FACT ORIGIN : {blocks} fact origin(s) in the yaml files of {folder.name} - {changed} file(s) changed")
+    return changed
 
 
 EXPORT_COLS = ["fact_id", "name", "entity", "data_type", "tsgs", "laws"] + [c for c in fo.COLUMNS if c != "fact_id"]
@@ -207,6 +248,7 @@ def import_review(path: Optional[str] = None) -> int:
     finally:
         conn.close()
     flow(f"FACT ORIGIN : {n} reviewed fact(s) saved from {p.name} - the AI never changes them again")
+    write_yaml()
     return n
 
 
@@ -218,8 +260,11 @@ if __name__ == "__main__":
     ap.add_argument("--export", action="store_true", help="write the review Excel")
     ap.add_argument("--import", dest="do_import", action="store_true", help="read the reviewed Excel back")
     ap.add_argument("--file", help="the Excel to import (default Config/fact_origin.json review_file)")
+    ap.add_argument("--yaml", action="store_true", help="only write the origins into the governance master yaml files")
     a = ap.parse_args()
-    if a.export:
+    if a.yaml:
+        write_yaml()
+    elif a.export:
         export()
     elif a.do_import:
         import_review(a.file)

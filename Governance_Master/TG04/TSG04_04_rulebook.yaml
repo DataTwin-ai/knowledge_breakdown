@@ -1,0 +1,89 @@
+# GOVERNANCE MASTER TSG04_04 Non-money consideration (barter, exchange) (TG04 Value)
+# LAW ARC - 1 laws - status APPROVED
+name: TSG04_04 Non-money consideration (barter, exchange) - GOVERNANCE MASTER rulebook
+version: TSG04_04
+facts:
+  # ---- LAST: only heavy checks (free text) need these
+  F_FOS:  # 1. LAST (heavy check only) | 1 law(s)
+    name: Form Of Supply
+    type: CODE
+    options:
+    - BARTER
+    - DISPOSAL
+    - EXCHANGE
+    - LEASE
+    - LICENCE
+    - OTHER
+    - RENTAL
+    - SALE
+    - TRANSFER
+    tier: T1
+    source_kind: READ
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.subject, CONTRACT.consideration_type, SALE_INVOICE.line_description]
+      how_to_get: 'Read CONTRACT.subject and CONTRACT.consideration_type. Decide the form of supply: SALE for a price in money with transfer of title, BARTER if the consideration is other goods or services, EXCHANGE, LEASE, RENTAL, LICENCE, TRANSFER or DISPOSAL as the wording says. Use OTHER if none fits.'
+      fallback: If there is no contract, read SALE_INVOICE.line_description and invoice_type. If that is also unclear, ask the user how the supply was made.
+      when_missing: ASK
+      as_of: date of supply
+      level: TRANSACTION
+      ai_level: HIGH
+      cost: HIGH
+      example: SALE
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_SIAFOS_A_SIAB:
+    statement: The supply takes the form of barter of goods or services or both
+    order: HIGH
+    interpretation: Does the supply take the form of a barter of goods or services or both?
+    grounding:
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAE:
+    statement: The supply takes the form of exchange of goods or services or both
+    order: HIGH
+    interpretation: Does the supply take the form of an exchange of goods or services or both?
+    grounding:
+    - F_FOS
+    handler: light
+groups: {}
+outcomes:
+  M_SIAFOS_LE_SIAB:
+    outcome: SUPPLY_IS_A_BARTER
+    expr: M_SIAFOS_A_SIAB
+    module: M_SIAFOS
+    description: The supply takes the form of barter of goods or services or both (Section 7(1), part of the law)
+  M_SIAFOS_LE_SIAE:
+    outcome: SUPPLY_IS_AN_EXCHANGE
+    expr: M_SIAFOS_A_SIAE
+    module: M_SIAFOS
+    description: The supply takes the form of exchange of goods or services or both (Section 7(1), part of the law)
+products:
+  M_SIAFOS_PD_SIAB:
+    statement: The supply takes the form of barter of goods or services or both
+  M_SIAFOS_PD_SIAE:
+    statement: The supply takes the form of exchange of goods or services or both
+compounds:
+- id: C_SIAFOS
+  question: The supply takes the form of barter of goods or services or both; The supply takes the form of exchange of goods
+    or services or both? (Section 7(1))
+  includes:
+  - M_SIAFOS_LE_SIAB
+  - M_SIAFOS_LE_SIAE
+  produces:
+  - product: M_SIAFOS_PD_SIAB
+    from:
+    - M_SIAFOS_LE_SIAB
+  - product: M_SIAFOS_PD_SIAE
+    from:
+    - M_SIAFOS_LE_SIAE
+time:
+  law_date: F_DOI

@@ -5,6 +5,8 @@
   "batch_size": 15,
   "laws_per_fact": 3,
   "review_file": "Output/fact_origin_review.xlsx",
+  "_write_yaml": "2026-11-26: true = every fact of every Governance_Master/<TG>/<TSG>_rulebook.yaml gets an origin: block (document, method, uses, how_to_get, fallback ...) after tagging / --import / --yaml, and when the governance master rebuilds a yaml",
+  "write_yaml": true,
   "documents": {
     "SALE_INVOICE": {
       "about": "Tax invoice / bill of supply / e-invoice (INV-01) issued by the supplier",

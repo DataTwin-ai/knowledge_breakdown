@@ -1,10 +1,105 @@
 # GOVERNANCE MASTER TSG01_03 Neither supply (Schedule III) (TG01 Supply & Taxability)
-# LAW ARC - 25 laws - status NEEDS_REVIEW
+# LAW ARC - 30 laws - status NEEDS_REVIEW
 name: TSG01_03 Neither supply (Schedule III) - GOVERNANCE MASTER rulebook
 version: TSG01_03
 facts:
   # ---- level 1: gate facts - if one is false, that law stops here
-  F_SKOT:  # 1. 1 gate | 6 law(s)
+  F_PRS:  # 1. 1 gate | 5 law(s)
+    name: Person Registration Status
+    type: CODE
+    options:
+    - CANCELLED
+    - REGISTERED
+    - SUSPENDED
+    - UNREGISTERED
+    tier: T0
+    origin:
+      document: GST_REGISTRATION
+      method: LOOKUP
+      uses: [GST_RETURN.gstin, SALE_INVOICE.supplier_gstin, GST_REGISTRATION.registration_status, GST_REGISTRATION.cancellation_date]
+      how_to_get: Take the GSTIN of the person from GST_RETURN.gstin or SALE_INVOICE.supplier_gstin. Look it up in the GST portal or GSP search taxpayer API and take registration_status. Active gives REGISTERED, Cancelled gives CANCELLED, and Suspended gives SUSPENDED. If the GSTIN is not found, the value is UNREGISTERED. If the status is Cancelled, check that cancellation_date is on or before the as-of date. If cancellation_date is later, the value is REGISTERED.
+      fallback: 'Read the registration certificate (REG-06) if the user has one. Otherwise ask: ''Is the person registered under GST? What is the GSTIN?'''
+      when_missing: ASK
+      as_of: end of the tax period or date of the return
+      level: TAXPAYER
+      ai_level: NONE
+      cost: MEDIUM
+      example: REGISTERED
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_DOF:  # 2. 1 gate | 4 law(s)
+    name: Date Of Furnishing
+    type: DATE
+    tier: T1
+    origin:
+      document: GST_RETURN
+      method: FIELD
+      uses: [GST_RETURN.arn_date]
+      how_to_get: Take the filing acknowledgement of the return in question and read arn_date.
+      fallback: 'Ask the user: On what date did you file this return?'
+      when_missing: ASK
+      as_of: date of filing
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: '2024-05-18'
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_MOFD:  # 3. 1 gate | 4 law(s)
+    name: Mode Of Furnishing Details
+    type: CODE
+    options:
+    - ELECTRONIC
+    - OTHER
+    tier: T0
+    origin:
+      document: GST_RETURN
+      method: FIELD
+      uses: [GST_RETURN.filing_mode]
+      how_to_get: Take GST_RETURN.filing_mode. If it shows online filing on the GST portal, through a GSP, or with digital or EVC signature, the value is ELECTRONIC. If it shows paper or any other way, the value is OTHER.
+      fallback: 'If filing_mode is empty, treat a valid ARN in GST_RETURN.arn as ELECTRONIC. Otherwise ask the user: ''Did you file the return online on the GST portal?'''
+      when_missing: ASK
+      as_of: date of filing (ARN date)
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: ELECTRONIC
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_PTC:  # 4. 1 gate | 4 law(s)
+    name: Person Tax Category
+    type: CODE
+    options:
+    - COMPOSITION_S10
+    - ISD
+    - NON_RESIDENT
+    - REGULAR
+    - TCS_S52
+    - TDS_S51
+    tier: T0
+    origin:
+      document: GST_REGISTRATION
+      method: LOOKUP
+      uses: [GST_RETURN.gstin, GST_REGISTRATION.taxpayer_type, GST_REGISTRATION.composition]
+      how_to_get: 'Take the GSTIN of the person who furnishes the return (GST_RETURN.gstin, or the supplier GSTIN on the invoice). Look it up in the GST portal / GSP search taxpayer API or the REG-06 certificate. Read taxpayer_type and composition. Map: composition = yes or ''Composition'' gives COMPOSITION_S10; ''Input Service Distributor'' gives ISD; ''Non-Resident Taxable Person'' gives NON_RESIDENT; ''Tax Collector (e-commerce)'' gives TCS_S52; ''Tax Deductor'' gives TDS_S51; ''Regular'' gives REGULAR. A person with several roles gets the role that applies to the return being checked.'
+      fallback: 'Ask the user: ''Is this person a regular taxpayer, a composition dealer, an Input Service Distributor, a non-resident taxable person, a TDS deductor or an e-commerce TCS collector?'''
+      when_missing: ASK
+      as_of: end of the tax period
+      level: TAXPAYER
+      ai_level: NONE
+      cost: MEDIUM
+      example: REGULAR
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_SKOT:  # 5. 1 gate | 4 law(s)
     name: Supply Kind Of Transaction
     type: CODE
     options:
@@ -12,7 +107,23 @@ facts:
     - GOODS
     - SERVICES
     tier: T1
-  F_CRT:  # 2. 1 gate | 3 law(s)
+    origin:
+      document: SALE_INVOICE
+      method: LOOKUP
+      uses: [SALE_INVOICE.hsn_sac]
+      how_to_get: 'For each line take hsn_sac. Look it up in the HSN/SAC table: codes beginning with 99 are services, other codes are goods. If all lines are goods the value is GOODS, if all are services the value is SERVICES, if both appear the value is BOTH.'
+      fallback: 'Read SALE_INVOICE.line_description and decide goods or services; if still unclear, read CONTRACT.subject or ask the user: ''Is this a sale of goods, a service, or both?'''
+      when_missing: ASK
+      as_of: invoice date
+      level: INVOICE
+      ai_level: NONE
+      cost: MEDIUM
+      example: SERVICES
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_CRT:  # 6. 1 gate | 3 law(s)
     name: Consideration Receipt Timing
     type: CODE
     options:
@@ -20,7 +131,32 @@ facts:
     - ON_OR_BEFORE_EARLIER_MILESTONE
     - NOT_RECEIVED_IN_FULL
     tier: T1
-  F_GWS:  # 3. 1 gate | 3 law(s)
+    derived_from:
+    - F_ECRD
+    - F_CCS
+    - F_CCID
+    - F_PFOD
+    formula: NOT_RECEIVED_IN_FULL if the entire consideration has not been received; otherwise the reference date is the first
+      occupation date when the certificate is NOT_REQUIRED, the earlier of the certificate date and the first occupation date
+      when the certificate is ISSUED, and UNKNOWN when the certificate is REQUIRED_NOT_ISSUED; the value is AFTER_EARLIER_MILESTONE
+      when the receipt date is later than the reference date, else ON_OR_BEFORE_EARLIER_MILESTONE
+    origin:
+      document: SYSTEM
+      method: DERIVED
+      uses: [F_ECRD, F_CCS, F_CCID, F_PFOD]
+      how_to_get: If F_ECRD is not set, the value is NOT_RECEIVED_IN_FULL. Otherwise find the earlier milestone. If F_CCS is ISSUED, it is the earlier of F_CCID and F_PFOD. If F_CCS is NOT_REQUIRED or REQUIRED_NOT_ISSUED, it is F_PFOD alone. If F_ECRD is after the milestone date, the value is AFTER_EARLIER_MILESTONE. If F_ECRD is on or before it, or no milestone has happened yet, the value is ON_OR_BEFORE_EARLIER_MILESTONE.
+      fallback: If a date is missing, ask the user for that date.
+      when_missing: ASK
+      as_of: date of supply of the construction service
+      level: TRANSACTION
+      ai_level: NONE
+      cost: LOW
+      example: AFTER_EARLIER_MILESTONE
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_GWS:  # 7. 1 gate | 3 law(s)
     name: Goods Warehousing Status
     type: CODE
     options:
@@ -28,7 +164,23 @@ facts:
     - OTHER
     - WAREHOUSED
     tier: T0
-  F_HCS:  # 4. 1 gate | 3 law(s)
+    origin:
+      document: CUSTOMS
+      method: FIELD
+      uses: [CUSTOMS.warehoused, CUSTOMS.be_type]
+      how_to_get: Take CUSTOMS.warehoused from the bill of entry or warehouse papers. If true, the value is WAREHOUSED. If false, the value is NOT_WAREHOUSED. If the be_type shows something that is neither, the value is OTHER.
+      fallback: 'If the warehoused flag is empty, treat a filled CUSTOMS.warehouse_code as WAREHOUSED. Otherwise ask the user: ''Were the goods held in a customs warehouse when supplied?'''
+      when_missing: ASK
+      as_of: date of supply
+      level: LINE_ITEM
+      ai_level: NONE
+      cost: LOW
+      example: WAREHOUSED
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_HCS:  # 8. 1 gate | 3 law(s)
     name: Home Clearance Status
     type: CODE
     options:
@@ -36,7 +188,23 @@ facts:
     - CLEARED_FOR_HOME_CONSUMPTION
     - OTHER
     tier: T1
-  F_PEO:  # 5. 1 gate | 3 law(s)
+    origin:
+      document: CUSTOMS
+      method: FIELD
+      uses: [CUSTOMS.cleared_for_home_consumption, CUSTOMS.be_date]
+      how_to_get: Take CUSTOMS.cleared_for_home_consumption from the bill of entry. If it is false or not yet cleared on the date of supply, the value is BEFORE_CLEARANCE. If it is true and the clearance was on or before the date of supply, the value is CLEARED_FOR_HOME_CONSUMPTION. Otherwise OTHER.
+      fallback: 'Ask the user: ''Had the goods been cleared for home consumption when you supplied them?'''
+      when_missing: ASK
+      as_of: date of supply
+      level: LINE_ITEM
+      ai_level: NONE
+      cost: LOW
+      example: BEFORE_CLEARANCE
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_PEO:  # 9. 1 gate | 3 law(s)
     name: Person Elected Office
     type: CODE
     options:
@@ -47,7 +215,83 @@ facts:
     - OTHER_LOCAL_AUTHORITY_MEMBER
     - NONE
     tier: T1
-  F_BEA:  # 6. 1 gate | 2 law(s)
+    origin:
+      document: PROFILE
+      method: FIELD
+      uses: [PROFILE.elected_office]
+      how_to_get: 'From the person''s profile, read elected_office. Map it to one code: Member of Parliament gives MP, State Legislature gives STATE_LEGISLATURE_MEMBER, Panchayat gives PANCHAYAT_MEMBER, Municipality gives MUNICIPAL_MEMBER, any other local authority gives OTHER_LOCAL_AUTHORITY_MEMBER. If the field is blank, return NONE.'
+      fallback: 'Ask the user: ''Which elected office does the person hold (MP, State Legislature, Panchayat, Municipality, other local authority, or none)?'''
+      when_missing: ASK
+      as_of: date the functions were performed
+      level: TAXPAYER
+      ai_level: NONE
+      cost: LOW
+      example: PANCHAYAT_MEMBER
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_RISD:  # 10. 1 gate | 3 law(s)
+    name: Return Inward Supply Details
+    type: TEXT
+    tier: T0
+    origin:
+      document: GST_RETURN
+      method: FIELD
+      uses: [GST_RETURN.inward_supplies_rcm]
+      how_to_get: Read inward_supplies_rcm (inward supplies shown in the return, e.g. reverse-charge inward supplies and ITC-related inward details). If the return has no such details, leave the fact unset.
+      fallback: Ask the user whether the return shows inward supply details and what they are.
+      when_missing: UNKNOWN
+      as_of: end of the tax period
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: 'Inward supplies liable to reverse charge: 50,000'
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_RTPD:  # 11. 1 gate | 3 law(s)
+    name: Return Tax Payable Details
+    type: TEXT
+    tier: T0
+    origin:
+      document: GST_RETURN
+      method: FIELD
+      uses: [GST_RETURN.tax_payable]
+      how_to_get: Read tax_payable from the return (the tax liability for the period, by head). Use it as shown.
+      fallback: Ask the user for the tax payable shown in the return.
+      when_missing: UNKNOWN
+      as_of: end of the tax period
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: IGST 20,000; CGST 10,000; SGST 10,000
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_RTPD2:  # 12. 1 gate | 3 law(s)
+    name: Return Tax Paid Details
+    type: TEXT
+    tier: T0
+    origin:
+      document: GST_RETURN
+      method: FIELD
+      uses: [GST_RETURN.tax_paid]
+      how_to_get: Read tax_paid from the return or its acknowledgement (tax paid through cash and credit ledgers, by head). Use it as shown. Do not mix in interest_paid or late_fee_paid.
+      fallback: Ask the user for the tax paid shown in the return.
+      when_missing: UNKNOWN
+      as_of: date of filing (ARN date)
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: IGST 20,000; CGST 10,000; SGST 10,000
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_BEA:  # 13. 1 gate | 2 law(s)
     name: Body Establishing Authority
     type: CODE
     options:
@@ -56,14 +300,46 @@ facts:
     - LOCAL_AUTHORITY
     - OTHER
     tier: T1
-  F_DPT:  # 7. 1 gate | 2 law(s)
+    origin:
+      document: PROFILE
+      method: FIELD
+      uses: [PROFILE.established_by, PROFILE.establishing_law]
+      how_to_get: 'Read PROFILE.established_by. Map it: Central Government to CENTRAL_GOVT, State Government to STATE_GOVT, Local Authority to LOCAL_AUTHORITY, anything else to OTHER.'
+      fallback: Read PROFILE.establishing_law to see which government made the law that set up the body. If still unclear, ask the user who established the body.
+      when_missing: ASK
+      as_of: date of supply
+      level: TAXPAYER
+      ai_level: NONE
+      cost: LOW
+      example: STATE_GOVT
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_DPT:  # 14. 1 gate | 2 law(s)
     name: Destination Place Territory
     type: CODE
     options:
     - NON_TAXABLE_TERRITORY
     - OTHER_TERRITORY
     tier: T1
-  F_GDPL:  # 8. 1 gate | 2 law(s)
+    origin:
+      document: SALE_INVOICE
+      method: LOOKUP
+      uses: [SALE_INVOICE.ship_to_state]
+      how_to_get: Read ship_to_state from the invoice. Look it up in the table of Indian states and Union Territories. If it is found, the value is OTHER_TERRITORY. If it is a place outside India, the value is NON_TAXABLE_TERRITORY.
+      fallback: 'Use SALE_INVOICE.place_of_supply the same way. If both are empty, ask the user: To which country or state are the goods delivered?'
+      when_missing: ASK
+      as_of: date of supply
+      level: INVOICE
+      ai_level: NONE
+      cost: MEDIUM
+      example: OTHER_TERRITORY
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_GDPL:  # 15. 1 gate | 2 law(s)
     name: Goods Dispatch Port Location
     type: CODE
     options:
@@ -71,35 +347,169 @@ facts:
     - NOT_DISPATCHED
     - OUTSIDE_INDIA_PORT
     tier: T1
-  F_GEII:  # 9. 1 gate | 2 law(s)
+    origin:
+      document: USER
+      method: ASK
+      uses: [CUSTOMS.be_no, CUSTOMS.port_code]
+      how_to_get: 'Ask the user: ''Have the goods been dispatched yet? If so, was the port of dispatch in India or outside India?'' Answers map to NOT_DISPATCHED, INDIA_PORT or OUTSIDE_INDIA_PORT.'
+      fallback: If a CUSTOMS bill of entry exists with be_no, the goods were dispatched from outside India, so use OUTSIDE_INDIA_PORT.
+      when_missing: UNKNOWN
+      as_of: date of supply
+      level: TRANSACTION
+      ai_level: NONE
+      cost: HIGH
+      example: OUTSIDE_INDIA_PORT
+      confidence: low
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_GEII:  # 16. 1 gate | 2 law(s)
     name: Goods Entry Into India
     type: CODE
     options:
     - ENTERS_INDIA
     - DOES_NOT_ENTER
     tier: T1
-  F_GTM:  # 10. 1 gate | 2 law(s)
+    derived_from:
+    - F_SOOT
+    formula: If F_SOOT = 'IMPORT', then F_GEII = 'ENTERS_INDIA'. Otherwise (if F_SOOT = 'EXPORT' or 'DOMESTIC'), F_GEII =
+      'DOES_NOT_ENTER'.
+    origin:
+      document: CUSTOMS
+      method: DERIVED
+      uses: [F_SOOT, CUSTOMS.be_no]
+      how_to_get: 'If a CUSTOMS bill of entry exists (CUSTOMS.be_no present), the goods entered India: ENTERS_INDIA. Otherwise use the origin and destination places from F_SOOT. If both are in the non-taxable territory and no bill of entry exists, the value is DOES_NOT_ENTER.'
+      fallback: 'Ask the user: ''Did these goods enter into India?'''
+      when_missing: ASK
+      as_of: date of supply
+      level: TRANSACTION
+      ai_level: NONE
+      cost: MEDIUM
+      example: DOES_NOT_ENTER
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_GTM:  # 17. 1 gate | 2 law(s)
     name: Goods Transfer Mechanism
     type: CODE
     options:
     - ENDORSEMENT_OF_DOCUMENTS_OF_TITLE
     - OTHER
     tier: T1
-  F_ODR:  # 11. 1 gate | 2 law(s)
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.subject]
+      how_to_get: Read CONTRACT.subject for how the goods are passed to the buyer. If it says the documents of title (bill of lading, delivery order) are endorsed to the buyer, the value is ENDORSEMENT_OF_DOCUMENTS_OF_TITLE. Otherwise OTHER.
+      fallback: 'Ask the user: ''Were the goods transferred by endorsement of documents of title, or in another way?'''
+      when_missing: ASK
+      as_of: date of supply
+      level: TRANSACTION
+      ai_level: LOW
+      cost: HIGH
+      example: ENDORSEMENT_OF_DOCUMENTS_OF_TITLE
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_NRB:  # 18. 1 gate | 2 law(s)
+    name: Notification Recommending Body
+    type: CODE
+    options:
+    - COUNCIL
+    - NONE_STATED
+    - OTHER
+    tier: T1
+    source_kind: DOCUMENT
+    origin:
+      document: NOTIFICATION
+      method: FIELD
+      uses: [NOTIFICATION.recommended_by]
+      how_to_get: Take NOTIFICATION.recommended_by from the notification in Law/. If it names the GST Council, the value is COUNCIL. If the field is empty or says nothing about a recommendation, the value is NONE_STATED. If it names any other body, the value is OTHER.
+      fallback: Read the preamble of the notification text for the words 'on the recommendations of the Council'.
+      when_missing: STOP
+      as_of: notification date
+      level: DOCUMENT
+      ai_level: NONE
+      cost: LOW
+      example: COUNCIL
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_NRFF:  # 19. 1 gate | 2 law(s)
+    name: Notified Return Filing Frequency
+    type: CODE
+    options:
+    - QUARTERLY
+    - MONTHLY
+    - OTHER
+    tier: T1
+    source_kind: DOCUMENT
+    origin:
+      document: NOTIFICATION
+      method: LOOKUP
+      uses: [NOTIFICATION.notification_no, NOTIFICATION.notified_class]
+      how_to_get: Find the notification that applies to the taxpayer's class in our Law/ notification table, using notification_no and notified_class. Take the return filing frequency recorded for that notification. Return QUARTERLY if it requires quarterly returns, MONTHLY if monthly, otherwise OTHER. If no notification covers the class, return OTHER. Never ask the user.
+      fallback: Read NOTIFICATION.conditions and NOTIFICATION.notified_class text on our side to find the frequency named there.
+      when_missing: UNKNOWN
+      as_of: start of the tax period for which the return is due (the notification must be in force then)
+      level: TAXPAYER
+      ai_level: NONE
+      cost: MEDIUM
+      example: QUARTERLY
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_ODR:  # 20. 1 gate | 2 law(s)
     name: Origin Destination Relation
     type: CODE
     options:
     - DIFFERENT_PLACE
     - SAME_PLACE
     tier: T1
-  F_OPT:  # 12. 1 gate | 2 law(s)
+    origin:
+      document: SALE_INVOICE
+      method: DERIVED
+      uses: [SALE_INVOICE.supplier_state, SALE_INVOICE.ship_to_state, SALE_INVOICE.place_of_supply]
+      how_to_get: Compare the origin place with the destination place on the invoice. Origin is supplier_state. Destination is ship_to_state, or place_of_supply if ship_to_state is blank. Return SAME_PLACE if they are the same, otherwise DIFFERENT_PLACE.
+      fallback: 'Ask the user: ''Is the place the goods are sent to the same as the place they are sent from?'''
+      when_missing: ASK
+      as_of: date of supply (invoice date)
+      level: TRANSACTION
+      ai_level: NONE
+      cost: LOW
+      example: DIFFERENT_PLACE
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_OPT:  # 21. 1 gate | 2 law(s)
     name: Origin Place Territory
     type: CODE
     options:
     - NON_TAXABLE_TERRITORY
     - OTHER_TERRITORY
     tier: T1
-  F_PBR:  # 13. 1 gate | 2 law(s)
+    origin:
+      document: SALE_INVOICE
+      method: LOOKUP
+      uses: [SALE_INVOICE.supplier_state]
+      how_to_get: Take supplier_state from the invoice. Look it up in the table of Indian States and Union Territories. If it is found, return OTHER_TERRITORY. If it is a place outside India's taxable territory (a foreign country or other place outside India), return NON_TAXABLE_TERRITORY.
+      fallback: 'Ask the user: ''Were the goods supplied from a place outside India''s taxable territory?'''
+      when_missing: ASK
+      as_of: date of supply (invoice date)
+      level: TRANSACTION
+      ai_level: NONE
+      cost: MEDIUM
+      example: OTHER_TERRITORY
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_PBR:  # 22. 1 gate | 2 law(s)
     name: Person Body Role
     type: CODE
     options:
@@ -108,11 +518,43 @@ facts:
     - DIRECTOR
     - OTHER
     tier: T1
-  F_PDEBC:  # 14. 1 gate | 2 law(s)
+    origin:
+      document: PROFILE
+      method: FIELD
+      uses: [PROFILE.post_held, PROFILE.designation]
+      how_to_get: 'From the person''s profile, read post_held (or designation if post_held is blank). Python maps the text: Chairperson or Chairman to CHAIRPERSON, Member to MEMBER, Director to DIRECTOR, anything else to OTHER.'
+      fallback: 'Ask the user: ''Is the person a Chairperson, a Member or a Director of the body, or something else?'''
+      when_missing: ASK
+      as_of: date the duties were performed
+      level: TAXPAYER
+      ai_level: NONE
+      cost: LOW
+      example: DIRECTOR
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_PDEBC:  # 23. 1 gate | 2 law(s)
     name: Person Deemed Employee Before Commencement
     type: BOOLEAN
     tier: T1
-  F_PRR:  # 15. 1 gate | 2 law(s)
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.employment_terms, CONTRACT.start_date, CONTRACT.parties]
+      how_to_get: 'Read the employment papers in the contract: employment_terms, start_date and parties. Decide whether the person was in an employer-employee relationship (or deemed to be one) with the body before the clause commenced. Return true if so, otherwise false.'
+      fallback: 'Ask the user: ''Before this rule came into force, was the person treated as an employee of the body?'''
+      when_missing: ASK
+      as_of: date the clause commenced
+      level: TAXPAYER
+      ai_level: HIGH
+      cost: HIGH
+      example: 'false'
+      confidence: low
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_PRR:  # 24. 1 gate | 2 law(s)
     name: Provider Recipient Relation
     type: CODE
     options:
@@ -123,33 +565,114 @@ facts:
     - PRINCIPAL_AGENT
     - RELATED_PERSONS
     tier: T1
-  F_RRIT:  # 16. 1 gate | 2 law(s)
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.relation_between_parties, CONTRACT.parties, CONTRACT.employment_terms]
+      how_to_get: Read the relation between the parties in the contract. Map it to EMPLOYEE_EMPLOYER, PRINCIPAL_AGENT, CONTRACTOR_CLIENT, RELATED_PERSONS or DISTINCT_PERSONS. If there is no stated relation, use the parties and the employment terms to decide. Use OTHER if none fits.
+      fallback: 'Ask the user: ''What is the relationship between the provider and the recipient: employee-employer, principal-agent, or something else?'''
+      when_missing: ASK
+      as_of: date of supply
+      level: TRANSACTION
+      ai_level: LOW
+      cost: HIGH
+      example: EMPLOYEE_EMPLOYER
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_RICD:  # 25. 1 gate | 2 law(s)
+    name: Return Input Credit Details
+    type: TEXT
+    tier: T0
+    origin:
+      document: GST_RETURN
+      method: FIELD
+      uses: [GST_RETURN.itc_claimed]
+      how_to_get: Read itc_claimed from the return (the ITC availed table, e.g. GSTR-3B table 4). Use the text or amounts as shown. If the return shows no ITC, leave the value empty.
+      fallback: Ask the user for the ITC availed shown in the return.
+      when_missing: UNKNOWN
+      as_of: end of the tax period
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: IGST 12,000; CGST 6,000; SGST 6,000
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_ROSD:  # 26. 1 gate | 2 law(s)
+    name: Return Outward Supply Details
+    type: TEXT
+    tier: T0
+    origin:
+      document: GST_RETURN
+      method: FIELD
+      uses: [GST_RETURN.outward_supplies]
+      how_to_get: Read outward_supplies from the return (e.g. GSTR-1 outward supply tables or GSTR-3B table 3.1). If the return shows no outward supplies, leave the fact unset.
+      fallback: Ask the user whether the return shows outward supply details and what they are.
+      when_missing: UNKNOWN
+      as_of: end of the tax period
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: 'Taxable outward supplies: 5,00,000'
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_RPC:  # 27. 1 gate | 2 law(s)
+    name: Return Period Coverage
+    type: CODE
+    options:
+    - FULL_FINANCIAL_YEAR
+    - PART_FINANCIAL_YEAR
+    - OTHER
+    tier: T1
+  F_RRIT:  # 28. 1 gate | 2 law(s)
     name: Recipient Role In Transaction
     type: CODE
     options:
     - CONSIGNEE
     - OTHER_PERSON
     tier: T0
-  F_SCS:  # 17. 1 gate | 2 law(s)
-    name: Supply Consideration Status
-    type: CODE
-    options:
-    - AGREED
-    - NONE
-    - PAID
+    origin: {document: USER, method: ASK, how_to_get: 'Ask the user: ''Is the buyer the consignee named in the bill of lading / bill of entry, or another person to whom the consignee transferred the goods by endorsing the documents of title?''. Map consignee to CONSIGNEE and any other person to OTHER_PERSON.', fallback: 'Compare the recipient on SALE_INVOICE (recipient_name) with the importer on the customs papers (CUSTOMS.importer_iec). If they are different persons, the value is OTHER_PERSON.', when_missing: ASK, as_of: date of supply, level: TRANSACTION, ai_level: NONE, cost: HIGH, example: OTHER_PERSON, confidence: medium, sensitive: false, reviewed: false, origin_by: AI}
+  F_RTD:  # 29. 1 gate | 2 law(s)
+    name: Return Turnover Details
+    type: TEXT
     tier: T1
-  F_SRIS:  # 18. 1 gate | 2 law(s)
+  F_SRIS:  # 30. 1 gate | 2 law(s)
     name: Supplier Role In Supply
     type: CODE
     options:
     - CONSIGNEE
     - OTHER
     tier: T0
-  F_ACBN:  # 19. 1 gate | 1 law(s)
-    name: Activity Covered By Notification
+    origin: {document: USER, method: ASK, how_to_get: 'Ask the user: ''Is the person making this supply the consignee of the goods named in the bill of lading or import papers?'' Answer yes gives CONSIGNEE, no gives OTHER.', fallback: 'If a CUSTOMS bill of entry is available, compare importer_iec with the supplier''s IEC; if it is not the same, the value is OTHER.', when_missing: UNKNOWN, as_of: date of supply, level: TRANSACTION, ai_level: NONE, cost: HIGH, example: OTHER, confidence: low, sensitive: false, reviewed: false, origin_by: AI}
+  F_AERU:  # 31. 1 gate | 1 law(s)
+    name: Any Earlier Return Unfurnished
     type: BOOLEAN
     tier: T1
-  F_ASK:  # 20. 1 gate | 1 law(s)
+    derived_from:
+    - F_RHBF
+    formula: TRUE if at least one F_RHBF for an earlier tax period of the same person is FALSE
+    origin:
+      document: GST_RETURN
+      method: DERIVED
+      uses: [GST_RETURN.gstin, GST_RETURN.ret_period, GST_RETURN.arn]
+      how_to_get: 1. Identify the GSTIN and return period for the current return. 2. Retrieve all GST_RETURN documents for the same GSTIN and return type for all tax periods prior to the current period. 3. Check if any of these retrieved GST_RETURN documents are missing an ARN or ARN date. 4. If at least one earlier return is found to be unfurnished, the value is TRUE. Otherwise, it is FALSE.
+      fallback: UNKNOWN
+      when_missing: UNKNOWN
+      as_of: Current date
+      level: TAXPAYER
+      ai_level: NONE
+      cost: MEDIUM
+      example: 'TRUE'
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_ASK:  # 32. 1 gate | 1 law(s)
     name: Activity Subject Kind
     type: CODE
     options:
@@ -157,23 +680,31 @@ facts:
     - SERVICES
     - OTHER
     tier: T1
-  F_AUT:  # 21. 1 gate | 1 law(s)
-    name: Activity Undertaker Type
-    type: CODE
-    options:
-    - CENTRAL_GOVT
-    - STATE_GOVT
-    - LOCAL_AUTHORITY
-    - OTHER
-    tier: T1
-  F_BAS:  # 22. 1 gate | 1 law(s)
+    origin:
+      document: SALE_INVOICE
+      method: READ
+      uses: [SALE_INVOICE.line_description, SALE_INVOICE.hsn_sac]
+      how_to_get: Read SALE_INVOICE.line_description, with SALE_INVOICE.hsn_sac as a hint. Decide whether the treatment or process is applied to goods (GOODS), to a service (SERVICES) or to something else (OTHER). A job-work or processing description for another person's material gives GOODS.
+      fallback: 'Read CONTRACT.subject and CONTRACT.property_description. If still unclear, ask the user: ''On what is the treatment or process performed: goods, services or something else?'''
+      when_missing: ASK
+      as_of: date of supply
+      level: LINE_ITEM
+      ai_level: LOW
+      cost: HIGH
+      example: GOODS
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_BAS:  # 33. 1 gate | 1 law(s)
     name: Business Asset Status
     type: CODE
     options:
     - PART_OF_BUSINESS_ASSETS
     - NOT_PART_OF_BUSINESS_ASSETS
     tier: T1
-  F_GOR:  # 23. 1 gate | 1 law(s)
+    origin: {document: USER, method: ASK, how_to_get: 'Ask the user: ''Were these goods part of the assets of your business before they were transferred or disposed of?'' Yes gives PART_OF_BUSINESS_ASSETS, no gives NOT_PART_OF_BUSINESS_ASSETS.', fallback: 'Check CONTRACT.property_description for the goods being listed as business assets. If still unclear, stop and ask again.', when_missing: ASK, as_of: just before the transfer or disposal, level: TRANSACTION, ai_level: NONE, cost: HIGH, example: PART_OF_BUSINESS_ASSETS, confidence: medium, sensitive: false, reviewed: false, origin_by: AI}
+  F_GOR:  # 34. 1 gate | 1 law(s)
     name: Goods Owner Relation
     type: CODE
     options:
@@ -181,23 +712,38 @@ facts:
     - OWNED_BY_PERFORMER
     - OTHER
     tier: T1
-  F_NRB:  # 24. 1 gate | 1 law(s)
-    name: Notification Recommending Body
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.subject, CONTRACT.parties]
+      how_to_get: Read CONTRACT.subject and CONTRACT.parties for a job-work or processing agreement. If the goods being treated belong to the customer or principal, the value is OWNED_BY_ANOTHER_PERSON. If the performer owns them, OWNED_BY_PERFORMER. Otherwise OTHER.
+      fallback: Read SALE_INVOICE.line_description for words like 'job work' or 'goods supplied by customer'. If still unclear, ask the user who owns the goods being processed.
+      when_missing: ASK
+      as_of: date of supply
+      level: TRANSACTION
+      ai_level: LOW
+      cost: HIGH
+      example: OWNED_BY_ANOTHER_PERSON
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_RFT:  # 35. 1 gate | 1 law(s)
+    name: Return Furnishing Timing
     type: CODE
     options:
-    - COUNCIL
-    - NONE_STATED
-    - OTHER
-    tier: T1
-  F_SCT:  # 25. 1 gate | 1 law(s)
-    name: Supply Consideration Type
-    type: CODE
-    options:
-    - MONEY
-    - NON_MONEY
-    - NONE
-    tier: T1
-  F_SS:  # 26. 1 gate | 1 law(s)
+    - AFTER_DUE_DATE
+    - ON_OR_BEFORE_DUE_DATE
+    tier: T0
+    derived_from:
+    - F_DOF
+    - F_TPOR
+  F_RTP:  # 36. 1 gate | 1 law(s)
+    name: Return Tax Period
+    type: AMOUNT
+    tier: T0
+    unit: MONTH
+  F_SS:  # 37. 1 gate | 1 law(s)
     name: Structure Status
     type: CODE
     options:
@@ -205,7 +751,23 @@ facts:
     - NOT_EXISTING
     - OTHER
     tier: T1
-  F_WF:  # 27. 1 gate | 1 law(s)
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.property_description, CONTRACT.subject]
+      how_to_get: Read property_description and subject in the contract or work order. If the work is on a civil structure (building, road, etc.) that already stands, the value is EXISTING_CIVIL_STRUCTURE. If a new structure is to be built from the ground, the value is NOT_EXISTING. If the work is not on a civil structure, the value is OTHER.
+      fallback: 'Ask the user: ''Does the building or structure already exist before this work starts?'''
+      when_missing: ASK
+      as_of: start of the work
+      level: TRANSACTION
+      ai_level: LOW
+      cost: HIGH
+      example: EXISTING_CIVIL_STRUCTURE
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_WF:  # 38. 1 gate | 1 law(s)
     name: Work Form
     type: CODE
     options:
@@ -215,8 +777,24 @@ facts:
     - REMODELLING
     - OTHER
     tier: T1
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.subject, CONTRACT.property_description]
+      how_to_get: Open the work order or agreement. Read the subject and property_description fields, which describe the work. For each separate work, decide which kind it is. ADDITION means new area or structure added to an existing structure. ALTERATION means changing the existing structure without adding to it. REPLACEMENT means substituting a part of the structure with a new one. REMODELLING means reshaping or redesigning the existing structure. Use OTHER if none of these fits. Give one value per work.
+      fallback: 'Read SALE_INVOICE.line_description for the work. If the form is still unclear, ask the user: ''What was done to the existing structure: addition, alteration, replacement, remodelling or something else?'''
+      when_missing: ASK
+      as_of: date of supply
+      level: LINE_ITEM
+      ai_level: HIGH
+      cost: HIGH
+      example: ADDITION
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
   # ---- level 2: asked only when that law's gates pass
-  F_CAK:  # 28. 2 | 3 law(s)
+  F_CAK:  # 39. 2 | 3 law(s)
     name: Competent Authority Kind
     type: CODE
     options:
@@ -224,14 +802,70 @@ facts:
     - GOVERNMENT
     - OTHER
     tier: T1
-  F_CCR:  # 29. 2 | 3 law(s)
+    origin:
+      document: PROFILE
+      method: READ
+      uses: [PROFILE.body_type, PROFILE.established_by, PROFILE.establishing_law]
+      how_to_get: Read PROFILE.body_type, PROFILE.established_by and PROFILE.establishing_law of the body that issued the certificate. If it is the Government, the value is GOVERNMENT. If a law authorises it to issue completion certificates, the value is AUTHORISED_CERT_ISSUER. Otherwise it is OTHER.
+      fallback: 'Ask the user: ''Is the issuing body the Government or an authority authorised by law to issue completion certificates?'''
+      when_missing: ASK
+      as_of: date the completion certificate was issued
+      level: DOCUMENT
+      ai_level: LOW
+      cost: HIGH
+      example: AUTHORISED_CERT_ISSUER
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_CCR:  # 40. 2 | 3 law(s)
     name: Completion Certificate Requirement
     type: CODE
     options:
     - NOT_REQUIRED
     - REQUIRED
     tier: T1
-  F_PSS:  # 30. 2 | 2 law(s)
+    derived_from:
+    - F_CCS
+    formula: F_CCR = 'REQUIRED' if F_CCS in ['ISSUED', 'REQUIRED_NOT_ISSUED'] else 'NOT_REQUIRED
+    origin:
+      document: SYSTEM
+      method: DERIVED
+      uses: [F_CCS]
+      how_to_get: Take F_CCS. If F_CCS is NOT_REQUIRED, the value is NOT_REQUIRED. If F_CCS is ISSUED or REQUIRED_NOT_ISSUED, the value is REQUIRED.
+      fallback: 'If F_CCS is unknown, ask the user: Does the authority require a completion certificate for this building or complex?'
+      when_missing: ASK
+      as_of: date of supply of the construction service
+      level: TRANSACTION
+      ai_level: NONE
+      cost: LOW
+      example: REQUIRED
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_NSAC:  # 41. 2 | 2 law(s) | asked only if M_GPTNQR: F_PRS + F_NRB + F_NRFF | M_MRFBRP: F_PRS + F_DOF | M_MRFBRP: F_PRS
+    name: Notification Specifies Any Condition
+    type: BOOLEAN
+    tier: T1
+    source_kind: DOCUMENT
+    origin:
+      document: NOTIFICATION
+      method: DERIVED
+      uses: [NOTIFICATION.conditions]
+      how_to_get: Find the applicable notification in Law/. Look at NOTIFICATION.conditions. The value is true if conditions holds at least one condition or restriction, and false if it is empty or says none.
+      fallback: If the conditions field is not filled in, read the notification text on our side for words such as 'subject to conditions'.
+      when_missing: UNKNOWN
+      as_of: date the notification takes effect (effective_from)
+      level: TAXPAYER
+      ai_level: NONE
+      cost: LOW
+      example: 'true'
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_PSS:  # 42. 2 | 2 law(s)
     name: Property Sale Subject
     type: CODE
     options:
@@ -240,14 +874,46 @@ facts:
     - LAND_AND_BUILDING
     - OTHER
     tier: T1
-  F_ACR:  # 31. 2 | 1 law(s)
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.property_description, CONTRACT.subject]
+      how_to_get: Read the property description in the sale deed or contract. If only land is sold, the value is LAND. If only a building is sold, the value is BUILDING. If both are sold, the value is LAND_AND_BUILDING. If it is something else, the value is OTHER.
+      fallback: 'Ask the user: ''Is the property sold land, a building, or both?'''
+      when_missing: ASK
+      as_of: date of the sale deed
+      level: TRANSACTION
+      ai_level: LOW
+      cost: HIGH
+      example: LAND_AND_BUILDING
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_ACR:  # 43. 2 | 1 law(s)
     name: Architect Council Registration
     type: CODE
     options:
     - REGISTERED_WITH_COA
     - NOT_REGISTERED
     tier: T0
-  F_BD:  # 32. 2 | 1 law(s)
+    origin:
+      document: PROFILE
+      method: DERIVED
+      uses: [PROFILE.body_type, PROFILE.membership_no]
+      how_to_get: Read PROFILE.body_type and PROFILE.membership_no. If the membership body is the Council of Architecture and a membership number is present, the value is REGISTERED_WITH_COA. Otherwise it is NOT_REGISTERED.
+      fallback: 'Ask the user: ''Are you registered with the Council of Architecture? If yes, give your registration number.'''
+      when_missing: ASK
+      as_of: date of supply
+      level: TAXPAYER
+      ai_level: NONE
+      cost: LOW
+      example: REGISTERED_WITH_COA
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_BD:  # 44. 2 | 1 law(s)
     name: Body Designation
     type: CODE
     options:
@@ -258,7 +924,23 @@ facts:
     - SUPREME_COURT
     - TRIBUNAL
     tier: T1
-  F_FOGU:  # 33. 2 | 1 law(s) | asked only if M_PUOBGIS: F_BAS
+    origin:
+      document: PROFILE
+      method: FIELD
+      uses: [PROFILE.body_type]
+      how_to_get: 'Read PROFILE.body_type of the body. Map it: District Court to DISTRICT_COURT, High Court to HIGH_COURT, Supreme Court to SUPREME_COURT, Tribunal to TRIBUNAL, any other court to OTHER_COURT, anything else to OTHER_BODY.'
+      fallback: 'Ask the user: ''Is the body a District Court, High Court, Supreme Court, other court, tribunal or another body?'''
+      when_missing: ASK
+      as_of: date of supply
+      level: TAXPAYER
+      ai_level: NONE
+      cost: LOW
+      example: HIGH_COURT
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_FOGU:  # 45. 2 | 1 law(s) | asked only if M_PUOBGIS: F_BAS
     name: Form Of Goods Use
     type: CODE
     options:
@@ -267,7 +949,375 @@ facts:
     - PRIVATE_USE
     - USED_BY_PERSON
     tier: T1
-  F_FOS:  # 34. 2 | 1 law(s) | asked only if M_SIAFOS: F_SKOT + F_SCS
+    origin: {document: USER, method: ASK, how_to_get: 'Ask the user: ''How were the goods used? Put to private use, used by a person, made available to any person for use, or not used at all?''', fallback: 'Read CONTRACT.subject for a lending, loan-for-use or private-use arrangement.', when_missing: UNKNOWN, as_of: date of use, level: TRANSACTION, ai_level: NONE, cost: HIGH, example: PRIVATE_USE, confidence: medium, sensitive: false, reviewed: false, origin_by: AI}
+  F_PER:  # 46. 2 | 1 law(s)
+    name: Person Engineer Registration
+    type: CODE
+    options:
+    - REGISTERED_CHARTERED_ENGINEER_IEI
+    - OTHER
+    tier: T0
+    origin:
+      document: PROFILE
+      method: LOOKUP
+      uses: [PROFILE.membership_no, PROFILE.professional_qualification]
+      how_to_get: Take membership_no from the person's profile and look it up in the Institution of Engineers (India) register of chartered engineers. If the person is found and the registration is current, return REGISTERED_CHARTERED_ENGINEER_IEI. Otherwise return OTHER. Use professional_qualification only to confirm that the person claims to be an engineer.
+      fallback: 'Ask the user: ''Is the person a chartered engineer registered with the Institution of Engineers (India)? Please give the membership number.'''
+      when_missing: ASK
+      as_of: date the certificate was issued
+      level: TAXPAYER
+      ai_level: NONE
+      cost: MEDIUM
+      example: REGISTERED_CHARTERED_ENGINEER_IEI
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_POGU:  # 47. 2 | 1 law(s) | asked only if M_PUOBGIS: F_BAS
+    name: Purpose Of Goods Use
+    type: CODE
+    options:
+    - BUSINESS
+    - NON_BUSINESS
+    tier: T1
+    origin: {document: USER, method: ASK, how_to_get: 'Ask the user: ''Are the goods put to private use or used for something other than the business, or are they made available to another person for such a use?'' If yes, the value is NON_BUSINESS. If the goods are used only for the business, the value is BUSINESS.', fallback: 'Read the purpose of use from CONTRACT.subject if a contract exists. If it is still unclear, mark UNKNOWN.', when_missing: UNKNOWN, as_of: date of the use or of making the goods available, level: TRANSACTION, ai_level: NONE, cost: HIGH, example: NON_BUSINESS, confidence: medium, sensitive: false, reviewed: false, origin_by: AI}
+  # ---- LAST: only heavy checks (free text) need these
+  F_DOTA:  # 48. LAST (heavy check only) | 7 law(s) | asked only if M_DBGBM: F_BEA + F_PBR + F_PDEBC | M_FOEM: F_PEO | M_COBTAS: F_CRT
+    name: Description Of The Activity
+    type: TEXT
+    tier: T1
+    source_kind: DOCUMENT
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.parties, CONTRACT.subject]
+      how_to_get: Read parties and subject. Write what the activity consists of, and whether the Central Government, a State Government or a local authority carries it out as a public authority (sovereign function) or as a commercial service.
+      fallback: 'Ask the user: What is the activity, and does the government body carry it on as a public authority?'
+      when_missing: ASK
+      as_of: date of the activity
+      level: TRANSACTION
+      ai_level: HIGH
+      cost: HIGH
+      example: Municipal corporation issuing a trade licence as a statutory function
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_DOAOT:  # 49. LAST (heavy check only) | 6 law(s) | asked only if M_ESTE: F_SKOT + F_PRR | M_TOPOGIS: F_ASK + F_GOR
+    name: Description Of Activity Or Transaction
+    type: TEXT
+    tier: T1
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.subject, CONTRACT.property_description, CONTRACT.employment_terms]
+      how_to_get: Read the contract subject, then property_description if it is about property, or employment_terms if it is about employment. Write a short plain-text description of the activity or transaction and who does it for whom.
+      fallback: 'Use SALE_INVOICE.line_description. If that is also missing, ask the user: Please describe the activity or transaction.'
+      when_missing: ASK
+      as_of: date of the activity or transaction
+      level: TRANSACTION
+      ai_level: LOW
+      cost: HIGH
+      example: Sale of a vacant plot of land to a buyer
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_RFUFF:  # 50. LAST (heavy check only) | 4 law(s) | asked only if M_ISDMR: F_DOF + F_MOFD + F_PTC + F_RFT | M_RPFMR: F_MOFD + F_RISD + F_RTPD + F_RTPD2 + F_RICD + F_ROSD | M_CTFAR: F_PRS + F_DOF + F_MOFD + F_PTC + F_RISD + F_RTPD + F_RTPD2 + F_RPC + F_RTD | M_MRFBRP: F_PRS + F_DOF | M_MRFBRP: F_PRS
+    name: Return Form Used For Furnishing
+    type: TEXT
+    tier: T0
+    origin:
+      document: GST_RETURN
+      method: DERIVED
+      uses: [GST_RETURN.return_type, GST_RETURN.filing_mode]
+      how_to_get: On the return or its filing acknowledgement, read return_type (e.g. GSTR-1, GSTR-3B) and filing_mode (e.g. online portal, GSP, offline utility). Join them into one text, for example 'GSTR-3B filed electronically on the portal'.
+      fallback: 'Ask the user: ''Which return form did you file, and was it filed electronically on the GST portal?'''
+      when_missing: ASK
+      as_of: date of filing (ARN date)
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: GSTR-1, electronic filing on GST portal
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_TPOR:  # 51. LAST (heavy check only) | 4 law(s) | asked only if M_ISDMR: F_DOF + F_MOFD + F_PTC + F_RFT | M_RPFMR: F_MOFD + F_RISD + F_RTPD + F_RTPD2 + F_RICD + F_ROSD | M_CTFAR: F_PRS + F_DOF + F_MOFD + F_PTC + F_RISD + F_RTPD + F_RTPD2 + F_RPC + F_RTD | M_MRFBRP: F_PRS + F_DOF | M_MRFBRP: F_PRS
+    name: Tax Period Of Return
+    type: AMOUNT
+    tier: T0
+    unit: MONTH
+    origin:
+      document: GST_RETURN
+      method: FIELD
+      uses: [GST_RETURN.ret_period, GST_RETURN.filing_frequency]
+      how_to_get: Open the return (GSTR-1, GSTR-3B or other) or its filing acknowledgement. Read the field ret_period, which holds the month or quarter the return covers. Use it as the tax period. If the return is quarterly, the value is the quarter. Use the return's filing_frequency only to interpret whether ret_period is a month or a quarter.
+      fallback: 'If the return or ret_period is not available, ask the user: ''For which month or quarter is this return filed?'''
+      when_missing: ASK
+      as_of: end of the tax period
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: April 2024 (042024)
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_EL:  # 52. LAST (heavy check only) | 3 law(s)
+    name: Establishing Law
+    type: TEXT
+    tier: T1
+    origin:
+      document: PROFILE
+      method: FIELD
+      uses: [PROFILE.establishing_law]
+      how_to_get: Read PROFILE.establishing_law for the court or Tribunal. This is the law or order under which it was established. Copy the text as printed.
+      fallback: 'If the profile has no value, ask the user: ''Under which law or order was this court or Tribunal established?'''
+      when_missing: ASK
+      as_of: date of supply
+      level: TAXPAYER
+      ai_level: NONE
+      cost: LOW
+      example: Administrative Tribunals Act, 1985
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_ROP:  # 53. LAST (heavy check only) | 3 law(s) | asked only if M_RPFMR: F_MOFD + F_RISD + F_RTPD + F_RTPD2 + F_RICD + F_ROSD | M_CTFAR: F_PRS + F_DOF + F_MOFD + F_PTC + F_RISD + F_RTPD + F_RTPD2 + F_RPC + F_RTD | M_MRFBRP: F_PRS + F_DOF | M_MRFBRP: F_PRS
+    name: Return Other Particulars
+    type: TEXT
+    tier: T0
+    origin:
+      document: GST_RETURN
+      method: FIELD
+      uses: [GST_RETURN.other_particulars]
+      how_to_get: Read other_particulars from the return. Use the text as shown. If it is blank, leave the value empty.
+      fallback: Ask the user for any other particulars shown in the return.
+      when_missing: UNKNOWN
+      as_of: end of the tax period
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: Nil return declaration
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_SCS:  # 54. LAST (heavy check only) | 3 law(s)
+    name: Supply Consideration Status
+    type: CODE
+    options:
+    - AGREED
+    - NONE
+    - PAID
+    tier: T1
+    origin:
+      document: CONTRACT
+      method: DERIVED
+      uses: [CONTRACT.consideration, CONTRACT.consideration_type]
+      how_to_get: Read consideration and consideration_type from the contract. If consideration is blank or nil / zero (or the type says no consideration, e.g. gift), the value is NONE. If consideration_type or the papers show it has been paid (cash, bank, advance received), the value is PAID. If an amount or benefit is promised but not yet paid, the value is AGREED.
+      fallback: 'Use SALE_INVOICE.total_value: if it is above zero there is a consideration (AGREED, or PAID if payment is shown). Otherwise ask the user: ''Is anything paid or promised in return for this supply?'''
+      when_missing: ASK
+      as_of: date of supply
+      level: TRANSACTION
+      ai_level: NONE
+      cost: MEDIUM
+      example: AGREED
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_CTIN:  # 55. LAST (heavy check only) | 2 law(s) | asked only if M_GPTNQR: F_PRS + F_NRB + F_NRFF | M_MRFBRP: F_PRS + F_DOF | M_MRFBRP: F_PRS
+    name: Conditions Text In Notification
+    type: TEXT
+    tier: T1
+    source_kind: DOCUMENT
+    origin:
+      document: NOTIFICATION
+      method: LOOKUP
+      uses: [NOTIFICATION.conditions]
+      how_to_get: In our Law/ notifications table, find the notification that lets a class of registered persons file quarterly returns under section 39(1). Read its conditions field as written.
+      fallback: If no matching notification is found, treat the value as unknown. Never ask the user.
+      when_missing: UNKNOWN
+      as_of: effective_from date of the notification, or the tax period if the conditions changed
+      level: DOCUMENT
+      ai_level: NONE
+      cost: MEDIUM
+      example: Aggregate turnover up to Rs 5 crore in the preceding financial year; option to be exercised on the portal
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_NCD:  # 56. LAST (heavy check only) | 2 law(s) | asked only if M_GPTNQR: F_PRS + F_NRB + F_NRFF | M_MRFBRP: F_PRS + F_DOF | M_MRFBRP: F_PRS
+    name: Notification Class Description
+    type: TEXT
+    tier: T1
+    source_kind: DOCUMENT
+    origin:
+      document: NOTIFICATION
+      method: FIELD
+      uses: [NOTIFICATION.notified_class, NOTIFICATION.notification_no]
+      how_to_get: Find the relevant notification in our own Law/ records using its notification_no. Take the text in NOTIFICATION.notified_class exactly as written. Never ask the user.
+      fallback: Use the conditions text in NOTIFICATION.conditions if the class text is empty.
+      when_missing: STOP
+      as_of: notification effective date
+      level: DOCUMENT
+      ai_level: NONE
+      cost: LOW
+      example: Registered persons with aggregate turnover up to Rs. 5 crore in the preceding financial year
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_PBT:  # 57. LAST (heavy check only) | 2 law(s)
+    name: Provider Body Type
+    type: CODE
+    options:
+    - COURT
+    - TRIBUNAL
+    - OTHER
+    tier: T0
+    origin:
+      document: PROFILE
+      method: FIELD
+      uses: [PROFILE.body_type]
+      how_to_get: 'From the profile of the body providing the service, read body_type. Map it: court gives COURT, tribunal gives TRIBUNAL, anything else gives OTHER.'
+      fallback: 'Ask the user: ''Is the body providing the service a court, a tribunal, or something else?'''
+      when_missing: ASK
+      as_of: date of supply of the service
+      level: TRANSACTION
+      ai_level: NONE
+      cost: LOW
+      example: TRIBUNAL
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_PCR:  # 58. LAST (heavy check only) | 2 law(s) | asked only if M_GPTNQR: F_PRS + F_NRB + F_NRFF | M_MRFBRP: F_PRS + F_DOF | M_MRFBRP: F_PRS
+    name: Person Compliance Records
+    type: TEXT
+    tier: T0
+    source_kind: DOCUMENT
+    origin:
+      document: GST_RETURN
+      method: FIELD
+      uses: [GST_RETURN.other_particulars]
+      how_to_get: Take the person's returns for the period. Copy other_particulars, which records what was done for the notified conditions (for example the quarterly option, or the payment made in the months between quarterly returns). Use filing_frequency and filing_mode on the same return as supporting notes.
+      fallback: 'Ask the user: ''Please give your records showing what you did for each condition in the notification.'''
+      when_missing: ASK
+      as_of: end of the tax period
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: Opted for quarterly filing; tax paid for months 1 and 2 using the payment challan
+      confidence: low
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_PPD:  # 59. LAST (heavy check only) | 2 law(s) | asked only if M_GPTNQR: F_PRS + F_NRB + F_NRFF | M_MRFBRP: F_PRS + F_DOF | M_MRFBRP: F_PRS
+    name: Person Profile Details
+    type: TEXT
+    tier: T0
+    source_kind: DOCUMENT
+    origin:
+      document: PROFILE
+      method: DERIVED
+      uses: [PROFILE.person_type, PROFILE.designation, PROFILE.post_held, PROFILE.professional_qualification, PROFILE.body_type]
+      how_to_get: 'Join the person''s profile fields into one text: person type, designation, post held, professional qualification and body type. Skip any blank field. The notification''s class description is compared with this text later.'
+      fallback: 'Ask the user: ''Please describe the person: what type of person or body is it, and what is its designation or qualification?'''
+      when_missing: ASK
+      as_of: date of supply or date of the return
+      level: TAXPAYER
+      ai_level: NONE
+      cost: LOW
+      example: Individual; Cost Accountant; member of ICMAI
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_PPH:  # 60. LAST (heavy check only) | 2 law(s)
+    name: Person Post Held
+    type: CODE
+    options:
+    - CONSTITUTIONAL_POST
+    - OTHER_POST
+    - NONE
+    tier: T1
+    origin:
+      document: PROFILE
+      method: READ
+      uses: [PROFILE.post_held, PROFILE.elected_office, PROFILE.designation]
+      how_to_get: Read the post held, the elected office and the designation in the profile. If the person holds a post created by the Constitution of India, such as President, Governor, judge of a High Court, Comptroller and Auditor General, or Member of Parliament or a State Legislature, the value is CONSTITUTIONAL_POST. If the person holds some other post, the value is OTHER_POST. If no post is held, the value is NONE.
+      fallback: 'Ask the user: ''Does this person hold any post under the Constitution? If so, which one?'''
+      when_missing: ASK
+      as_of: date the duties were performed
+      level: TAXPAYER
+      ai_level: LOW
+      cost: HIGH
+      example: CONSTITUTIONAL_POST
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_SEC:  # 61. LAST (heavy check only) | 2 law(s) | asked only if M_ESTE: F_SKOT + F_PRR
+    name: Service Employment Context
+    type: CODE
+    options:
+    - IN_COURSE_OF_EMPLOYMENT
+    - IN_RELATION_TO_EMPLOYMENT
+    - NOT_RELATED_TO_EMPLOYMENT
+    tier: T1
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.employment_terms, CONTRACT.subject, CONTRACT.parties, CONTRACT.relation_between_parties]
+      how_to_get: Open the employment papers or contract. Read employment_terms, subject and parties. Decide whether the service is done by an employee for the employer as part of the job (IN_COURSE_OF_EMPLOYMENT), is linked to the job but not part of the normal duties (IN_RELATION_TO_EMPLOYMENT), or has no connection to any employment (NOT_RELATED_TO_EMPLOYMENT, e.g. an independent contractor or a separate business service).
+      fallback: 'Ask the user: ''Is this service done by an employee for their employer, as part of or connected to the job?'''
+      when_missing: ASK
+      as_of: date of supply
+      level: TRANSACTION
+      ai_level: HIGH
+      cost: HIGH
+      example: IN_COURSE_OF_EMPLOYMENT
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_ASIS:  # 62. LAST (heavy check only) | 1 law(s)
+    name: Activity Schedule I Status
+    type: CODE
+    options:
+    - NOT_SPECIFIED_IN_SCHEDULE_I
+    - SPECIFIED_IN_SCHEDULE_I
+    tier: T1
+    source_kind: READ
+    origin:
+      document: SYSTEM
+      method: ASK
+      uses: [F_DOTS, SALE_INVOICE.line_description, CONTRACT.subject]
+      how_to_get: Compare the description of the activity (from F_DOTS or SALE_INVOICE.line_description or CONTRACT.subject) against the list of activities specified in Schedule I of the CGST Act. If it matches any activity listed, the value is SPECIFIED_IN_SCHEDULE_I. Otherwise, it is NOT_SPECIFIED_IN_SCHEDULE_I.
+      fallback: UNKNOWN
+      when_missing: UNKNOWN
+      as_of: Date of supply/activity
+      level: TRANSACTION
+      ai_level: NONE
+      cost: MEDIUM
+      example: SPECIFIED_IN_SCHEDULE_I
+      confidence: low
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_DOGU:  # 63. LAST (heavy check only) | 1 law(s) | asked only if M_PUOBGIS: F_BAS
+    name: Direction Of Goods Use
+    type: CODE
+    options:
+    - BY_BUSINESS_PERSON
+    - OTHER
+    - UNDER_BUSINESS_PERSON_DIRECTION
+    tier: T1
+    origin: {document: USER, method: ASK, how_to_get: 'Ask the user: Were the goods used by the business person themself, or by someone else under their direction? Map the answer to BY_BUSINESS_PERSON, UNDER_BUSINESS_PERSON_DIRECTION or OTHER.', fallback: 'If a contract or invoice exists, read its subject or line description to find who uses the goods. If it is still unclear, ask again.', when_missing: ASK, as_of: time the goods were used or made available, level: TRANSACTION, ai_level: NONE, cost: HIGH, example: UNDER_BUSINESS_PERSON_DIRECTION, confidence: medium, sensitive: false, reviewed: false, origin_by: AI}
+  F_FOS:  # 64. LAST (heavy check only) | 1 law(s)
     name: Form Of Supply
     type: CODE
     options:
@@ -281,70 +1331,43 @@ facts:
     - SALE
     - TRANSFER
     tier: T1
-  F_PER:  # 35. 2 | 1 law(s)
-    name: Person Engineer Registration
-    type: CODE
-    options:
-    - REGISTERED_CHARTERED_ENGINEER_IEI
-    - OTHER
-    tier: T0
-  F_POGU:  # 36. 2 | 1 law(s) | asked only if M_PUOBGIS: F_BAS
-    name: Purpose Of Goods Use
-    type: CODE
-    options:
-    - BUSINESS
-    - NON_BUSINESS
-    tier: T1
-  # ---- LAST: only heavy checks (free text) need these
-  F_DOTA:  # 37. LAST (heavy check only) | 10 law(s) | asked only if M_DBGBM: F_BEA + F_PBR + F_PDEBC | M_FOEM: F_PEO | M_COBTAS: F_CRT | M_NGANGNS: F_ACBN + F_AUT + F_NRB | M_SIAFOS: F_SKOT + F_SCS | M_SIAWC: F_SCS
-    name: Description Of The Activity
-    type: TEXT
-    tier: T1
-  F_DOAOT:  # 38. LAST (heavy check only) | 5 law(s) | asked only if M_ESTE: F_SKOT + F_PRR | M_TOPOGIS: F_ASK + F_GOR
-    name: Description Of Activity Or Transaction
-    type: TEXT
-    tier: T1
-  F_EL:  # 39. LAST (heavy check only) | 3 law(s)
-    name: Establishing Law
-    type: TEXT
-    tier: T1
-  F_PBT:  # 40. LAST (heavy check only) | 2 law(s)
-    name: Provider Body Type
-    type: CODE
-    options:
-    - COURT
-    - TRIBUNAL
-    - OTHER
-    tier: T0
-  F_PPH:  # 41. LAST (heavy check only) | 2 law(s)
-    name: Person Post Held
-    type: CODE
-    options:
-    - CONSTITUTIONAL_POST
-    - OTHER_POST
-    - NONE
-    tier: T1
-  F_SEC:  # 42. LAST (heavy check only) | 2 law(s) | asked only if M_ESTE: F_SKOT + F_PRR
-    name: Service Employment Context
-    type: CODE
-    options:
-    - IN_COURSE_OF_EMPLOYMENT
-    - IN_RELATION_TO_EMPLOYMENT
-    - NOT_RELATED_TO_EMPLOYMENT
-    tier: T1
-  F_DOGU:  # 43. LAST (heavy check only) | 1 law(s) | asked only if M_PUOBGIS: F_BAS
-    name: Direction Of Goods Use
-    type: CODE
-    options:
-    - BY_BUSINESS_PERSON
-    - OTHER
-    - UNDER_BUSINESS_PERSON_DIRECTION
-    tier: T1
-  F_PBAD:  # 44. LAST (heavy check only) | 1 law(s) | asked only if M_PUOBGIS: F_BAS
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.subject, CONTRACT.consideration_type, SALE_INVOICE.line_description]
+      how_to_get: 'Read CONTRACT.subject and CONTRACT.consideration_type. Decide the form of supply: SALE for a price in money with transfer of title, BARTER if the consideration is other goods or services, EXCHANGE, LEASE, RENTAL, LICENCE, TRANSFER or DISPOSAL as the wording says. Use OTHER if none fits.'
+      fallback: If there is no contract, read SALE_INVOICE.line_description and invoice_type. If that is also unclear, ask the user how the supply was made.
+      when_missing: ASK
+      as_of: date of supply
+      level: TRANSACTION
+      ai_level: HIGH
+      cost: HIGH
+      example: SALE
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_PBAD:  # 65. LAST (heavy check only) | 1 law(s) | asked only if M_PUOBGIS: F_BAS
     name: Person Business Activity Description
     type: TEXT
     tier: T1
-  F_PPC:  # 45. LAST (heavy check only) | 1 law(s)
+    origin:
+      document: GST_REGISTRATION
+      method: FIELD
+      uses: [GST_REGISTRATION.nature_of_business]
+      how_to_get: Search the registration by the person's gstin. Copy nature_of_business as the description of what business the person carries on. If the registration is found and the field is filled, that is the value.
+      fallback: 'Ask the user: ''Does this person carry on a business? If yes, what business?'''
+      when_missing: ASK
+      as_of: date the goods were put to private use or made available
+      level: TAXPAYER
+      ai_level: NONE
+      cost: LOW
+      example: Wholesale trading of electronic goods
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_PPC:  # 66. LAST (heavy check only) | 1 law(s)
     name: Provision Paragraph Context
     type: CODE
     options:
@@ -352,7 +1375,8 @@ facts:
     - OTHER_PROVISION
     - UNDETERMINED
     tier: T1
-  F_PSLS:  # 46. LAST (heavy check only) | 1 law(s)
+    origin: {document: SYSTEM, method: DERIVED, how_to_get: 'The engine knows which provision of the law is being evaluated. If the term ''warehoused goods'' is used in paragraph 8 of Schedule III, the value is PARA8_PROVISION. If it is used in any other provision, the value is OTHER_PROVISION. If the engine cannot tell, the value is UNDETERMINED.', fallback: Use UNDETERMINED., when_missing: UNKNOWN, as_of: time of validation, level: DOCUMENT, ai_level: NONE, cost: LOW, example: PARA8_PROVISION, confidence: low, sensitive: false, reviewed: false, origin_by: AI}
+  F_PSLS:  # 67. LAST (heavy check only) | 1 law(s)
     name: Person Surveyor Licence Status
     type: CODE
     options:
@@ -360,19 +1384,165 @@ facts:
     - LICENSED_SURVEYOR_PLANNING_AUTHORITY
     - NOT_LICENSED_SURVEYOR
     tier: T1
-  F_SOOT:  # 47. LAST (heavy check only) | 1 law(s) | asked only if M_IOSFC: F_SCT
-    name: Supply Origin Of Transaction
+    origin:
+      document: PROFILE
+      method: READ
+      uses: [PROFILE.professional_qualification, PROFILE.designation, PROFILE.body_type, PROFILE.established_by]
+      how_to_get: Read the profile (licence, qualification, designation and body). If the person holds a surveyor licence from a local body, the value is LICENSED_SURVEYOR_LOCAL_BODY. If the licence is from a planning authority, the value is LICENSED_SURVEYOR_PLANNING_AUTHORITY. If there is no surveyor licence, the value is NOT_LICENSED_SURVEYOR.
+      fallback: 'Ask the user: ''Is the person a licensed surveyor? Who issued the licence: a local body or a planning authority?'''
+      when_missing: ASK
+      as_of: date of the completion certificate
+      level: TAXPAYER
+      ai_level: LOW
+      cost: HIGH
+      example: LICENSED_SURVEYOR_LOCAL_BODY
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_RMC:  # 68. LAST (heavy check only) | 1 law(s) | asked only if M_ISDMR: F_DOF + F_MOFD + F_PTC + F_RFT
+    name: Return Manner Compliant
+    type: BOOLEAN
+    tier: T0
+  F_SBC:  # 69. LAST (heavy check only) | 1 law(s)
+    name: Supply Business Context
     type: CODE
     options:
-    - IMPORT
-    - DOMESTIC
-    - EXPORT
+    - IN_BUSINESS
+    - NOT_IN_BUSINESS
+    - UNKNOWN
+    tier: T1
+    source_kind: READ
+  F_TN:  # 70. LAST (heavy check only) | 1 law(s)
+    name: Transaction Nature
+    type: CODE
+    options:
+    - DOMESTIC_GOODS
+    - DOMESTIC_SERVICES
+    - IMPORT_GOODS
+    - IMPORT_SERVICES
+    - OTHER
     tier: T1
   F_DOI:
     name: Date Of Invoice
     type: DATE
     tier: T0
 predicates:
+  M_SIAFOS_A_SIAS:
+    statement: The supply of goods or services or both is a sale.
+    order: HIGH
+    interpretation: 'Decide whether: The supply of goods or services or both is a sale'
+    grounding:
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAT:
+    statement: The supply of goods or services or both is a transfer.
+    order: HIGH
+    interpretation: 'Decide whether: The supply of goods or services or both is a transfer'
+    grounding:
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAB:
+    statement: The supply of goods or services or both is a barter.
+    order: HIGH
+    interpretation: 'Decide whether: The supply of goods or services or both is a barter'
+    grounding:
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAE:
+    statement: The supply of goods or services or both is an exchange.
+    order: HIGH
+    interpretation: 'Decide whether: The supply of goods or services or both is an exchange'
+    grounding:
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAL:
+    statement: The supply of goods or services or both is a licence.
+    order: HIGH
+    interpretation: 'Decide whether: The supply of goods or services or both is a licence'
+    grounding:
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAR:
+    statement: The supply of goods or services or both is a rental.
+    order: HIGH
+    interpretation: 'Decide whether: The supply of goods or services or both is a rental'
+    grounding:
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAL2:
+    statement: The supply of goods or services or both is a lease.
+    order: HIGH
+    interpretation: 'Decide whether: The supply of goods or services or both is a lease'
+    grounding:
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAD:
+    statement: The supply of goods or services or both is a disposal.
+    order: HIGH
+    interpretation: 'Decide whether: The supply of goods or services or both is a disposal'
+    grounding:
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAF:
+    statement: The supply of goods or services or both is a form other than the specified examples.
+    order: HIGH
+    interpretation: Does the described activity qualify as a form of supply under Section 7(1)(a), even though it is not one
+      of the listed examples (sale, transfer, etc.)?
+    grounding:
+    - F_FOS
+    - F_DOAOT
+    handler: light
+  M_SIAFOS_A_SMFC:
+    statement: The supply is made for a consideration.
+    order: HIGH
+    interpretation: 'Decide whether: The supply is made for a consideration'
+    grounding:
+    - F_SCS
+    handler: light
+  M_SIAFOS_A_SAFC:
+    statement: The supply is agreed to be made for a consideration.
+    order: HIGH
+    interpretation: 'Decide whether: The supply is agreed to be made for a consideration'
+    grounding:
+    - F_SCS
+    handler: light
+  M_SIAFOS_A_SICOB:
+    statement: The supply is made by a person in the course or furtherance of business.
+    order: HIGH
+    interpretation: Is the supply made in the course or furtherance of the person's business?
+    grounding:
+    - F_SBC
+    - F_DOAOT
+    handler: heavy
+  M_IOSFC_A_TIAIOS:
+    statement: The transaction is an import of services.
+    order: HIGH
+    interpretation: 'Decide whether: The transaction is an import of services'
+    grounding:
+    - F_TN
+    handler: light
+  M_IOSFC_A_IIFAC:
+    statement: The import of services is for a consideration.
+    order: HIGH
+    interpretation: 'Decide whether: The import of services is for a consideration'
+    grounding:
+    - F_SCS
+    handler: light
+  M_SIAWC_A_AISISI:
+    statement: The activity is specified in Schedule I
+    order: HIGH
+    interpretation: Is the activity one of the activities specified in Schedule I of the CGST Act?
+    grounding:
+    - F_ASIS
+    handler: heavy
+  M_SIAWC_A_AIWC:
+    statement: The activity is made or agreed to be made without a consideration
+    order: HIGH
+    interpretation: 'Decide whether: The activity is made or agreed to be made without a consideration'
+    grounding:
+    - F_SCS
+    handler: light
   M_MOWG_A_TUFPE:
     statement: The expression warehoused goods is used for the purposes of paragraph 8 of Schedule III
     order: HIGH
@@ -426,6 +1596,8 @@ predicates:
     order: LOW
     rule: F_CCR = 'NOT_REQUIRED'
     handler: python
+    compute:
+      F_CCR: F_CCR = 'REQUIRED' if F_CCS in ['ISSUED', 'REQUIRED_NOT_ISSUED'] else 'NOT_REQUIRED
   M_AACA_A_ARWC:
     statement: The competent authority is an architect registered with the Council of Architecture constituted under the Architects
       Act, 1972
@@ -694,31 +1866,9 @@ predicates:
     order: LOW
     rule: F_GEII = 'DOES_NOT_ENTER'
     handler: python
-  M_NGANGNS_A_UBGB:
-    statement: The activity or transaction is undertaken by the Central Government, a State Government or any local authority.
-    order: LOW
-    rule: F_AUT IN ['CENTRAL_GOVT', 'STATE_GOVT', 'LOCAL_AUTHORITY']
-    handler: python
-  M_NGANGNS_A_EAPA:
-    statement: The Central Government, State Government or local authority is engaged in the activity or transaction as a
-      public authority.
-    order: HIGH
-    if_false: the activity is carried on other than as a public authority
-    interpretation: On the description of the activity, is the government body engaged in it as a public authority, rather
-      than in an ordinary commercial or private capacity?
-    grounding:
-    - F_DOTA
-    handler: heavy
-  M_NGANGNS_A_AINBG:
-    statement: The activity or transaction is one that may be notified by the Government and has been so notified.
-    order: LOW
-    rule: F_ACBN = TRUE
-    handler: python
-  M_GPTNQR_A_NOCR:
-    statement: The Government's notification of the class of registered persons is made on the recommendations of the Council
-    order: LOW
-    rule: F_NRB = 'COUNCIL'
-    handler: python
+    compute:
+      F_GEII: If F_SOOT = 'IMPORT', then F_GEII = 'ENTERS_INDIA'. Otherwise (if F_SOOT = 'EXPORT' or 'DOMESTIC'), F_GEII =
+        'DOES_NOT_ENTER'.
   M_PUOBGIS_A_PCOAB:
     statement: The person by whom or under whose direction the goods are used or made available is a person carrying on a
       business
@@ -772,6 +1922,61 @@ predicates:
     order: LOW
     rule: F_GOR = 'OWNED_BY_ANOTHER_PERSON'
     handler: python
+  M_ISDMR_A_TPRAI:
+    statement: The taxable person is registered as an Input Service Distributor
+    order: LOW
+    rule: F_PTC = 'ISD'
+    handler: python
+  M_ISDMR_A_RIPFAM:
+    statement: The return is furnished in such form and manner as may be prescribed
+    order: HIGH
+    interpretation: Is the form used, and the manner of furnishing, what the prescribed requirements specify for an Input
+      Service Distributor return, which this text does not state?
+    grounding:
+    - F_RFUFF
+    - F_RMC
+    handler: heavy
+  M_ISDMR_A_RFWTD:
+    statement: The return is furnished within thirteen days after the end of such month
+    order: LOW
+    rule: F_RFT = 'ON_OR_BEFORE_DUE_DATE'
+    handler: python
+  M_RPFMR_A_RCCMOP:
+    statement: The return is furnished for every calendar month or part thereof
+    order: HIGH
+    interpretation: Does the tax period of the return cover a calendar month or a part of a calendar month?
+    grounding:
+    - F_TPOR
+    handler: light
+  M_NTPRF_A_RHBF:
+    statement: The registered non-resident taxable person has furnished a return
+    order: LOW
+    rule: F_DOF IS_SET
+    handler: python
+  M_NTPRF_A_RFE:
+    statement: The return is furnished electronically
+    order: LOW
+    rule: F_MOFD = 'ELECTRONIC'
+    handler: python
+  M_RFNAIPU_A_RFTPF:
+    statement: The person is furnishing a return for a tax period
+    order: LOW
+    if_false: F_RTP NOT SET
+    rule: F_RTP IS_SET
+    handler: python
+  M_RFNAIPU_A_EPRU:
+    statement: The return for any of the previous tax periods has not been furnished by the person
+    order: LOW
+    rule: F_AERU = TRUE
+    handler: python
+    compute:
+      F_RHBF: F_RHBF = (F_RFT == 'AFTER_DUE_DATE' or F_RFT == 'ON_OR_BEFORE_DUE_DATE')
+      F_AERU: TRUE if at least one F_RHBF for an earlier tax period of the same person is FALSE
+  M_FODRP_A_FIRP:
+    statement: The person furnishing the details is a registered person
+    order: LOW
+    rule: F_PRS = 'REGISTERED'
+    handler: python
   M_COBTAS_A_AIBC:
     statement: The activity is construction of a complex, building, civil structure or a part thereof, including a complex
       or building intended for sale to a buyer, wholly or partly
@@ -788,6 +1993,11 @@ predicates:
     order: LOW
     rule: F_CRT = 'AFTER_EARLIER_MILESTONE'
     handler: python
+    compute:
+      F_CRT: NOT_RECEIVED_IN_FULL if the entire consideration has not been received; otherwise the reference date is the first
+        occupation date when the certificate is NOT_REQUIRED, the earlier of the certificate date and the first occupation
+        date when the certificate is ISSUED, and UNKNOWN when the certificate is REQUIRED_NOT_ISSUED; the value is AFTER_EARLIER_MILESTONE
+        when the receipt date is later than the reference date, else ON_OR_BEFORE_EARLIER_MILESTONE
   M_SOLAB_A_TISOL:
     statement: The transaction is a sale of land.
     order: LOW
@@ -798,105 +2008,169 @@ predicates:
     order: LOW
     rule: F_PSS = 'BUILDING' OR F_PSS = 'LAND_AND_BUILDING'
     handler: python
-  M_SIAFOS_A_SIAS:
-    statement: The supply takes the form of a sale of goods or services or both
+  M_RPFMR_A_RSIOS:
+    statement: The return contains details of inward and outward supplies of goods or services or both
     order: LOW
-    rule: F_FOS = 'SALE'
+    rule: F_RISD IS_SET AND F_ROSD IS_SET
     handler: python
-  M_SIAFOS_A_SIAT:
-    statement: The supply takes the form of a transfer of goods or services or both
+  M_RPFMR_A_RSITCA:
+    statement: The return contains details of input tax credit availed
     order: LOW
-    rule: F_FOS = 'TRANSFER'
+    rule: F_RICD IS_SET
     handler: python
-  M_SIAFOS_A_SIAB:
-    statement: The supply takes the form of a barter of goods or services or both
+  M_RPFMR_A_RSTP:
+    statement: The return contains details of tax payable
     order: LOW
-    rule: F_FOS = 'BARTER'
+    rule: F_RTPD IS_SET
     handler: python
-  M_SIAFOS_A_SIAE:
-    statement: The supply takes the form of an exchange of goods or services or both
+  M_RPFMR_A_RSTP2:
+    statement: The return contains details of tax paid
     order: LOW
-    rule: F_FOS = 'EXCHANGE'
+    rule: F_RTPD2 IS_SET
     handler: python
-  M_SIAFOS_A_SIALG:
-    statement: The supply takes the form of a licence of goods or services or both
-    order: LOW
-    rule: F_FOS = 'LICENCE'
-    handler: python
-  M_SIAFOS_A_SIAR:
-    statement: The supply takes the form of a rental of goods or services or both
-    order: LOW
-    rule: F_FOS = 'RENTAL'
-    handler: python
-  M_SIAFOS_A_SIAL:
-    statement: The supply takes the form of a lease of goods or services or both
-    order: LOW
-    rule: F_FOS = 'LEASE'
-    handler: python
-  M_SIAFOS_A_SIAD:
-    statement: The supply takes the form of a disposal of goods or services or both
-    order: LOW
-    rule: F_FOS = 'DISPOSAL'
-    handler: python
-  M_SIAFOS_A_SIAQF:
-    statement: The supply is another qualifying form of supply of goods or services or both, not one of the listed forms
+  M_RPFMR_A_RHOPP:
+    statement: The return contains such other particulars as may be prescribed
     order: HIGH
-    interpretation: Is this unlisted form of supply a form of supply of the same kind as sale, transfer, barter, exchange,
-      licence, rental, lease or disposal, given that the list is only illustrative?
+    interpretation: Does the return include the other particulars that the prescribed rules require? The rules are not part
+      of this provision.
     grounding:
-    - F_FOS
-    - F_DOTA
-    handler: heavy
-  M_SIAFOS_A_SIOGOS:
-    statement: The supply is of goods or services or both
-    order: LOW
-    rule: F_SKOT IN ['GOODS', 'SERVICES', 'BOTH']
-    handler: python
-  M_SIAFOS_A_SIMFC:
-    statement: The supply is made for a consideration
-    order: LOW
-    rule: F_SCS = 'PAID'
-    handler: python
-  M_SIAFOS_A_SIAFC:
-    statement: The supply is agreed to be made for a consideration
-    order: LOW
-    rule: F_SCS = 'AGREED'
-    handler: python
-  M_SIAFOS_A_SBPIB:
-    statement: The supply is made by a person in the course or furtherance of business
-    order: HIGH
-    interpretation: Is the person making the supply doing so in the course or furtherance of business, judged from the description
-      of the activity?
-    grounding:
-    - F_DOTA
-    handler: heavy
-  M_IOSFC_A_TISI:
-    statement: The transaction is an import of services
-    order: HIGH
-    interpretation: Does the documented transaction amount to an import of services under the Act, given its supply origin
-      and whether the supply is of services?
-    grounding:
-    - F_SOOT
-    - F_SKOT
+    - F_ROP
     handler: light
-  M_IOSFC_A_IMFC:
-    statement: The import of services was made for a consideration
-    order: LOW
-    rule: F_SCT IN ['MONEY', 'NON_MONEY']
-    handler: python
-  M_SIAWC_A_ASISI:
-    statement: The activity is one of the activities specified in Schedule I.
+  M_RPFMR_A_RFWPT:
+    statement: The return is furnished within such time as may be prescribed
     order: HIGH
-    interpretation: Does the described activity fall within an entry of Schedule I, read with the Schedule entry wording
+    interpretation: Is the date of furnishing within the time prescribed for this return period?
     grounding:
-    - F_DOTA
-    handler: heavy
-  M_SIAWC_A_AMWC:
-    statement: The activity was made, or agreed to be made, without a consideration.
+    - F_DOF
+    - F_TPOR
+    handler: light
+  M_RPOSD_A_PIISD:
+    statement: The person is an Input Service Distributor
     order: LOW
-    rule: F_SCS = 'NONE'
+    rule: F_PTC = 'ISD'
+    handler: python
+  M_RPOSD_A_PINTP:
+    statement: The person is a non-resident taxable person
+    order: LOW
+    rule: F_PTC = 'NON_RESIDENT'
+    handler: python
+  M_RPOSD_A_PPTUS10:
+    statement: The person is a person paying tax under the provisions of section 10
+    order: LOW
+    rule: F_PTC = 'COMPOSITION_S10'
+    handler: python
+  M_RPOSD_A_PPTUS51:
+    statement: The person is a person paying tax under the provisions of section 51
+    order: LOW
+    rule: F_PTC = 'TDS_S51'
+    handler: python
+  M_RPOSD_A_PPTUS52:
+    statement: The person is a person paying tax under the provisions of section 52
+    order: LOW
+    rule: F_PTC = 'TCS_S52'
+    handler: python
+  M_RPOSD_A_DAFE:
+    statement: The person shall furnish the details electronically
+    order: LOW
+    rule: F_MOFD = 'ELECTRONIC'
+    handler: python
+  M_RPOSD_A_FIPFAM:
+    statement: The person shall furnish the details in such form and manner as may be prescribed
+    order: HIGH
+    interpretation: Was the furnishing done in the form and manner prescribed for outward supply details? The prescribed form
+      and manner are not stated in this provision and must be read from the rules.
+    grounding:
+    - F_RFUFF
+    handler: light
+  M_GPTNQR_A_NOCR:
+    statement: The Government's notification of the class of registered persons is made on the recommendations of the Council
+    order: LOW
+    rule: F_NRB = 'COUNCIL'
+    handler: python
+  M_GPTNQR_A_PINC:
+    statement: The person belongs to a certain class of registered persons notified by the Government
+    order: HIGH
+    interpretation: Does the description of the class in the notification cover this person, given the person's registration
+      and return profile details?
+    grounding:
+    - F_NCD
+    - F_PPD
+    handler: heavy
+  M_GPTNQR_A_NREQ:
+    statement: The notified persons shall furnish a return for every quarter or part thereof
+    order: LOW
+    rule: F_NRFF = 'QUARTERLY'
+    handler: python
+  M_GPTNQR_A_NNCS:
+    statement: The notification specifies no condition or restriction on the quarterly return obligation
+    order: LOW
+    rule: F_NSAC = FALSE
+    handler: python
+  M_GPTNQR_A_NCSBP:
+    statement: The quarterly return obligation is subject to such conditions and restrictions as may be specified in the notification,
+      and the person satisfies each condition and restriction so specified
+    order: HIGH
+    interpretation: Weighing the conditions and restrictions as written in the notification against the person's records,
+      is each specified condition and restriction satisfied by this person?
+    grounding:
+    - F_CTIN
+    - F_PCR
+    handler: heavy
+  M_CTFAR_A_RFFYOP:
+    statement: The return is for each financial year or part thereof
+    order: LOW
+    rule: F_RPC IN ['FULL_FINANCIAL_YEAR', 'PART_FINANCIAL_YEAR']
+    handler: python
+  M_CTFAR_A_RPFR:
+    statement: The registered person furnishes a return as required by the shall obligation
+    order: LOW
+    rule: F_DOF IS_SET
+    handler: python
+  M_CTFAR_A_RCST:
+    statement: The return contains turnover in the State or Union territory
+    order: LOW
+    rule: F_RTD IS_SET
+    handler: python
+  M_CTFAR_A_RCIS:
+    statement: The return contains inward supplies of goods or services or both
+    order: LOW
+    rule: F_RISD IS_SET
+    handler: python
+  M_MRFBRP_A_RFFTP:
+    statement: The registered person shall furnish a return for every tax period whether or not any supplies of goods or services
+      or both have been made during such tax period
+    order: LOW
+    rule: F_DOF IS_SET
     handler: python
 groups:
+  M_SIAFOS_G_QFOS:
+    name: Qualifying Forms Of Supply
+    logic: ANY
+    members:
+    - M_SIAFOS_A_SIAS
+    - M_SIAFOS_A_SIAT
+    - M_SIAFOS_A_SIAB
+    - M_SIAFOS_A_SIAE
+    - M_SIAFOS_A_SIAL
+    - M_SIAFOS_A_SIAR
+    - M_SIAFOS_A_SIAL2
+    - M_SIAFOS_A_SIAD
+    - M_SIAFOS_A_SIAF
+    description: The supply must take one of the listed forms or another qualifying form.
+  M_SIAFOS_G_SFC:
+    name: Supply For Consideration
+    logic: ANY
+    members:
+    - M_SIAFOS_A_SMFC
+    - M_SIAFOS_A_SAFC
+    description: The supply must be made or agreed to be made for a consideration.
+  M_IOSFC_G_CFIOSTBS:
+    name: Conditions For Import Of Service To Be Supply
+    logic: ALL
+    members:
+    - M_IOSFC_A_TIAIOS
+    - M_IOSFC_A_IIFAC
+    description: Both conditions must be met. The business test is explicitly not a condition for this type of supply.
   M_MOWG_G_SACM:
     name: Scope And Customs Meaning
     logic: ALL
@@ -1054,8 +2328,33 @@ groups:
     - M_TOPOGIS_A_AATG
     - M_TOPOGIS_A_GBTAP
     description: All three conditions must be satisfied together
-  M_ANGNS_A_ASISIII:
-    name: Any of the referred steps (M_ANGNS_A_ASISIII)
+  M_ISDMR_G_RSC:
+    name: Return Scope Conditions
+    logic: ALL
+    members:
+    - M_ISDMR_A_TPRAI
+    - M_RPFMR_A_RCCMOP
+    description: The person is an Input Service Distributor and the return covers the calendar month or part
+  M_ISDMR_G_RFC:
+    name: Return Filing Conditions
+    logic: ALL
+    members:
+    - M_NTPRF_A_RHBF
+    - M_ISDMR_A_RIPFAM
+    - M_NTPRF_A_RFE
+    - M_ISDMR_A_RFWTD
+    description: The return is furnished in prescribed form and manner, electronically and within thirteen days after month
+      end
+  M_RFNAIPU_G_AFBC:
+    name: All Furnishing Block Conditions
+    logic: ALL
+    members:
+    - M_FODRP_A_FIRP
+    - M_RFNAIPU_A_RFTPF
+    - M_RFNAIPU_A_EPRU
+    description: The if clause of the source as an AND of three conditions
+  M_ANGNS_A_AOTISISIII:
+    name: Any of the referred steps (M_ANGNS_A_AOTISISIII)
     logic: ANY
     members:
     - M_ACOTLBG_PD_ACNS
@@ -1070,44 +2369,113 @@ groups:
     - M_SOLAB_PD_LOBSO
     - M_SOWGBC_PD_WGNS
     description: TRUE when any step of the law this check refers to is TRUE
-  M_SIAFOS_G_SFA:
-    name: Supply Form Alternatives
+  M_RPFMR_G_EPC:
+    name: Excluded Person Categories
     logic: ANY
     members:
-    - M_SIAFOS_A_SIAS
-    - M_SIAFOS_A_SIAT
-    - M_SIAFOS_A_SIAB
-    - M_SIAFOS_A_SIAE
-    - M_SIAFOS_A_SIALG
-    - M_SIAFOS_A_SIAR
-    - M_SIAFOS_A_SIAL
-    - M_SIAFOS_A_SIAD
-    - M_SIAFOS_A_SIAQF
-    description: Any one listed form or any other qualifying form of supply. The list after such as is illustrative and not
-      closed.
-  M_SIAFOS_G_MOAC:
-    name: Made Or Agreed Consideration
+    - M_RPOSD_A_PIISD
+    - M_RPOSD_A_PINTP
+    - M_RPOSD_A_PPTUS10
+    - M_RPOSD_A_PPTUS51
+    - M_RPOSD_A_PPTUS52
+    description: Person is an Input Service Distributor or a non-resident taxable person or pays tax under section 10 or 51
+      or 52. Any one takes the person outside the duty (other than).
+  M_RPFMR_G_RCPP:
+    name: Return Core Particulars Present
+    logic: ALL
+    members:
+    - M_RPFMR_A_RSIOS
+    - M_RPFMR_A_RSITCA
+    - M_RPFMR_A_RSTP
+    - M_RPFMR_A_RSTP2
+    - M_RPFMR_A_RHOPP
+    description: The return carries the listed particulars and such other particulars as may be prescribed.
+  M_RPFMR_G_RFC:
+    name: Return Furnishing Conditions
+    logic: ALL
+    members:
+    - M_RPFMR_A_RCCMOP
+    - M_RPOSD_A_DAFE
+    - M_RPFMR_G_RCPP
+    - M_RPOSD_A_FIPFAM
+    - M_RPFMR_A_RFWPT
+    description: 'All stated requirements on the return: period, electronic mode, particulars, prescribed form and manner,
+      and prescribed time.'
+  M_GPTNQR_G_RPINC:
+    name: Registered Person In Notified Class
+    logic: ALL
+    members:
+    - M_FODRP_A_FIRP
+    - M_GPTNQR_A_PINC
+    description: The person must be a registered person and must belong to the class notified by the Government.
+  M_GPTNQR_G_NCSOA:
+    name: Notified Conditions Satisfied Or Absent
     logic: ANY
     members:
-    - M_SIAFOS_A_SIMFC
-    - M_SIAFOS_A_SIAFC
-    description: The supply is either made for a consideration or agreed to be made for a consideration. Both events are not
-      required.
-  M_IOSFC_G_IFCG:
-    name: Import For Consideration Group
+    - M_GPTNQR_A_NNCS
+    - M_GPTNQR_A_NCSBP
+    description: Either the notification specifies no condition or restriction, or the person satisfies the conditions and
+      restrictions the notification specifies.
+  M_CTFAR_G_RCTG:
+    name: Registered Composition Taxpayer Group
     logic: ALL
     members:
-    - M_IOSFC_A_TISI
-    - M_IOSFC_A_IMFC
-    description: Both the import of services and its consideration are required for the inclusion
-  M_SIAWC_G_SAWC:
-    name: Schedule Activity Without Consideration
+    - M_FODRP_A_FIRP
+    - M_RPOSD_A_PPTUS10
+    description: A registered person who pays tax under section 10
+  M_CTFAR_G_MRCG:
+    name: Mandatory Return Content Group
     logic: ALL
     members:
-    - M_SIAWC_A_ASISI
-    - M_SIAWC_A_AMWC
-    description: Both the Schedule I activity test and the nil consideration test must be met for this inclusion.
+    - M_CTFAR_A_RCST
+    - M_CTFAR_A_RCIS
+    - M_RPFMR_A_RSTP
+    - M_RPFMR_A_RSTP2
+    - M_RPFMR_A_RHOPP
+    description: All listed particulars must be in the return
+  M_CTFAR_G_RFMG:
+    name: Return Furnishing Manner Group
+    logic: ALL
+    members:
+    - M_RPOSD_A_DAFE
+    - M_RPOSD_A_FIPFAM
+    description: Electronic furnishing and the prescribed form and manner
+  M_MRFBRP_A_RRFUS39:
+    name: Any of the referred steps (M_MRFBRP_A_RRFUS39)
+    logic: ANY
+    members:
+    - M_CTFAR_PD_ARDA
+    - M_CTFAR_PD_ARDM
+    - M_GPTNQR_PD_QRR
+    - M_RPFMR_PD_RMSR
+    - M_RPFMR_PD_ROATP
+    description: TRUE when any step of the law this check refers to is TRUE
+  M_MRFBRP_G_RRFT:
+    name: Registered Return Filer Test
+    logic: ALL
+    members:
+    - M_FODRP_A_FIRP
+    - M_MRFBRP_A_RRFUS39
+    description: Every registered person who is required to furnish a return under sub-section (1) or sub-section (2) is the
+      group to which the duty applies.
 outcomes:
+  M_SIAFOS_LE_IISUS71A:
+    outcome: SUPPLY_INCLUDED
+    expr: M_SIAFOS_G_QFOS AND M_SIAFOS_G_SFC AND M_SIAFOS_A_SICOB
+    module: M_SIAFOS
+    description: A transaction is included in the definition of supply if it is a qualifying form of supply, for a consideration,
+      and in the course or furtherance of business.
+  M_IOSFC_LE_IOSFCIS:
+    outcome: SUPPLY_INCLUDED
+    expr: M_IOSFC_G_CFIOSTBS
+    module: M_IOSFC
+    description: The transaction is included in the scope of supply if it meets the conditions for an import of service for
+      consideration.
+  M_SIAWC_LE_IISFSIA:
+    outcome: SUPPLY_INCLUDED
+    expr: M_SIAWC_A_AISISI AND M_SIAWC_A_AIWC
+    module: M_SIAWC
+    description: The transaction is included in the scope of supply if it is a Schedule I activity and is without consideration.
   M_MOWG_LE_WGMA:
     outcome: MEANING_ESTABLISHED
     expr: M_MOWG_G_SACM
@@ -1198,12 +2566,6 @@ outcomes:
     expr: M_SOGFNT_G_ESCA
     module: M_SOGFNT
     description: The activity is neither a supply of goods nor a supply of services when all entry 7 conditions hold.
-  M_NGANGNS_LE_NANS:
-    outcome: NEITHER_GOODS_NOR_SERVICES
-    expr: M_NGANGNS_A_UBGB AND M_NGANGNS_A_EAPA AND M_NGANGNS_A_AINBG AND M_GPTNQR_A_NOCR
-    module: M_NGANGNS
-    description: When all four conditions hold, the activity or transaction shall be treated neither as a supply of goods
-      nor a supply of services, overriding sub-section (1).
   M_PUOBGIS_LE_BGPUDS:
     outcome: USAGE_OR_MAKING_AVAILABLE_DEEMED_SUPPLY_OF_SERVICES
     expr: M_PUOBGIS_G_BPAGC AND M_PUOBGIS_G_PONBUR
@@ -1214,6 +2576,17 @@ outcomes:
     expr: M_TOPOGIS_G_TOAG
     module: M_TOPOGIS
     description: The deemed supply of services follows when the whole treatment group is satisfied
+  M_ISDMR_LE_IMRC:
+    outcome: ISD_RETURN_COMPLIANT
+    expr: M_ISDMR_G_RSC AND M_ISDMR_G_RFC
+    module: M_ISDMR
+    description: The ISD monthly return obligation is met only when the person is an Input Service Distributor, the return
+      covers the calendar month and every filing condition holds
+  M_RFNAIPU_LE_FNAO:
+    outcome: FURNISHING_NOT_ALLOWED
+    expr: M_RFNAIPU_G_AFBC
+    module: M_RFNAIPU
+    description: Prohibition outcome applies only when all three block conditions hold
   M_COBTAS_LE_CTAS:
     outcome: TREATED_AS_SUPPLY_OF_SERVICES
     expr: M_COBTAS_A_AIBC AND NOT M_COBTAS_A_CRAM
@@ -1226,72 +2599,72 @@ outcomes:
     module: M_SOLAB
     description: The transaction is treated as neither supply of goods nor supply of services if it includes a sale of land,
       or a sale of building that is not subject to clause (b) of paragraph 5 of Schedule II
-  M_ANGNS_LE_SIIINSO:
-    outcome: NEITHER_GOODS_NOR_SERVICES
-    expr: M_ANGNS_A_ASISIII
+  M_ANGNS_LE_TANSOGNS:
+    outcome: NOT_A_SUPPLY
+    expr: M_ANGNS_A_AOTISISIII
     module: M_ANGNS
-    description: The activity or transaction is treated neither as a supply of goods nor as a supply of services when it is
-      specified in Schedule III, notwithstanding sub-section (1).
-  M_SIAFOS_LE_SIBC:
-    outcome: SUPPLY_INCLUDED
-    expr: M_SIAFOS_G_SFA AND M_SIAFOS_A_SIOGOS AND M_SIAFOS_G_MOAC AND M_SIAFOS_A_SBPIB
-    module: M_SIAFOS
-    description: The transaction is included in supply under Section 7(1)(a) when it is in a qualifying form, is of goods
-      or services or both, is made or agreed to be made for a consideration, and is by a person in the course or furtherance
-      of business.
-  M_IOSFC_LE_IOSI:
-    outcome: SUPPLY_INCLUDED
-    expr: M_IOSFC_G_IFCG
-    module: M_IOSFC
-    description: Import of services for a consideration is included in supply; the business test is not a member of this expression
-  M_SIAWC_LE_SIO:
-    outcome: SUPPLY_INCLUDED
-    expr: M_SIAWC_G_SAWC
-    module: M_SIAWC
-    description: The supply is included under this limb only when the Schedule I activity group is met.
-overrides:
-  IH_ANGNS_SIAFOS:
-    outcome: NEITHER_GOODS_NOR_SERVICES
-    expr: M_ANGNS_A_ASISIII
-    module: M_ANGNS
-    description: The activity or transaction is treated neither as a supply of goods nor as a supply of services when it is
-      specified in Schedule III, notwithstanding sub-section (1).
-  IH_NGANGNS_SIAFOS:
-    outcome: NEITHER_GOODS_NOR_SERVICES
-    expr: M_NGANGNS_A_UBGB AND M_NGANGNS_A_EAPA AND M_NGANGNS_A_AINBG AND M_GPTNQR_A_NOCR
-    module: M_NGANGNS
-    description: When all four conditions hold, the activity or transaction shall be treated neither as a supply of goods
-      nor a supply of services, overriding sub-section (1).
-  IH_ANGNS_IOSFC:
-    outcome: NEITHER_GOODS_NOR_SERVICES
-    expr: M_ANGNS_A_ASISIII
-    module: M_ANGNS
-    description: The activity or transaction is treated neither as a supply of goods nor as a supply of services when it is
-      specified in Schedule III, notwithstanding sub-section (1).
-  IH_NGANGNS_IOSFC:
-    outcome: NEITHER_GOODS_NOR_SERVICES
-    expr: M_NGANGNS_A_UBGB AND M_NGANGNS_A_EAPA AND M_NGANGNS_A_AINBG AND M_GPTNQR_A_NOCR
-    module: M_NGANGNS
-    description: When all four conditions hold, the activity or transaction shall be treated neither as a supply of goods
-      nor a supply of services, overriding sub-section (1).
-  IH_ANGNS_SIAWC:
-    outcome: NEITHER_GOODS_NOR_SERVICES
-    expr: M_ANGNS_A_ASISIII
-    module: M_ANGNS
-    description: The activity or transaction is treated neither as a supply of goods nor as a supply of services when it is
-      specified in Schedule III, notwithstanding sub-section (1).
-  IH_NGANGNS_SIAWC:
-    outcome: NEITHER_GOODS_NOR_SERVICES
-    expr: M_NGANGNS_A_UBGB AND M_NGANGNS_A_EAPA AND M_NGANGNS_A_AINBG AND M_GPTNQR_A_NOCR
-    module: M_NGANGNS
-    description: When all four conditions hold, the activity or transaction shall be treated neither as a supply of goods
-      nor a supply of services, overriding sub-section (1).
+    description: The legal outcome is that the activity or transaction is treated as neither a supply of goods nor a supply
+      of services.
+  M_RPFMR_LE_ROATP:
+    outcome: RETURN_OBLIGATION_APPLIES
+    expr: M_FODRP_A_FIRP AND NOT M_RPFMR_G_EPC
+    module: M_RPFMR
+    description: The duty to furnish the return applies to a registered person who is not in any excluded category.
+  M_RPFMR_LE_RMSR:
+    outcome: RETURN_MEETS_SECTION_39_1_REQUIREMENTS
+    expr: M_RPFMR_G_RFC
+    module: M_RPFMR
+    description: The return is for the calendar month or part month, is furnished electronically, carries the stated particulars
+      and is in the prescribed form and time. It is only meaningful for a person covered by M_RPFMR_LE_ROATP.
+  M_GPTNQR_LE_QRR:
+    outcome: QUARTERLY_RETURN_REQUIRED
+    expr: M_GPTNQR_A_NOCR AND M_GPTNQR_G_RPINC AND M_GPTNQR_A_NREQ AND M_GPTNQR_G_NCSOA
+    module: M_GPTNQR
+    description: A registered person in a class notified on Council recommendation must furnish a return for every quarter
+      or part thereof, subject to the notified conditions and restrictions.
+  M_CTFAR_LE_ARDA:
+    outcome: ANNUAL_RETURN_DUTY_APPLIES
+    expr: M_CTFAR_G_RCTG AND M_CTFAR_A_RFFYOP
+    module: M_CTFAR
+    description: The shall duty arises for a registered person paying tax under section 10 for each financial year or part
+      thereof
+  M_CTFAR_LE_ARDM:
+    outcome: RETURN_OBLIGATION_MET
+    expr: M_CTFAR_G_RCTG AND M_CTFAR_A_RFFYOP AND M_CTFAR_A_RPFR AND M_CTFAR_G_MRCG AND M_CTFAR_G_RFMG AND M_RPFMR_A_RFWPT
+    module: M_CTFAR
+    description: The duty is met when the return is furnished with the required content in the prescribed form, manner and
+      time
+  M_MRFBRP_LE_RDM:
+    outcome: DUTY_MET_FOR_PERIOD
+    expr: M_MRFBRP_G_RRFT AND M_MRFBRP_A_RFFTP
+    module: M_MRFBRP
+    description: The registered filer has furnished a return for the tax period.
+  M_MRFBRP_LE_RDNM:
+    outcome: DUTY_NOT_MET_FOR_PERIOD
+    expr: M_MRFBRP_G_RRFT AND NOT M_MRFBRP_A_RFFTP
+    module: M_MRFBRP
+    description: The registered filer has not furnished a return for the tax period, and no supply in the period does not
+      excuse it.
+  M_MRFBRP_LE_S398NA:
+    outcome: NO_SECTION_39_8_DUTY
+    expr: NOT M_MRFBRP_G_RRFT
+    module: M_MRFBRP
+    description: The person is not a registered person required to furnish a return under sub-section (1) or sub-section (2),
+      so this MKP gives no return-duty finding.
 triggers:
   M_MOWG_CT_CSR:
     question: Do the Customs records show whether the goods are warehoused goods within the meaning in the Customs Act, 1962?
     trigger: F_GWS = 'OTHER'
     beside: M_MOWG_LE_WGMA
 products:
+  M_SIAFOS_PD_IISUS71A:
+    statement: A transaction is included in the definition of supply if it is a qualifying form of supply, for a consideration,
+      and in the course or furtherance of business.
+  M_IOSFC_PD_IOSFCIS:
+    statement: The transaction is included in the scope of supply if it meets the conditions for an import of service for
+      consideration.
+  M_SIAWC_PD_IISFSIA:
+    statement: The transaction is included in the scope of supply if it is a Schedule I activity and is without consideration.
   M_MOWG_PD_WGMA:
     statement: The Customs meaning of warehoused goods applies for paragraph 8 when the scope test and the goods test are
       both met
@@ -1333,31 +2706,61 @@ products:
     statement: Both conditions true gives neither supply of goods nor supply of services under Schedule III paragraph 6
   M_SOGFNT_PD_NSO:
     statement: The activity is neither a supply of goods nor a supply of services when all entry 7 conditions hold.
-  M_NGANGNS_PD_NANS:
-    statement: When all four conditions hold, the activity or transaction shall be treated neither as a supply of goods nor
-      a supply of services, overriding sub-section (1).
   M_PUOBGIS_PD_BGPUDS:
     statement: The deeming applies when the business context is met and at least one of the three use routes is met.
   M_TOPOGIS_PD_TOAGIS:
     statement: The deemed supply of services follows when the whole treatment group is satisfied
+  M_ISDMR_PD_IMRC:
+    statement: The ISD monthly return obligation is met only when the person is an Input Service Distributor, the return covers
+      the calendar month and every filing condition holds
+  M_RFNAIPU_PD_FNAO:
+    statement: Prohibition outcome applies only when all three block conditions hold
   M_COBTAS_PD_CTAS:
     statement: Deemed supply of services applies when the activity is construction as described and the entire consideration
       was not received after the earlier completion or occupation milestone.
   M_SOLAB_PD_LOBSO:
     statement: The transaction is treated as neither supply of goods nor supply of services if it includes a sale of land,
       or a sale of building that is not subject to clause (b) of paragraph 5 of Schedule II
-  M_ANGNS_PD_SIIINSO:
-    statement: The activity or transaction is treated neither as a supply of goods nor as a supply of services when it is
-      specified in Schedule III, notwithstanding sub-section (1).
-  M_SIAFOS_PD_SIBC:
-    statement: The transaction is included in supply under Section 7(1)(a) when it is in a qualifying form, is of goods or
-      services or both, is made or agreed to be made for a consideration, and is by a person in the course or furtherance
-      of business.
-  M_IOSFC_PD_IOSI:
-    statement: Import of services for a consideration is included in supply; the business test is not a member of this expression
-  M_SIAWC_PD_SIO:
-    statement: The supply is included under this limb only when the Schedule I activity group is met.
+  M_ANGNS_PD_TANSOGNS:
+    statement: The legal outcome is that the activity or transaction is treated as neither a supply of goods nor a supply
+      of services.
+  M_RPFMR_PD_ROATP:
+    statement: The duty to furnish the return applies to a registered person who is not in any excluded category.
+  M_RPFMR_PD_RMSR:
+    statement: The return is for the calendar month or part month, is furnished electronically, carries the stated particulars
+      and is in the prescribed form and time. It is only meaningful for a person covered by M_RPFMR_LE_ROATP.
+  M_GPTNQR_PD_QRR:
+    statement: A registered person in a class notified on Council recommendation must furnish a return for every quarter or
+      part thereof, subject to the notified conditions and restrictions.
+  M_CTFAR_PD_ARDA:
+    statement: The shall duty arises for a registered person paying tax under section 10 for each financial year or part thereof
+  M_CTFAR_PD_ARDM:
+    statement: The duty is met when the return is furnished with the required content in the prescribed form, manner and time
+  M_MRFBRP_PD_RDM:
+    statement: The registered filer has furnished a return for the tax period.
+  M_MRFBRP_PD_RDNM:
+    statement: The registered filer has not furnished a return for the tax period, and no supply in the period does not excuse
+      it.
+  M_MRFBRP_PD_S398NA:
+    statement: The person is not a registered person required to furnish a return under sub-section (1) or sub-section (2),
+      so this MKP gives no return-duty finding.
 compounds:
+- id: C_S7_SS1
+  question: 'Section 7(1): which clause applies?'
+  includes:
+  - M_SIAFOS_LE_IISUS71A
+  - M_IOSFC_LE_IOSFCIS
+  - M_SIAWC_LE_IISFSIA
+  produces:
+  - product: M_SIAFOS_PD_IISUS71A
+    from:
+    - M_SIAFOS_LE_IISUS71A
+  - product: M_IOSFC_PD_IOSFCIS
+    from:
+    - M_IOSFC_LE_IOSFCIS
+  - product: M_SIAWC_PD_IISFSIA
+    from:
+    - M_SIAWC_LE_IISFSIA
 - id: C_MOWG
   question: 'Schedule III, paragraph 8, clause (b), Explanation 2: Meaning Of Warehoused Goods?'
   includes:
@@ -1482,6 +2885,23 @@ compounds:
   - product: M_TOPOGIS_PD_TOAGIS
     from:
     - M_TOPOGIS_LE_TOAGIS
+- id: C_ISDMR
+  question: 'Section 39(4): Input Service Distributor Monthly Return?'
+  includes:
+  - M_ISDMR_LE_IMRC
+  produces:
+  - product: M_ISDMR_PD_IMRC
+    from:
+    - M_ISDMR_LE_IMRC
+  exclusive: []
+- id: C_RFNAIPU
+  question: 'Section 39(10): Return Furnishing Not Allowed If Previous Unfurnished?'
+  includes:
+  - M_RFNAIPU_LE_FNAO
+  produces:
+  - product: M_RFNAIPU_PD_FNAO
+    from:
+    - M_RFNAIPU_LE_FNAO
 - id: C_COBTAS
   question: 'Schedule II, paragraph 5(b): Construction Of Building Treated As Services?'
   includes:
@@ -1498,40 +2918,65 @@ compounds:
   - product: M_SOLAB_PD_LOBSO
     from:
     - M_SOLAB_LE_LOBSO
-- id: C_S7_SS2
-  question: 'Section 7(2): which clause applies?'
+- id: C_ANGNS
+  question: 'Section 7(2)(a): Activities Neither Goods Nor Services?'
   includes:
-  - M_NGANGNS_LE_NANS
-  - M_ANGNS_LE_SIIINSO
+  - M_ANGNS_LE_TANSOGNS
   produces:
-  - product: M_NGANGNS_PD_NANS
+  - product: M_ANGNS_PD_TANSOGNS
     from:
-    - M_NGANGNS_LE_NANS
-  - product: M_ANGNS_PD_SIIINSO
-    from:
-    - M_ANGNS_LE_SIIINSO
-- id: C_S7_SS1
-  question: 'Section 7(1): which clause applies?'
+    - M_ANGNS_LE_TANSOGNS
+- id: C_RPFMR
+  question: 'Section 39(1): Registered Person Furnish Monthly Return?'
   includes:
-  - M_SIAFOS_LE_SIBC
-  - M_IOSFC_LE_IOSI
-  - M_SIAWC_LE_SIO
+  - M_RPFMR_LE_ROATP
+  - M_RPFMR_LE_RMSR
   produces:
-  - product: M_SIAFOS_PD_SIBC
+  - product: M_RPFMR_PD_ROATP
     from:
-    - M_SIAFOS_LE_SIBC
-  - product: M_IOSFC_PD_IOSI
+    - M_RPFMR_LE_ROATP
+  - product: M_RPFMR_PD_RMSR
     from:
-    - M_IOSFC_LE_IOSI
-  - product: M_SIAWC_PD_SIO
+    - M_RPFMR_LE_RMSR
+- id: C_GPTNQR
+  question: 'Section 39(1), proviso: Government Power To Notify Quarterly Returns?'
+  includes:
+  - M_GPTNQR_LE_QRR
+  produces:
+  - product: M_GPTNQR_PD_QRR
     from:
-    - M_SIAWC_LE_SIO
-  overrides:
-  - IH_ANGNS_SIAFOS
-  - IH_NGANGNS_SIAFOS
-  - IH_ANGNS_IOSFC
-  - IH_NGANGNS_IOSFC
-  - IH_ANGNS_SIAWC
-  - IH_NGANGNS_SIAWC
+    - M_GPTNQR_LE_QRR
+- id: C_CTFAR
+  question: 'Section 39(2): Composition Taxpayer Furnish Annual Return?'
+  includes:
+  - M_CTFAR_LE_ARDA
+  - M_CTFAR_LE_ARDM
+  produces:
+  - product: M_CTFAR_PD_ARDA
+    from:
+    - M_CTFAR_LE_ARDA
+  - product: M_CTFAR_PD_ARDM
+    from:
+    - M_CTFAR_LE_ARDM
+- id: C_MRFBRP
+  question: 'Section 39(8): Mandatory Return Furnishing By Registered Person?'
+  includes:
+  - M_MRFBRP_LE_RDM
+  - M_MRFBRP_LE_RDNM
+  - M_MRFBRP_LE_S398NA
+  produces:
+  - product: M_MRFBRP_PD_RDM
+    from:
+    - M_MRFBRP_LE_RDM
+  - product: M_MRFBRP_PD_RDNM
+    from:
+    - M_MRFBRP_LE_RDNM
+  - product: M_MRFBRP_PD_S398NA
+    from:
+    - M_MRFBRP_LE_S398NA
+  exclusive:
+  - M_MRFBRP_LE_RDM
+  - M_MRFBRP_LE_RDNM
+  - M_MRFBRP_LE_S398NA
 time:
   law_date: F_DOI

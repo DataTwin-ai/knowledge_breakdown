@@ -38,7 +38,7 @@ from akp_ss.facts import FactRegistry, skip_rows, time_fact
 from akp_ss.factcheck import check as check_facts
 from akp_ss.ids import abbreviate, check as id_check, merge_same_tests
 from akp_ss import timestep
-from akp_ss.guard import engine_ready, legal_words, structure
+from akp_ss.guard import engine_ready, fill_source_kind, legal_words, repair_handlers, structure
 from akp_ss.parse import (apply_python_review, family, field_list, parse_rows, parse_verdict, raw_rows, retry_text,
                            table_text)
 from akp_ss.refs import RefFinder, set_references
@@ -651,11 +651,15 @@ def run_akp_scope(pdf_path, instrument=None, section=None, scope_key=None, only_
     advisory: List[str] = []
     findings: List[str] = []             # word / number / reference errors: the comparison model referees them
 
-    def checks(standard, bundle, source_text, knowledge_type):
+    def checks(standard, bundle, source_text, knowledge_type, candidates=None):
         """Blocking errors; advisory notes go to the comparison model instead (legal_word_check). The word, number
         and reference errors are also kept in `findings`; the structure / fact / engine errors are the rest."""
         operative = knowledge_type not in NON_OPERATIVE
         reg_ids = registry.all_ids()
+        for n in fill_source_kind(standard, candidates or [], reg_ids):   # the judge dropped source_kind / formula
+            log(n)
+        for n in repair_handlers(standard, reg_ids):  # 2026-11-27: python atom on a READ / ASK fact -> the LLM
+            log(n)
         errs = structure(standard, bundle["sp_rows"], operative, reg_ids)
         errs += registry.check(standard)
         if operative:
@@ -1046,7 +1050,7 @@ def run_akp_scope(pdf_path, instrument=None, section=None, scope_key=None, only_
                                     "INPUT:\n" + judge_input)
                     stage(f"AKP {n_b}/{len(bundles)} judge")
                     standard = judge_table(judge_prompt, mkp_id)
-                    errs = checks(standard, bundle, source_text, knowledge_type)
+                    errs = checks(standard, bundle, source_text, knowledge_type, gemini + claude)
                     hard = [e for e in errs if e not in findings]
                     for repair in range(s["judge_repairs"]):      # structure errors: the judge repairs them first
                         if not hard:
@@ -1057,7 +1061,7 @@ def run_akp_scope(pdf_path, instrument=None, section=None, scope_key=None, only_
                         standard = judge_table(judge_prompt + "\n\nPYTHON_CHECK_FAILED - fix exactly these items:\n" +
                                                "\n".join(f"- {e}" for e in hard) + "\n\nYOUR PREVIOUS TABLE:\n" +
                                                table_text(standard), mkp_id)
-                        errs = checks(standard, bundle, source_text, knowledge_type)
+                        errs = checks(standard, bundle, source_text, knowledge_type, gemini + claude)
                         hard = [e for e in errs if e not in findings]
                     if hard:                        # the engine could not run it: no model can excuse this
                         verdict = {"verdict": "FALSE", "reconstructed_mkp": "(not compared - Python checks failed)",

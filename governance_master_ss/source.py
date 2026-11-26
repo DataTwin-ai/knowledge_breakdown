@@ -88,9 +88,10 @@ def from_db(conn, schema: str, tables: Dict[str, str], instruments: List[str]) -
                 (list(instruments),))
     s.akp = [dict(zip(AKP_COLS, r)) for r in akp]
     for r in _rows(conn, sql.SQL("SELECT fact_id, name, entity, data_type, unit, options, evidence, derived_from, nl, "
-                                 "possible_duplicate_of FROM {}").format(_t(schema, tables["fact"]))):
+                                 "possible_duplicate_of, source_kind, derivation FROM {}").format(_t(schema, tables["fact"]))):
         s.facts[r[0]] = {"name": r[1], "entity": r[2], "data_type": r[3], "unit": r[4], "options": _jl(r[5]),
-                         "evidence": _jl(r[6]), "derived_from": _jl(r[7]), "nl": r[8], "possible_duplicate_of": r[9]}
+                         "evidence": _jl(r[6]), "derived_from": _jl(r[7]), "nl": r[8], "possible_duplicate_of": r[9],
+                         "source_kind": r[10], "derivation": r[11]}
     s.gkp = [dict(zip(("source_mkp", "akp_element", "akp_type", "tg_id", "tsg_id", "status"), r))
              for r in _rows(conn, sql.SQL("SELECT source_mkp, akp_element, akp_type, tg_id, tsg_id, status "
                                           "FROM {} WHERE is_latest AND instrument = ANY(%s)").format(
@@ -121,8 +122,10 @@ def from_db(conn, schema: str, tables: Dict[str, str], instruments: List[str]) -
     except Exception:
         conn.rollback()
     try:                                                 # the parts of outside documents each law needs (bug list C1)
-        s.references = [dict(zip(("source_mkp", "ref_id", "mention", "relation", "source_key"), r)) for r in _rows(
-            conn, sql.SQL("SELECT mkp_element, ref_id, mention, relation, source_key FROM {} WHERE scope='CROSS' "
+        s.references = [dict(zip(("source_mkp", "ref_id", "mention", "relation", "source_key", "target_key"), r))
+                        for r in _rows(
+            conn, sql.SQL("SELECT mkp_element, ref_id, mention, relation, source_key, target_key FROM {} "
+                          "WHERE scope='CROSS' "
                           "AND COALESCE(source_key, '') <> ''").format(_t(schema, tables["ref_link"])))]
     except Exception:                                    # no reference table yet
         conn.rollback()

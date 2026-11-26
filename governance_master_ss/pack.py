@@ -23,12 +23,33 @@ def check_pack(pack: dict) -> List[str]:
     for pid, p in pack.get("predicates", {}).items():
         if p.get("order") not in ("LOW", "HIGH"):
             errs.append(f"check {pid}: order must be LOW or HIGH, not {p.get('order')!r}")
+        elif p.get("order") == "LOW" and p.get("facts"):      # 2026-11-27: a calculation atom (compute steps)
+            from akp_ss.formula import check_steps
+            w = pack.get("predicates", {}).get(p.get("when") or "", {})
+            outside = [f"{p['when']}.{s}" for s in (w.get("compute") or {})] if p.get("when") else []
+            used, problems = check_steps(p.get("compute") or {}, p.get("rule", ""), p.get("result", ""), outside)
+            errs += [f"check {pid}: {e}" for e in problems]
+            errs += [f"check {pid}: unknown fact {f}" for f in sorted(used | set(p["facts"])) if f not in facts]
         elif p.get("order") == "LOW":
             errs += [f"check {pid}: {e}" for e in (R.check(p.get("rule", ""), facts) if p.get("rule") else ["no rule"])]
         else:
             if not p.get("interpretation"):
                 errs.append(f"check {pid}: a judged check needs its question")
             errs += [f"check {pid}: unknown fact {f}" for f in p.get("grounding", []) if f not in facts]
+        if p.get("when") and p["when"] not in pack.get("predicates", {}):          # 2026-11-27: amount atoms
+            errs.append(f"check {pid}: when {p['when']} is not a check")
+        if p.get("result") and p["result"] not in facts and p["result"] not in (p.get("compute") or {}):
+            errs.append(f"check {pid}: result {p['result']} is neither a step nor a fact")
+        errs += [f"check {pid}: compute uses unknown fact {f}" for f in p.get("compute", {})
+                 if f.startswith("F_") and f not in facts]
+    for oid, o in pack.get("outcomes", {}).items():
+        amount = str(o.get("amount") or "")
+        if "." in amount:                                 # ATOM.step - the result step of an amount atom
+            atom, step = amount.split(".", 1)
+            if step not in (pack.get("predicates", {}).get(atom, {}).get("compute") or {}):
+                errs.append(f"outcome {oid}: amount {amount} - {atom} has no step {step}")
+        elif amount and amount not in facts:
+            errs.append(f"outcome {oid}: amount {amount} is not a fact")
     for gid, g in pack.get("groups", {}).items():
         if g.get("logic") not in ("ALL", "ANY"):
             errs.append(f"group {gid}: logic must be ALL or ANY")
@@ -125,7 +146,8 @@ def rows(pack: dict, report: dict, id_map: List[dict], spine: dict, names: dict,
                 text = e.get("statement")
                 logic = e.get("rule") or e.get("interpretation")
                 order = e.get("order")
-                facts = ", ".join(sorted(R.parse(e["rule"])["facts"])) if e.get("rule") else ", ".join(e.get("grounding", []))
+                facts = (", ".join(e["facts"]) if e.get("facts") else
+                         ", ".join(sorted(R.parse(e["rule"])["facts"])) if e.get("rule") else ", ".join(e.get("grounding", [])))
             elif label == "GROUP":
                 text, logic, order, facts = e.get("description") or e.get("name"), \
                     f"{e.get('logic')} [{', '.join(e.get('members', []))}]", None, None

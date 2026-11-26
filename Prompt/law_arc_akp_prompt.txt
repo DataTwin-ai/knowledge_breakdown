@@ -1,3 +1,7 @@
+PROMPT EDIT 2026-11-27 (3): THE PYTHON DECISION TEST (4 questions), how: on every python atom, Python runs every python atom on test inputs and moves what it cannot do to the LLM; HSN / SAC rates are READ (LLM) for now.
+PROMPT EDIT 2026-11-27 (2): facts are RAW inputs only; every calculation is a step (step1, step2 ...) inside the atom, rule / result on steps, ATOM.step from the when atom, OR amount: ATOM.step.
+PROMPT EDIT 2026-11-27: PYTHON ATOMS, MONEY AND TIME - formula grammar with IF and dates, amount atoms (when + result), OR amount, source_kind on every FACTS row (registry facts too), full section 47(1) example; format example: forms of supply are a READ fact.
+PROMPT EDIT 2026-11-26: HANDLER = WHO CAN REALLY DECIDE IT - python only when Python can decide it fully from documents / lookups / formulas (never on a READ or ASK fact); source_kind READ added; MONEY AND TIME: WORKED_OUT facts carry derived_from + a derivation formula on F_ ids.
 PROMPT EDIT 2026-11-19: FACTS - a fact is an attribute with values (one CODE fact for the alternatives of one choice), not a yes/no fact per value; Python FACT SHAPE check.
 PROMPT EDIT 2026-11-16 (2): FACT CONCEPT = the kind of input, 2-3 words, never the name repeated.
 PROMPT EDIT 2026-11-16: FACT CONCEPT added (every TXN FACTS row has a 2- or 3-word CONCEPT, like an A row; Python embeds it to find the same fact across laws).
@@ -26,100 +30,141 @@ NAME AND HANDLER FIELDS — EVERY A, G, LE, PD, OR, CT AND TC ROW
   table - Python rewrites every id everywhere. Never shorten the statement to fit the name.
   A fact taken from INPUT.fact_registry keeps its fact_id exactly as given - do not rename it.
 - handler: who checks the atom when a document is validated, on EVERY A row, decided while splitting:
-    python  a plain check of fact values (=, <, >, IN a list, IS_SET) - goes with order: LOW and a rule;
+    python  ONLY when Python can decide it fully, with no reading: EVERY fact behind its rule is source_kind
+            DOCUMENT or LOOKUP (never READ or ASK), every calculation is a step inside the atom and the atom has
+            how: - pass THE PYTHON DECISION TEST in PYTHON ATOMS, MONEY AND TIME below. Goes with order: LOW and a
+            rule that compares a step or a fact with a VALUE. Python RUNS every python atom on test inputs and moves
+            to the LLM what it cannot do alone - no exceptions;
     light   needs reading, but one or two facts and an easy, short question - goes with order: HIGH;
     heavy   a real legal judgement: several facts, or the law's wording must be weighed - order: HIGH.
   python atoms give a rule and no interpretation; light / heavy atoms give an interpretation and at least one
-  fact. A legal judgement is never python.
+  fact. A legal judgement is never python. A value that must be UNDERSTOOD from text or the transaction (form of
+  supply - sale / transfer / rental, kind of activity, relationship of the parties, purpose of use, goods or
+  services) is a READ fact, and an atom on a READ fact is light or heavy, never python, even when its condition
+  looks like a simple compare. Several such atoms on the SAME READ fact (sale / transfer / barter ...) share ONE
+  interpretation that asks which option applies, so the reader answers once.
 - source_kind on every TXN FACTS row: where the value comes from - DOCUMENT (a column / field of the document
-  checked, e.g. invoice date), WORKED_OUT (calculated from other facts; then also derived_from and derivation),
-  LOOKUP (a register or master, e.g. GSTIN status) or ASK (only a person can answer). A fact is a RAW input:
+  checked, e.g. invoice date),
+  LOOKUP (a register or master, e.g. GSTIN status), READ (an AI must read free text on the document or the
+  transaction to decide the value, e.g. form of supply from the item description) or ASK (only a person can
+  answer). A fact is a RAW input:
   "date of birth" is a fact, "is a senior citizen" is an atom on it.
 
-CONCEPT-FIRST LEGAL ATOMICITY
-1. FIRST identify complete legal concept families in the source, THEN create meaningful A rows.
-   Do NOT generate orphan fragments such as "supply has been made", "by a person" or
-   "for consideration" when the operative source concept is "a supply made for
-   consideration by a person in the course or furtherance of business".
-   Preserve such conditions within coherent statements or connected G/LE/FACTS logic.
-   If a component has a truly independent legal test or is reused across outcomes,
-   keep its own A and express the dependency with G/LE. Do NOT combine unrelated tests
-   merely to fill a concept or ignore independently testable facts.
-   Example: "supply made for consideration" and "supply agreed to be made for
-   consideration" are distinct conceptual alternatives; retain OR and avoid requiring both.
-2. Retain legal words, modals, conditions, exceptions, amounts, periods, scope and effect.
-   Never silently change shall/may, goods/services, any/all, exceptions or references.
-3. Keep terms of art intact when splitting would alter their meaning (e.g., "course or furtherance of business").
-4. Split alternatives and enumerations (sale, transfer, barter, etc.) into distinct atoms.
-   "such as" is illustrative, not exhaustive: preserve an OTHER case in the legal logic.
-5. Make conceptual atoms positive, self-contained and capable of being tested against facts.
-   Preserve negation, exceptions and statutory consequences in the G/LE/OR logic.
-6. Preserve the originating phrase IDs SP1, SP2, etc. and each provision's citation_key and version context.
-7. Retain the original decision-network machinery from AKP: LE law expressions, G logical
-   groups, PD inputs, A atoms, CT catalysts, TXN FACTS, OR outcome rules, LK links,
-   SP traceability, LW legal-word mapping, TC example cases and SUM.
-8. Logical groups G are ONLY for internal AND/OR evaluation. They are NOT the TG / TSG taxonomy (that is the groups field).
-9. For operative MKPs, include coherent A rows, an LE and required facts; for a heading,
-   amendment-history, metadata or non-operative illustration use MKP and SP with a skip reason.
-   CROSS_REF with no independent obligation may have only MKP, LK and SP.
+PYTHON ATOMS, MONEY AND TIME - THE PYTHON DECISION TEST, RAW FACTS, THE CALCULATION INSIDE THE ATOM
+A python atom is decided by Python ALONE at validation time: no reading, no judgement, the same answer every
+time. So it must carry everything Python needs: its raw input facts and every calculation step. Money and time
+laws (tax, interest, late fee, penalty, refund, credit share, threshold, due date, time limit) are almost always
+python - they are the most valuable checks, because they give the issue in rupees.
 
-CONCEPT COLUMN AND FAMILY — MANDATORY FOR ATOMS
-- Every A.RESULTS MUST include `family: "<meaningful family>"` using an identical family
-  for closely related legal concepts (e.g., Supply Subject, Forms of Supply,
-  Supply Consideration, Supplier Business Context). This is NOT a group ID.
-- The conceptual A statement MUST retain enough operative context for classification.
-  Do not copy the entire MKP into every A or hide unrelated AND/OR clauses in one A.
-- Taxonomy descriptions are only a vocabulary and completeness guide.
-  A concept may have multiple valid memberships, only broad membership, or no match.
-  AKP must not claim 100% membership or force a mismatch.
-- `Goods Supply` is meaningful in the existing taxonomy's TG01 general subgroup.
-  But "sale/transfer/barter of goods OR services" must NOT be changed to goods only.
-- A general "other qualifying form" required by non-exhaustive "such as" must remain
-  reachable in G/LE/OR and be reviewed when needed, even if not classified in GKP.
-- Every A row MUST have a 2- or 3-word CONCEPT, an exact short legal concept, e.g.
-  "Goods Sale", "Ownership Transfer", "Business Consideration", "Return Filing".
-- Avoid one-word concepts or vague categories: "Transfer", "GST", "Law", "Tax" are invalid.
-- Use the same short concept for precisely the same meaning; keep the original atom statement
-  complete, irrespective of concept length. Do not use permanent group or subgroup IDs.
-- Every TXN FACTS row MUST have a 2- or 3-word CONCEPT too: the KIND of input, not the fact name repeated -
-  no small words (of, the, for), e.g. name "Supply Consideration Status" -> concept "Consideration Status";
-  name "Form Of Supply" -> "Supply Form"; "Description Of Supplier Activity" -> "Activity Description";
-  "Date Of Invoice" -> "Invoice Date". Two facts that ask the same question get the same concept even when
-  their names differ - that is how the same input is found across laws. A registry fact keeps the concept
-  INPUT.fact_registry gives it.
-- A_REF rows, if any, retain the referring atom's concept. Other row types can use a short
-  explanatory concept or NA. Python generates embeddings of A.CONCEPT and A.statement separately, and of the
-  FACTS CONCEPT and the fact name + nl separately.
+1. THE PYTHON DECISION TEST - DO IT FOR EVERY ATOM BEFORE YOU WRITE handler: python
+   Python decides an atom ALONE, with no AI and no person thinking about it. Write handler: python ONLY when ALL
+   four answers are YES. One NO, or one doubt -> handler light / heavy (order HIGH, an interpretation question).
+   Q1 INPUTS   Is EVERY input a value that is printed in a field of a document, taken from a table / register by a
+               key (GSTIN -> status, due-date table), or a closed answer from a list the user picks? (source_kind
+               DOCUMENT or LOOKUP for every fact.) Text that must be read and understood is NOT such an input.
+   Q2 HOW      Can you write `how:` - exactly where each input comes from (document and field, or table and key)
+               and every step Python does - with NO word like decide, judge, assess, consider, determine whether,
+               nature of, kind of, in substance, reasonable, intended?
+   Q3 RUN      Can Python run it: every calculation is a step in the formula grammar (section 3), every value has
+               a type (DATE, AMOUNT, NUMBER, PERCENT, BOOL, or CODE with its options - never TEXT)?
+   Q4 BOTH     Can the rule come out TRUE for one real input and FALSE for another?
+   PYTHON CHECKS ALL FOUR: it RUNS every python atom on test inputs of every type (all CODE options, both BOOL
+   values, early and late dates, amounts on both sides of every number in the rule). An atom that has no how,
+   cannot be run, or always gives the same answer is moved to the LLM automatically - so never call python
+   what Python cannot do alone.
 
-REFERENCES — STORE IN RESULTS
-- When this atom explicitly refers to another law provision, append
-  reference: [Schedule I]  or  reference: [Section 7(1)]
-  to that atom's RESULTS. Multiple explicit targets can be listed.
-- Use literal source citations or a confirmed citation_key from input. Never invent a target ID.
-- A cited target need not be loaded yet; it remains an unresolved but retained reference.
-- A referenced provision and a SAME atom are different relationships.
-- Never invent a reference just because the atom is semantically related to another law.
+   PYTHON (all four YES) - always with how:
+     registered person      F_PRS = 'REGISTERED'; how: "GSTIN on the filed return -> REGISTERED; else the status
+                            field of the registration certificate (REG-06) / portal search; else ask the user"
+     printed value / limit  invoice value > 50000; aggregate turnover <= 15000000 (how: which return / field)
+     dates and days         days late = DAYS_BETWEEN(due date, filing date); claimed after the deadline
+     money                  tax, interest, late fee, penalty, cap, rounding - all as steps (section 3)
+     same / other state     first two digits of the GSTIN vs the state code of the place of supply
+     two documents matched  ITC in books - ITC in GSTR-2B; GSTR-1 tax - GSTR-3B tax
+     totals                 sum of invoice values by GSTIN / month
+     format                 GSTIN has 15 characters; invoice number at most 16 characters
+   LLM (one NO) - light / heavy, never python:
+     anything understood    form of supply (sale / rental / barter ...), goods or services, course or
+                            furtherance of business, related / distinct person, purpose or use, nature of an
+                            activity, composite or mixed supply, consideration in kind, an exempt or notified class
+     rate of goods / services   the rate of an HSN / SAC code - FOR NOW there is no rate table, so a rate, a
+                            tariff entry or "rate of tax of the goods" is source_kind READ and its atoms are light
+     a fact of type TEXT, or a CODE fact without its options
 
-SAME ATOMS
-- Generate EACH new atom independently. Do not omit it on your own and do not propose
-  canonical reuse during Gemini/Claude generation: the dedicated final COMPARISON step
-  checks validated nearest atoms after the Standard Judge.
-- When an atom is later approved as SAME, Python changes A to A_REF, storing
-  reference: "A_EXISTING_ID"; relation: SAME in RESULTS; no second canonical A is saved.
-- For a similar but legally different condition, retain a NEW A row.
+2. A FACT IS A RAW INPUT - NEVER A CALCULATED VALUE
+   Every FACTS row is a value that comes from outside and can be mapped to a field of a document or a register.
+   source_kind on EVERY TXN FACTS row (a registry fact too):
+     DOCUMENT  printed on a document that is checked (invoice date, taxable value, filing date of a return)
+     LOOKUP    taken from a register, master or table by a key (GSTIN status, due date of a return for its tax
+               period, rate of an HSN, a rate / limit / fee fixed by a notification or by the law, the date of
+               the check). Its evidence names the source (evidence: [Notification 13/2017-CT], [section 47(1)]).
+     READ      an AI must read free text to decide it (step 1, never python)
+     ASK       only a person can answer
+   NEVER write a FACTS row for something calculated (days late, failure end date, fee, interest, cap, excess
+   credit): write it as a STEP of the atom (step 3). A python atom uses only DOCUMENT and LOOKUP facts.
 
-OTHER ELEMENTS (PRESERVE FROM EXISTING DESIGN)
-- LE: one per outcome; expr uses only A_, G_, PD_ tokens with AND/OR/NOT, never F_.
-- G: ALL or ANY with two or more members; child MKPs retain appropriate dependencies.
-- A: family; name; statement; phrases; scope; role; order LOW/HIGH; handler; tier; resolver; facts; rule or
-  interpretation; false_if if legally necessary; nl; reference when explicitly present.
-- FACTS: F_ transaction inputs with type, resolver, used_by, evidence and nl.
-- PD: previously established product needed as input, never an invented output.
-- CT: optional substantive review question with a trigger; not a substitute for an atom.
-- OR: otherwise outcome and UNKNOWN treatment; an inclusive supply example failing
-  does NOT itself imply that the overall transaction is not a supply.
-- SP and LW: account for relevant original wording, qualifiers and each phrase.
-- TC: a few representative cases sufficient to demonstrate AND/OR/UNKNOWN and exceptions.
+3. THE ATOM CARRIES ITS CALCULATION - step1, step2 ... IN ORDER
+   On the A row:  facts: [every raw fact the steps use];
+                  step1: "<name> = <formula>"; step2: "<name> = <formula>"; ...
+                  rule: "<a step or a fact compared with a VALUE>";
+                  how: "<where each input comes from (document + field, or table + key) and what Python does>"
+   EVERY python atom has how: - without it the atom is moved to the LLM (an amount atom is refused).
+   - A step name is lower case words joined by _ (failure_end, days_late, late_fee). It is NOT a fact and is never
+     a FACTS row. Python ids (F_..., A_...) stay as you write them; only facts are mapped to fields.
+   - A step may use: the atom's facts, numbers, earlier steps of the same atom, and <WHEN_ATOM>.<step> - a step of
+     the atom named in `when`.
+   - Formula grammar (Python checks it and runs it - nothing else is allowed):
+       F_ facts, step names, numbers (100, 0.25), quoted codes ('LATE'), TRUE / FALSE
+       + - * / ( )     = != > >= < <=     AND OR NOT
+       MIN(a, b, ...)  MAX(a, b, ...)  ROUND(x)  ROUND(x, 2)  ABS(x)  IF(condition, then, else)
+       DAYS_BETWEEN(from, to)  MONTHS_BETWEEN(from, to)  ADD_DAYS(d, n)  ADD_MONTHS(d, n)  END_OF_MONTH(d)
+       DATE(year, month, day)  YEAR(d)  MONTH(d)  DAY(d)
+   - The rule is a comparison: rule: "days_late > 0". Without steps the rule compares a fact with a value
+     (rule: "F_PRS = 'REGISTERED'").
+   - A number written in THIS law's text may be in a step AND stays in the atom statement in the law's words
+     ("one hundred rupees"). A number the government notifies or changes (a rate, a due date, a reduced fee) is a
+     LOOKUP fact - never invent its value.
+   - "for every day during which such failure continues": the days run from the due date to the day the return is
+     furnished, or to the date of the check when it is not furnished yet - write that with IF.
+
+4. AN AMOUNT ATOM CARRIES THE MONEY
+   The consequence in money ("shall pay a late fee of ...", "shall pay interest at ...") is its own atom:
+     role: CONSEQUENCE; order: LOW; handler: python; when: <the condition atom that must be TRUE first>;
+     facts: [...]; step1 ...; rule: "<amount step> > 0"; result: <the step that is the amount>; how: "..."
+   It needs no LE or group (it hangs on its `when` atom).
+   OR row of the outcome: amount: <AMOUNT_ATOM>.<result step>; unit: INR - the rupee impact of the law.
+
+5. FULL EXAMPLE - section 47(1) late fee ("... fails to furnish ... returns required under section 39 ... by the
+   due date shall pay a late fee of one hundred rupees for every day during which such failure continues subject
+   to a maximum amount of five thousand rupees"):
+M_LFR|LE|LE_LATE_FEE|NA|name: "Late Fee Is Payable"; outcome: LATE_FEE_PAYABLE; expr: "A_REGISTERED AND A_RETURN_LATE"; phrases: [SP1, SP2]
+M_LFR|OR|OR_LATE_FEE|NA|name: "Late Fee Amount"; outcome: LATE_FEE_PAYABLE; amount: A_LATE_FEE_AMOUNT.late_fee; unit: INR; otherwise: NO_LATE_FEE; if_unknown: REVIEW
+M_LFR|A|A_REGISTERED|Registered Person|family: "Person Status"; name: "Person Is Registered"; statement: "The person is a registered person"; phrases: [SP1]; scope: TRANSACTION; role: CONDITION; order: LOW; handler: python; resolver: EXPRESSION; facts: [F_REGISTRATION_STATUS]; rule: "F_REGISTRATION_STATUS = 'REGISTERED'"; how: "GSTIN on the filed return gives REGISTERED; else the status field of the registration certificate or portal search; else ask the user"; nl: "The person holds an active GST registration"
+M_LFR|A|A_RETURN_LATE|Return Furnished Late|family: "Return Filing"; name: "Return Not Furnished By Due Date"; statement: "The person fails to furnish the return required under section 39 by the due date"; phrases: [SP1]; scope: TRANSACTION; role: CONDITION; order: LOW; handler: python; resolver: EXPRESSION; facts: [F_RETURN_DUE_DATE, F_RETURN_FILED_DATE, F_RETURN_FURNISHED, F_CHECK_DATE]; step1: "failure_end = IF(F_RETURN_FURNISHED = TRUE, F_RETURN_FILED_DATE, F_CHECK_DATE)"; step2: "days_late = MAX(0, DAYS_BETWEEN(F_RETURN_DUE_DATE, failure_end))"; rule: "days_late > 0"; how: "Due date from the due-date table for the tax period and filer type; filing date and filing status from the return acknowledgement (ARN); the check date is the run date; days between the due date and the filing date, or the check date when not filed"; nl: "The return came after its due date or has not come yet"
+M_LFR|A|A_LATE_FEE_AMOUNT|Late Fee Amount|family: "Late Fee"; name: "Late Fee For Each Day"; statement: "The person shall pay a late fee of one hundred rupees for every day during which such failure continues subject to a maximum amount of five thousand rupees"; phrases: [SP2]; scope: TRANSACTION; role: CONSEQUENCE; order: LOW; handler: python; resolver: EXPRESSION; when: A_RETURN_LATE; facts: [F_LATE_FEE_PER_DAY, F_LATE_FEE_CAP]; step1: "fee_daily = A_RETURN_LATE.days_late * F_LATE_FEE_PER_DAY"; step2: "late_fee = MIN(fee_daily, F_LATE_FEE_CAP)"; rule: "late_fee > 0"; result: late_fee; how: "Days late from A_RETURN_LATE times the fee per day of section 47(1) (or the notified lower fee), capped at the maximum fee"; nl: "One hundred rupees a day, at most five thousand rupees"
+TXN|FACTS|F_REGISTRATION_STATUS|Registration Status|name: "Person Registration Status"; entity: PERSON; type: CODE; options: [REGISTERED, CANCELLED, SUSPENDED, UNREGISTERED]; source_kind: LOOKUP; evidence: [GST portal registration status]; registry: NEW; new_reason: "no registration status fact"; used_by: [A_REGISTERED]
+TXN|FACTS|F_RETURN_DUE_DATE|Due Date|name: "Return Due Date"; entity: RETURN; type: DATE; source_kind: LOOKUP; evidence: [section 39, rule 61, due date notifications]; registry: NEW; new_reason: "no due date fact"; used_by: [A_RETURN_LATE]; nl: "Due date of the return for its tax period and filer type"
+TXN|FACTS|F_RETURN_FILED_DATE|Filing Date|name: "Return Filing Date"; entity: RETURN; type: DATE; source_kind: DOCUMENT; evidence: [return acknowledgement (ARN) date]; registry: NEW; new_reason: "no filing date fact"; used_by: [A_RETURN_LATE]
+TXN|FACTS|F_RETURN_FURNISHED|Return Furnished|name: "Return Is Furnished"; entity: RETURN; type: BOOL; source_kind: DOCUMENT; evidence: [return filing status]; registry: NEW; new_reason: "no filing status fact"; used_by: [A_RETURN_LATE]
+TXN|FACTS|F_CHECK_DATE|Check Date|name: "Date Of The Check"; entity: EVENT; type: DATE; source_kind: LOOKUP; evidence: [validation run date]; registry: NEW; new_reason: "end of a continuing failure"; used_by: [A_RETURN_LATE]
+TXN|FACTS|F_LATE_FEE_PER_DAY|Fee Per Day|name: "Late Fee Per Day"; entity: FEE; type: AMOUNT; unit: INR; source_kind: LOOKUP; evidence: [section 47(1), late fee notifications]; registry: NEW; new_reason: "daily late fee"; used_by: [A_LATE_FEE_AMOUNT]; nl: "One hundred rupees under section 47(1) unless a notification lowers it"
+TXN|FACTS|F_LATE_FEE_CAP|Fee Cap|name: "Late Fee Maximum"; entity: FEE; type: AMOUNT; unit: INR; source_kind: LOOKUP; evidence: [section 47(1), late fee notifications]; registry: NEW; new_reason: "maximum late fee"; used_by: [A_LATE_FEE_AMOUNT]; nl: "Five thousand rupees under section 47(1) unless a notification lowers it"
+   What the engine then does: due 20-07-2025, filed 30-07-2025 -> failure_end 30-07-2025 -> days_late 10 ->
+   A_RETURN_LATE TRUE -> fee_daily 10 * 100 = 1000 -> late_fee MIN(1000, 5000) = 1000 -> issue: late fee 1,000 rupees.
+
+6. SHORT PATTERNS FOR OTHER LAWS (same rules, same fields)
+   interest, s.50(1): condition atom facts [F_TAX_DUE_DATE, F_TAX_PAID_DATE]; step1: "days_late = MAX(0,
+     DAYS_BETWEEN(F_TAX_DUE_DATE, F_TAX_PAID_DATE))"; rule "days_late > 0". Amount atom when: <condition atom>;
+     facts [F_TAX_UNPAID, F_INTEREST_RATE]; step1: "interest = ROUND(F_TAX_UNPAID * F_INTEREST_RATE / 100 *
+     <CONDITION_ATOM>.days_late / 365)"; result: interest. F_INTEREST_RATE is LOOKUP, evidence [Notification
+     13/2017-CT].
+   threshold, s.22(1): facts [F_AGGREGATE_TURNOVER, F_TURNOVER_LIMIT]; step1: "over_limit = F_AGGREGATE_TURNOVER -
+     F_TURNOVER_LIMIT"; rule "over_limit > 0" (the limit differs by state, so it is LOOKUP).
+   time limit, s.16(4): facts [F_CREDIT_CLAIM_DATE, F_CLAIM_DEADLINE]; step1: "days_past = DAYS_BETWEEN(
+     F_CLAIM_DEADLINE, F_CREDIT_CLAIM_DATE)"; rule "days_past > 0" (TRUE = claimed too late).
+   match, s.16(2)(aa): facts [F_ITC_IN_BOOKS, F_ITC_IN_GSTR2B]; step1: "itc_excess = F_ITC_IN_BOOKS -
+     F_ITC_IN_GSTR2B"; rule "itc_excess > 0"; the amount atom gives result itc_excess (credit to reverse).
+
 - Keep source ancestry; no rule may assert an unprovided rate, deadline or exemption.
 
 FACTS - THE FACT NETWORK (MANDATORY)
@@ -140,8 +185,9 @@ FACTS - THE FACT NETWORK (MANDATORY)
   tests its value (rule: "F_PERSON_TAX_CATEGORY = 'ISD'"). Use BOOL only for a real yes / no input (input tax
   credit availed or not). Python rejects yes/no facts that are values of one attribute (FACT SHAPE).
 - FACTS RESULTS: name; entity; type (BOOL, CODE, AMOUNT, NUMBER, PERCENT, DATE, PERIOD, TEXT, LIST, ID, QUANTITY);
-  options for CODE; unit for AMOUNT / PERIOD / QUANTITY; evidence: [documents that prove it];
-  derived_from: [F_...] when computed from other facts (age from date of birth); registry: EXISTING or NEW;
+  options for CODE; unit for AMOUNT / PERIOD / QUANTITY; source_kind (DOCUMENT / LOOKUP / READ / ASK, on EVERY
+  FACTS row, a registry fact too); evidence: [documents that prove it]; a calculated value is never a fact - it is a
+  step of its atom; registry: EXISTING or NEW;
   new_reason: "<why no INPUT.fact_registry fact fits>" on every NEW fact; used_by; nl.
 - EVERY operative A names at least one fact in facts: [...] (or the PD it relies on). LOW atoms give a rule on
   those facts; HIGH atoms still name the evidence fact the heavy model will read (e.g. F_ACTIVITY_DESCRIPTION)
@@ -189,15 +235,16 @@ MKP|TYPE|ELEMENT|CONCEPT|RESULTS
 M_SIAFOS|MKP|M_SIAFOS|NA|citation: "Section 7(1)(a)"; citation_key: CGSTA17_S7_SS1_Ca; frame: INCLUSIVE
 M_SIAFOS|LE|LE_SIAFOS|NA|outcome: SUPPLY_INCLUDED; expr: "G_FORMS AND A_COB"
 M_SIAFOS|G|G_FORMS|NA|logic: ANY; members: [A_SALE, A_TRANSFER, A_OTHER]
-M_SIAFOS|A|A_SALE|Sale Transaction|family: "Forms of Supply"; name: "Supply Is A Sale"; groups: [TSG01_01]; statement: "The supply takes the form of sale of goods, services or both"; phrases: [SP3]; scope: TRANSACTION; role: CONDITION; order: LOW; handler: python; resolver: EXPRESSION; facts: [F_SUPPLY_FORM]; rule: "F_SUPPLY_FORM = 'SALE'"; nl: "A sale transaction"
-M_SIAFOS|A|A_TRANSFER|Transfer Transaction|family: "Forms of Supply"; name: "Supply Is A Transfer"; statement: "The supply takes the form of transfer of goods, services or both"; phrases: [SP3]; scope: TRANSACTION; role: CONDITION; order: LOW; handler: python; resolver: EXPRESSION; facts: [F_SUPPLY_FORM]; rule: "F_SUPPLY_FORM = 'TRANSFER'"; nl: "A transfer transaction"
+M_SIAFOS|A|A_SALE|Sale Transaction|family: "Forms of Supply"; name: "Supply Is A Sale"; groups: [TSG01_01]; statement: "The supply takes the form of sale of goods, services or both"; phrases: [SP3]; scope: TRANSACTION; role: CONDITION; order: HIGH; handler: light; resolver: HEAVY_MODEL; facts: [F_SUPPLY_FORM]; interpretation: "Which form does the supply take: sale, transfer, barter, exchange, licence, rental, lease, disposal or another form?"; nl: "A sale transaction"
+M_SIAFOS|A|A_TRANSFER|Transfer Transaction|family: "Forms of Supply"; name: "Supply Is A Transfer"; statement: "The supply takes the form of transfer of goods, services or both"; phrases: [SP3]; scope: TRANSACTION; role: CONDITION; order: HIGH; handler: light; resolver: HEAVY_MODEL; facts: [F_SUPPLY_FORM]; interpretation: "Which form does the supply take: sale, transfer, barter, exchange, licence, rental, lease, disposal or another form?"; nl: "A transfer transaction"
 M_SIAFOS|A|A_OTHER|Other Supply Forms|family: "Forms of Supply"; name: "Supply Is Another Form"; statement: "The supply is another qualifying form of goods or services or both"; phrases: [SP3]; scope: TRANSACTION; role: CONDITION; order: HIGH; handler: light; resolver: HEAVY_MODEL; facts: [F_SUPPLY_FORM, F_SUPPLY_DESCRIPTION]; interpretation: "Is this form of supply of the same kind as the listed forms?"; nl: "A form not in the examples"
 M_SIAFOS|A|A_COB|Business Activity|family: "Supplier Business Context"; name: "Supply In Course Of Business"; statement: "A person makes or agrees to make the supply in the course or furtherance of business"; phrases: [SP7]; scope: TRANSACTION; role: CONDITION; order: HIGH; handler: heavy; resolver: HEAVY_MODEL; facts: [F_ACTIVITY_DESCRIPTION]; interpretation: "Is the activity in the course or furtherance of business?"; nl: "An activity connected with business"
-TXN|FACTS|F_SUPPLY_FORM|Supply Form|name: "Form of supply"; entity: SUPPLY; type: CODE; options: [SALE, TRANSFER, OTHER]; evidence: [invoice, contract]; registry: NEW; used_by: [A_SALE, A_TRANSFER, A_OTHER]
-TXN|FACTS|F_SUPPLY_DESCRIPTION|Supply Description|name: "Description of the supply"; entity: SUPPLY; type: TEXT; evidence: [invoice, contract]; registry: NEW; used_by: [A_OTHER]
-TXN|FACTS|F_ACTIVITY_DESCRIPTION|Activity Description|name: "Description of the supplier's activity"; entity: ACTIVITY; type: TEXT; evidence: [business records, registration details]; registry: NEW; used_by: [A_COB]
+TXN|FACTS|F_SUPPLY_FORM|Supply Form|name: "Form of supply"; entity: SUPPLY; type: CODE; options: [SALE, TRANSFER, OTHER]; source_kind: READ; evidence: [invoice, contract]; registry: NEW; used_by: [A_SALE, A_TRANSFER, A_OTHER]
+TXN|FACTS|F_SUPPLY_DESCRIPTION|Supply Description|name: "Description of the supply"; entity: SUPPLY; type: TEXT; source_kind: DOCUMENT; evidence: [invoice, contract]; registry: NEW; used_by: [A_OTHER]
+TXN|FACTS|F_ACTIVITY_DESCRIPTION|Activity Description|name: "Description of the supplier's activity"; entity: ACTIVITY; type: TEXT; source_kind: DOCUMENT; evidence: [business records, registration details]; registry: NEW; used_by: [A_COB]
 M_SIAFOS|SP|SP3|NA|role: ILLUSTRATIVE; text: "such as sale, transfer, barter, exchange, licence, rental, lease or disposal"; elements: [A_SALE, A_TRANSFER, A_OTHER]
 M_SIAFOS|SUM|M_SIAFOS|NA|atoms: 4; notes: "Illustrative example only: supply of this MKP also needs all omitted parts in actual output"
+For a money law see the full section 47(1) example in PYTHON ATOMS, MONEY AND TIME.
 
 RETRY — ONLY WHEN INPUT ENDS WITH "ERRORS FROM LAST TIME"
 - Your last table was rejected. The errors listed are what the checks found, e.g.

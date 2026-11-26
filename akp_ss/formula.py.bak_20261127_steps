@@ -1,0 +1,179 @@
+"""Formula grammar of WORKED_OUT facts (2026-11-27): the calculation a python atom needs, checked by Python.
+
+A formula works out ONE fact from other facts, numbers and the law's values. Python runs it at validation time,
+so it must be exact and complete. Allowed:
+  facts        F_ ids (a leading @ is dropped: @F_RATE -> F_RATE)
+  values       numbers (100, 0.25), quoted codes ('AFTER_DUE_DATE'), TRUE / FALSE
+  arithmetic   + - * / and ( )
+  comparison   = != > >= < <=          (inside IF or as a TRUE / FALSE formula)
+  logic        AND OR NOT
+  functions    MIN(a, b, ...)  MAX(a, b, ...)  ROUND(x)  ROUND(x, digits)  ABS(x)
+               IF(condition, then, else)
+               DAYS_BETWEEN(from, to)        days from the first date to the second (to - from)
+               MONTHS_BETWEEN(from, to)      whole months from the first date to the second
+               ADD_DAYS(date, n)  ADD_MONTHS(date, n)  END_OF_MONTH(date)  DATE(year, month, day)
+               YEAR(date)  MONTH(date)  DAY(date)
+Examples:
+  DAYS_BETWEEN(F_DUE_DATE, F_FILED_DATE)
+  MIN(F_DAYS_LATE * F_FEE_PER_DAY, F_FEE_CAP)
+  IF(F_FILED_DATE > F_DUE_DATE, 'AFTER_DUE_DATE', 'ON_OR_BEFORE_DUE_DATE')
+  ROUND(F_UNPAID_TAX * F_INTEREST_RATE / 100 * F_DAYS_LATE / 365)
+"""
+from __future__ import annotations
+
+import re
+from typing import List, Set, Tuple
+
+FUNCTIONS = {                      # name: (min args, max args)
+    "MIN": (2, 99), "MAX": (2, 99), "ROUND": (1, 2), "ABS": (1, 1), "IF": (3, 3),
+    "DAYS_BETWEEN": (2, 2), "MONTHS_BETWEEN": (2, 2), "ADD_DAYS": (2, 2), "ADD_MONTHS": (2, 2),
+    "END_OF_MONTH": (1, 1), "DATE": (3, 3), "YEAR": (1, 1), "MONTH": (1, 1), "DAY": (1, 1),
+}
+_TOKEN = re.compile(r"\s*(?:(?P<num>\d+(?:\.\d+)?)|(?P<str>'[^']*')|(?P<id>@?[A-Za-z_][A-Za-z0-9_]*)|"
+                    r"(?P<op><=|>=|!=|==|<>|[-+*/(),=<>]))")
+
+
+def normalise(text: str) -> str:
+    """What models typically write -> the grammar, never changing the meaning: outer quotes, @F_X, ==, <>,
+    "quoted" codes, x and y / x or y in lower case."""
+    t = str(text or "").strip()
+    if len(t) >= 2 and t[0] == t[-1] and t[0] in "\"'" and t.count(t[0]) == 2:
+        t = t[1:-1].strip()
+    t = re.sub(r"@(?=F_)", "", t)
+    t = re.sub(r'"([^"]*)"', r"'\1'", t)
+    t = t.replace("==", "=").replace("<>", "!=")
+    t = re.sub(r"\b(and|or|not|if|min|max|round|abs|true|false)\b", lambda m: m.group(1).upper(), t)
+    return t
+
+
+def own(text: str, fact_id: str) -> str:
+    """A formula written as an assignment of its own fact ("F_FEE = MIN(...)" or "F_FEE := ...") -> the right side."""
+    raw = str(text or "").strip()
+    if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in "\"'" and raw.count(raw[0]) == 2:
+        raw = raw[1:-1].strip()
+    m = re.match(r"^\s*@?" + re.escape(fact_id) + r"\s*(?::=|=(?!=))\s*", raw)
+    return normalise(raw[m.end():] if m else raw)
+
+
+def tokens(text: str) -> List[Tuple[str, str]]:
+    out, i, t = [], 0, text
+    while i < len(t):
+        if t[i:].strip() == "":
+            break
+        m = _TOKEN.match(t, i)
+        if not m or m.end() == i:
+            raise ValueError(f"unexpected character at {i}: '{t[i:i + 12]}'")
+        kind = m.lastgroup
+        out.append((kind, m.group(kind)))
+        i = m.end()
+    return out
+
+
+def check(text: str) -> Tuple[Set[str], List[str]]:
+    """(facts the formula uses, problems). Empty problems = Python can run it."""
+    try:
+        toks = tokens(normalise(text))
+    except ValueError as exc:
+        return set(), [str(exc)]
+    if not toks:
+        return set(), ["empty formula"]
+    facts: Set[str] = set()
+    pos = [0]
+
+    def peek(k=0):
+        return toks[pos[0] + k] if pos[0] + k < len(toks) else ("end", "")
+
+    def take(value=None):
+        tok = peek()
+        if value is not None and tok[1].upper() != value:
+            raise ValueError(f"expected '{value}' but found '{tok[1] or 'the end'}'")
+        pos[0] += 1
+        return tok
+
+    def primary():
+        kind, val = peek()
+        if kind in ("num", "str"):
+            take()
+            return
+        if kind == "op" and val == "(":
+            take()
+            expr()
+            take(")")
+            return
+        if kind == "op" and val == "-":
+            take()
+            primary()
+            return
+        if kind == "id":
+            name = val.lstrip("@")
+            up = name.upper()
+            if up in ("TRUE", "FALSE"):
+                take()
+                return
+            if name.startswith("F_"):
+                take()
+                facts.add(name)
+                return
+            if up in FUNCTIONS:
+                take()
+                take("(")
+                n = 0
+                if peek()[1] != ")":
+                    expr()
+                    n = 1
+                    while peek()[1] == ",":
+                        take()
+                        expr()
+                        n += 1
+                take(")")
+                lo, hi = FUNCTIONS[up]
+                if not lo <= n <= hi:
+                    raise ValueError(f"{up} takes {lo}{'' if lo == hi else '-' + str(hi) if hi < 99 else ' or more'} "
+                                     f"argument(s), not {n}")
+                return
+            raise ValueError(f"'{name}' is not an F_ fact or an allowed function "
+                             f"({', '.join(sorted(FUNCTIONS))})")
+        raise ValueError(f"expected a value but found '{val or 'the end'}'")
+
+    def term():
+        primary()
+        while peek()[1] in ("*", "/"):
+            take()
+            primary()
+
+    def total():
+        term()
+        while peek()[1] in ("+", "-"):
+            take()
+            term()
+
+    def compare():
+        total()
+        if peek()[1] in ("=", "!=", ">", ">=", "<", "<="):
+            take()
+            total()
+
+    def negation():
+        if peek()[0] == "id" and peek()[1].upper() == "NOT":
+            take()
+        compare()
+
+    def conj():
+        negation()
+        while peek()[0] == "id" and peek()[1].upper() == "AND":
+            take()
+            negation()
+
+    def expr():
+        conj()
+        while peek()[0] == "id" and peek()[1].upper() == "OR":
+            take()
+            conj()
+
+    try:
+        expr()
+        if pos[0] != len(toks):
+            raise ValueError(f"unexpected '{peek()[1]}' after the end of the formula")
+    except ValueError as exc:
+        return facts, [str(exc)]
+    return facts, []

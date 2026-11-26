@@ -344,11 +344,13 @@ def run(limit: int = 50, then_run: bool = False, ref_ids: Optional[List[str]] = 
         register.write(cfg, updates)
         conn.close()
     if got and then_run:
-        flow(f"WEB SCRAPING : {len(got)} new document(s) go through IKP -> GKP now")
+        flow(f"WEB SCRAPING : {len(got)} new document(s) - the waiting references that need them run now")
         import main as law_arc
         kp_settings.load(fresh=True)   # 2026-11-22: main.py must see the PDFs just verified (a stale copy said "missing"
                                        # and downloaded an old url over the verified ACT_31_2018.pdf)
-        law_arc.main(["--documents", ",".join(got)])
+        # 2026-11-25: only the exact parts the citing laws need (main.py --references), never the permission.json
+        # scope ("--documents" ran the scope "section 2(23)" on ACT_32_2018 and stopped)
+        law_arc.main(["--references"])
         conn = get_connection()
         try:
             _sync_inserted(RefStore(conn, get_db_schema(), rc.get("document_table", "ref_document"),

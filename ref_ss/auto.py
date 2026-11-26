@@ -33,19 +33,22 @@ def unit(key: str) -> str:
 
 # ---------------------------------------------------------------- what the run's laws refer to
 
-def pending_refs(conn, schema: str, link_t: str, doc_t: str, source_mkps: List[str]) -> List[dict]:
+def pending_refs(conn, schema: str, link_t: str, doc_t: str, source_mkps: Optional[List[str]]) -> List[dict]:
     """The references of these laws whose exact clause has no AKP yet (PENDING / FAILED, and QUEUED left by a run
-    that was stopped), with their document's state."""
-    units = sorted({unit(m) for m in source_mkps})
-    if not units:
+    that was stopped), with their document's state. source_mkps None = the references of every saved law
+    (main.py --references, 2026-11-25)."""
+    units = None if source_mkps is None else sorted({unit(m) for m in source_mkps})
+    if units is not None and not units:
         return []
     with conn.cursor() as cur:
         cur.execute(sql.SQL("""SELECT l.instrument, l.version_id, l.mkp_element, l.scope, l.ref_id, l.target_key,
                 l.relation, l.mention, l.target_status, COALESCE(l.source_key, ''), COALESCE(d.kind, ''),
                 COALESCE(d.status, ''), COALESCE(d.doc_code, ''), COALESCE(d.title, '')
             FROM {} l LEFT JOIN {} d ON d.ref_id = l.ref_id
-            WHERE split_part(l.mkp_element, '#', 1) = ANY(%s) AND l.target_status IN ('PENDING', 'QUEUED', 'FAILED')
-            ORDER BY l.scope, l.ref_id, l.mkp_element""").format(_t(schema, link_t), _t(schema, doc_t)), (units,))
+            WHERE (%s OR split_part(l.mkp_element, '#', 1) = ANY(%s))
+              AND l.target_status IN ('PENDING', 'QUEUED', 'FAILED')
+            ORDER BY l.scope, l.ref_id, l.mkp_element""").format(_t(schema, link_t), _t(schema, doc_t)),
+                    (units is None, units or []))
         cols = ("instrument", "version_id", "mkp_element", "scope", "ref_id", "target_key", "relation", "mention",
                 "target_status", "source_key", "kind", "doc_status", "doc_code", "title")
         rows = [dict(zip(cols, r)) for r in cur.fetchall()]
@@ -145,6 +148,55 @@ def ask_part(idx, citing: dict, ask: Callable[[str], str], prompt: str) -> Tuple
     return keys, str(obj.get("reason") or "")[:200]
 
 
+def narrowest(saved: List[str], target: str, idx) -> List[str]:
+    """2026-11-25 (the 2(64) -> IGST 8 vs 8(1) bug): a part found before that is WIDER than the exact part the law
+    names (IGSTA17_S8 for IGSTA17_S8_SS1) gives way to the exact part; otherwise the saved parts stay."""
+    if target and target in idx.nodes and any(target.startswith(k + "_") for k in saved):
+        return [target]
+    return saved
+
+
+RULE_KEY = re.compile(r"_R\d+[A-Z]*$")
+
+
+def find_prescribed(idx, citing: dict, ask: Optional[Callable[[str], str]], prompt: str) -> Tuple[List[str], str]:
+    """'as may be prescribed' -> the rule (and sub-rule) of the Rules that prescribes it.
+    Python first: a rule whose text names the citing provision ("clause (aa) of sub-section (2) of section 16").
+    Then the model, in two small steps so the prompt stays small: 1) the rule, from every rule's heading;
+    2) the exact part, from that rule's own parts. Only keys of the document are kept."""
+    got = python_part(idx, citing["key"])
+    if got:
+        return got, "python: the rule that names " + ", ".join(needles(citing["key"]))
+    if not (ask and prompt):
+        return [], "no rule names the provision and no model is set"
+    rules = [k for k in idx.order if RULE_KEY.search(k)]
+    if not rules:
+        return [], "the Rules have no rule-level parts"
+    heads = [{"key": k, "level": idx.nodes[k].get("level"), "text": idx.text(k, False)[:160]} for k in rules]
+    req = {"citing": citing, "document": {"code": idx.doc}, "parts": heads}
+    first = _pick(ask(prompt + "\nINPUT:\n" + json.dumps(req, ensure_ascii=False)), idx)
+    rule = next((k for k in first[0] if k in rules), "")
+    if not rule:
+        return [], "model: no rule found (" + first[1] + ")"
+    kids = [k for k in idx.order if k.startswith(rule + "_")]
+    if not kids:
+        return [rule], "model: " + first[1]
+    parts = [{"key": k, "level": idx.nodes[k].get("level"), "text": idx.text(k, False)[:600]} for k in [rule] + kids]
+    req = {"citing": citing, "document": {"code": idx.doc}, "parts": parts[:120]}
+    second = _pick(ask(prompt + "\nINPUT:\n" + json.dumps(req, ensure_ascii=False)), idx)
+    keys = [k for k in second[0] if k == rule or k.startswith(rule + "_")]
+    return (keys or [rule]), "model: " + (second[1] if keys else first[1])
+
+
+def _pick(raw: str, idx) -> Tuple[List[str], str]:
+    text = re.sub(r"^```(?:json)?\s*|\s*```$", "", str(raw or "").strip(), flags=re.I)
+    try:
+        obj = json.loads(text[text.find("{"): text.rfind("}") + 1] or "{}")
+    except ValueError:
+        return [], "the answer was not JSON"
+    return [k for k in (obj.get("keys") or []) if k in idx.nodes], str(obj.get("reason") or "")[:200]
+
+
 def find_part(idx, citing: dict, whole_max: int, ask: Optional[Callable[[str], str]] = None,
               prompt: str = "") -> Tuple[List[str], str]:
     """The keys of the outside document this citing law needs, and how they were found.
@@ -152,6 +204,8 @@ def find_part(idx, citing: dict, whole_max: int, ask: Optional[Callable[[str], s
     target = str(citing.get("target") or "")                   # 2026-11-23: the exact part the law names
     if target and target != idx.doc and target in idx.nodes:   # ("clause (b) of sub-section (1) of section 2")
         return [target], "python: the exact part the law names"
+    if str(citing.get("relation") or "").upper() == "PRESCRIBED_BY":    # "as may be prescribed" (2026-11-25)
+        return find_prescribed(idx, citing, ask, prompt)
     got = python_part(idx, citing["key"])                     # an amending text names the provision it changes
     if got:
         return got, "python: the part that names " + ", ".join(needles(citing["key"]))
@@ -169,20 +223,34 @@ def find_part(idx, citing: dict, whole_max: int, ask: Optional[Callable[[str], s
 
 # ---------------------------------------------------------------- is the part already inserted?
 
-def part_done(conn, schema: str, akp_t: str, instrument: str, keys: List[str]) -> bool:
-    """True when every part key has an approved, latest AKP (the part itself or a part of it) - no stored list."""
+def part_done(conn, schema: str, akp_t: str, instrument: str, keys: List[str], idx=None) -> bool:
+    """True when every part key has an approved, latest AKP - no stored list.
+    2026-11-25 (exact part): a part is done when it, or a part above it, has the AKP; a part below counts only when
+    EVERY direct part of the key is done (IGSTA17_S8 is not done because only IGSTA17_S8_SS1 is). Without idx
+    (old callers) any part below counts, as before."""
     if not keys:
         return False
-    with conn.cursor() as cur:
-        for k in keys:
-            cur.execute(sql.SQL(r"""SELECT 1 FROM {} WHERE instrument=%s AND is_latest AND validation_status='APPROVED'
-                AND (split_part(source_mkp, '#', 1) = %s OR source_mkp LIKE %s) LIMIT 1""").format(_t(schema, akp_t)),
-                        (instrument, k, k.replace("_", r"\_") + r"\_%"))
-            if not cur.fetchone():
-                conn.commit()
-                return False
-    conn.commit()
-    return True
+    try:
+        with conn.cursor() as cur:
+            return all(_done(cur, schema, akp_t, instrument, k, idx) for k in keys)
+    finally:
+        conn.commit()
+
+
+def _done(cur, schema: str, akp_t: str, instrument: str, key: str, idx, depth: int = 0) -> bool:
+    cur.execute(sql.SQL(r"""SELECT split_part(source_mkp, '#', 1) FROM {} WHERE instrument=%s AND is_latest
+        AND validation_status='APPROVED' AND (split_part(source_mkp, '#', 1) = %s OR source_mkp LIKE %s
+        OR %s LIKE replace(split_part(source_mkp, '#', 1), '_', '\_') || '\_%%')""").format(_t(schema, akp_t)),
+                (instrument, key, key.replace("_", r"\_") + r"\_%", key))
+    found = {r[0] for r in cur.fetchall()}
+    if not found:
+        return False
+    if idx is None or any(f == key or key.startswith(f + "_") for f in found):
+        return True
+    kids = [k for k in idx.order if (idx.nodes.get(k) or {}).get("parent") == key]
+    if not kids or depth > 6:
+        return False
+    return all(_done(cur, schema, akp_t, instrument, k, idx, depth + 1) for k in kids)
 
 
 # ---------------------------------------------------------------- which atom holds the outside reference
@@ -195,28 +263,40 @@ def mark_outside(rows: List[dict], refs: List[dict]) -> List[str]:
     """Reference design 2026-11-19 (item 7): only the EXACT atom that names an outside document holds it. Python
     writes `outside_refs: [ref ids]` on that atom (A rows): the document's number ("14/2017") in the atom's words;
     with no number, the MKP's only outside reference goes to the atom that says notified / circular. refs:
-    [{ref_id, mention}] of this MKP (mkp_ref, scope CROSS). Returns log notes (a reference no atom names is listed)."""
+    [{ref_id, mention, target_key, relation}] of this MKP (mkp_ref, scope CROSS). 2026-11-25: a reference to an exact
+    part of an Act / Rules (target_key CGSTR17_R36_SR4) goes to the atom that names it ("rule 36") and the atom holds
+    that part's id; "as may be prescribed" (PRESCRIBED_BY) goes to the atoms that say prescribed and holds the Rules'
+    id (the exact rule is found after the workers). Returns log notes (a reference no atom names is listed)."""
     from transport import get_field
     notes, used = [], set()
     atoms = [r for r in rows if r.get("TYPE") == "A"]
     for ref in refs:
         nums = _nums(ref.get("mention"))
+        target, rel = str(ref.get("target_key") or ""), str(ref.get("relation") or "").upper()
+        name = needles(target)[:1] if target else []          # "rule 36" / "section 8" (2026-11-25)
         hits = []
         for r in atoms:
-            said = re.sub(r"\s", "", " ".join([get_field(r, "statement"), get_field(r, "reference"),
-                                                get_field(r, "nl")]).lower())
-            if nums and any(n in said for n in nums):
+            words = " ".join([get_field(r, "statement"), get_field(r, "reference"), get_field(r, "nl")]).lower()
+            said = re.sub(r"\s", "", words)
+            if rel == "PRESCRIBED_BY":
+                if "prescribed" in words:
+                    hits.append(r)
+            elif name and name[0].startswith(("rule", "section", "schedule")):
+                if re.search(r"(?<!\w)" + re.escape(name[0]) + r"(?!\w)", _norm(words)):
+                    hits.append(r)
+            elif nums and any(n in said for n in nums):
                 hits.append(r)
             elif not nums and len(refs) == 1 and ("notif" in said or "circular" in said):
                 hits.append(r)
+        hold = target if (target and rel != "PRESCRIBED_BY") else ref["ref_id"]
         for r in hits:
             have = [x.strip() for x in re.findall(r"outside_refs:\s*\[([^\]]*)\]", r.get("RESULTS") or "")
                     for x in x.split(",") if x.strip()] if "outside_refs:" in (r.get("RESULTS") or "") else []
-            ids = list(dict.fromkeys(have + [ref["ref_id"]]))
+            ids = list(dict.fromkeys(have + [hold]))
             text = re.sub(r";?\s*outside_refs:\s*\[[^\]]*\]", "", r.get("RESULTS") or "").strip(" ;")
             r["RESULTS"] = text + "; outside_refs: [" + ", ".join(ids) + "]"
             used.add(ref["ref_id"])
-            notes.append(f"REFERENCE              : {r['ELEMENT']} holds {ref['ref_id']} ({ref.get('mention', '')[:60]})")
+            notes.append(f"REFERENCE              : {r['ELEMENT']} holds {hold} ({ref.get('mention', '')[:60]})")
         if not hits:
             notes.append(f"REFERENCE NOT ON ATOM  : {ref['ref_id']} ({ref.get('mention', '')[:60]}) - no atom names it")
     return notes

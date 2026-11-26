@@ -267,6 +267,10 @@ class MkpRun:
         self.refs.ensure()
         self.held = held_documents(permission, conn, ikp_s["schema"], ikp_s["table_prefix"])
         self.act_code = parent_act(self.code, document["type"], document.get("name", ""))
+        # 2026-11-25: "as may be prescribed" in an Act -> its Rules (refs.prescribed: Act code -> Rules code)
+        if "prescribed" not in rc:
+            raise ValueError("Config/settings.json refs.prescribed is missing")
+        self.rules_code = (rc["prescribed"] or {}).get(self.code) if str(document["type"]).upper() == "ACT" else None
         # the official link of a new outside document is found while splitting (ref_ss/link.py), once per document
         for k in ("link_on_split", "link_search_max_uses"):
             if k not in rc:
@@ -317,7 +321,7 @@ class MkpRun:
                     if isinstance(a, dict):              # the text + the full name IKP read (the document's title)
                         notes.append({"text": str(a.get("text") or ""), "instrument": str(a.get("instrument") or "")})
             llm = list_field(rows[d.mkp_key], "cross_refs") if d.mkp_key in rows else []
-            found = detect(self.code, d.text, notes, xrefs, llm, self.act_code)
+            found = detect(self.code, d.text, notes, xrefs, llm, self.act_code, getattr(self, "rules_code", None))
             by_mkp[d.mkp_key] = found
             ex["self_refs"], ex["cross_refs"] = labels(found, "SELF"), labels(found, "CROSS")
         if by_mkp:

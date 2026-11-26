@@ -1,0 +1,223 @@
+# GOVERNANCE MASTER TSG06_01 GSTIN validity & status (TG06 Parties & Registration)
+# LAW ARC - 11 laws - status APPROVED
+name: TSG06_01 GSTIN validity & status - GOVERNANCE MASTER rulebook
+version: TSG06_01
+facts:
+  # ---- level 1: gate facts - if one is false, that law stops here
+  F_PRS:  # 1. 1 gate | 11 law(s)
+    name: Person Registration Status
+    type: CODE
+    options:
+    - CANCELLED
+    - REGISTERED
+    - SUSPENDED
+    - UNREGISTERED
+    tier: T0
+    origin:
+      document: GST_REGISTRATION
+      method: LOOKUP
+      uses: [GST_RETURN.gstin, SALE_INVOICE.supplier_gstin, GST_REGISTRATION.registration_status, GST_REGISTRATION.cancellation_date]
+      how_to_get: Take the GSTIN of the person from GST_RETURN.gstin or SALE_INVOICE.supplier_gstin. Look it up in the GST portal or GSP search taxpayer API and take registration_status. Active gives REGISTERED, Cancelled gives CANCELLED, and Suspended gives SUSPENDED. If the GSTIN is not found, the value is UNREGISTERED. If the status is Cancelled, check that cancellation_date is on or before the as-of date. If cancellation_date is later, the value is REGISTERED.
+      fallback: 'Read the registration certificate (REG-06) if the user has one. Otherwise ask: ''Is the person registered under GST? What is the GSTIN?'''
+      when_missing: ASK
+      as_of: end of the tax period or date of the return
+      level: TAXPAYER
+      ai_level: NONE
+      cost: MEDIUM
+      example: REGISTERED
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_FODRP_A_FIRP:
+    statement: The person furnishing the details is a registered person
+    order: LOW
+    rule: F_PRS = 'REGISTERED'
+    handler: python
+  M_NTPRF_A_PIR:
+    statement: The non-resident taxable person is registered
+    order: LOW
+    rule: F_PRS = 'REGISTERED'
+    handler: python
+  M_TPBRPFR_A_PIARP:
+    statement: The person furnishing the return is a registered person
+    order: LOW
+    rule: F_PRS = 'REGISTERED'
+    handler: python
+groups: {}
+outcomes:
+  M_FODRP_LE_FIRP:
+    outcome: FURNISHER_IS_REGISTERED_PERSON
+    expr: M_FODRP_A_FIRP
+    module: M_FODRP
+    description: The person furnishing the details is a registered person (Section 37(1), proviso, part of the law)
+  M_FODRP_LE_FIRP_RPOSD:
+    outcome: PERSON_IS_A_REGISTERED_PERSON
+    expr: M_FODRP_A_FIRP
+    module: M_RPOSD
+    description: The person furnishing the details is a registered person (Section 37(1), part of the law)
+  M_FODRP_LE_FIRP_GPTNQR:
+    outcome: PERSON_IS_REGISTERED_PERSON
+    expr: M_FODRP_A_FIRP
+    module: M_GPTNQR
+    description: The person furnishing the details is a registered person (Section 39(1), proviso, part of the law)
+  M_FODRP_LE_FIRP_RPFMR:
+    outcome: PERSON_IS_A_REGISTERED_PERSON
+    expr: M_FODRP_A_FIRP
+    module: M_RPFMR
+    description: The person furnishing the details is a registered person (Section 39(1), part of the law)
+  M_FODRP_LE_FIRP_ILORC:
+    outcome: LIABLE_PERSON_IS_REGISTERED
+    expr: M_FODRP_A_FIRP
+    module: M_ILORC
+    description: The person furnishing the details is a registered person (Rule 37(3), part of the law)
+  M_NTPRF_LE_PIR:
+    outcome: PERSON_IS_REGISTERED
+    expr: M_NTPRF_A_PIR
+    module: M_NTPRF
+    description: The non-resident taxable person is registered (Section 39(5), part of the law)
+  M_FODRP_LE_FIRP_CTFAR:
+    outcome: PERSON_IS_REGISTERED_PERSON
+    expr: M_FODRP_A_FIRP
+    module: M_CTFAR
+    description: The person furnishing the details is a registered person (Section 39(2), part of the law)
+  M_FODRP_LE_FIRP_MRFBRP:
+    outcome: PERSON_IS_REGISTERED
+    expr: M_FODRP_A_FIRP
+    module: M_MRFBRP
+    description: The person furnishing the details is a registered person (Section 39(8), part of the law)
+  M_FODRP_LE_FIRP_RFNAIPU:
+    outcome: FURNISHING_PERSON_IS_REGISTERED
+    expr: M_FODRP_A_FIRP
+    module: M_RFNAIPU
+    description: The person furnishing the details is a registered person (Section 39(10), part of the law)
+  M_TPBRPFR_LE_PIARP:
+    outcome: PERSON_IS_A_REGISTERED_PERSON
+    expr: M_TPBRPFR_A_PIARP
+    module: M_TPBRPFR
+    description: The person furnishing the return is a registered person (Proviso to sub-section (7) of section 39, part of
+      the law)
+  M_FODRP_LE_FIRP_LFFFTFR:
+    outcome: PERSON_IS_REGISTERED
+    expr: M_FODRP_A_FIRP
+    module: M_LFFFTFR
+    description: The person furnishing the details is a registered person (Section 47(2), part of the law)
+products:
+  M_FODRP_PD_FIRP:
+    statement: The person furnishing the details is a registered person
+  M_FODRP_PD_FIRP_RPOSD:
+    statement: The person is a registered person
+  M_FODRP_PD_FIRP_GPTNQR:
+    statement: The person is a registered person
+  M_FODRP_PD_FIRP_RPFMR:
+    statement: The person is a registered person
+  M_FODRP_PD_FIRP_ILORC:
+    statement: The person liable to pay interest is a registered person
+  M_NTPRF_PD_PIR:
+    statement: The non-resident taxable person is registered
+  M_FODRP_PD_FIRP_CTFAR:
+    statement: The person is a registered person
+  M_FODRP_PD_FIRP_MRFBRP:
+    statement: The person is a registered person
+  M_FODRP_PD_FIRP_RFNAIPU:
+    statement: The person furnishing the return is a registered person
+  M_TPBRPFR_PD_PIARP:
+    statement: The person furnishing the return is a registered person
+  M_FODRP_PD_FIRP_LFFFTFR:
+    statement: The person is a registered person
+compounds:
+- id: C_FODRP
+  question: The person furnishing the details is a registered person? (Section 37(1), proviso)
+  includes:
+  - M_FODRP_LE_FIRP
+  produces:
+  - product: M_FODRP_PD_FIRP
+    from:
+    - M_FODRP_LE_FIRP
+- id: C_RPOSD
+  question: The person furnishing the details is a registered person? (Section 37(1))
+  includes:
+  - M_FODRP_LE_FIRP_RPOSD
+  produces:
+  - product: M_FODRP_PD_FIRP_RPOSD
+    from:
+    - M_FODRP_LE_FIRP_RPOSD
+- id: C_GPTNQR
+  question: The person furnishing the details is a registered person? (Section 39(1), proviso)
+  includes:
+  - M_FODRP_LE_FIRP_GPTNQR
+  produces:
+  - product: M_FODRP_PD_FIRP_GPTNQR
+    from:
+    - M_FODRP_LE_FIRP_GPTNQR
+- id: C_RPFMR
+  question: The person furnishing the details is a registered person? (Section 39(1))
+  includes:
+  - M_FODRP_LE_FIRP_RPFMR
+  produces:
+  - product: M_FODRP_PD_FIRP_RPFMR
+    from:
+    - M_FODRP_LE_FIRP_RPFMR
+- id: C_ILORC
+  question: The person furnishing the details is a registered person? (Rule 37(3))
+  includes:
+  - M_FODRP_LE_FIRP_ILORC
+  produces:
+  - product: M_FODRP_PD_FIRP_ILORC
+    from:
+    - M_FODRP_LE_FIRP_ILORC
+- id: C_NTPRF
+  question: The non-resident taxable person is registered? (Section 39(5))
+  includes:
+  - M_NTPRF_LE_PIR
+  produces:
+  - product: M_NTPRF_PD_PIR
+    from:
+    - M_NTPRF_LE_PIR
+- id: C_CTFAR
+  question: The person furnishing the details is a registered person? (Section 39(2))
+  includes:
+  - M_FODRP_LE_FIRP_CTFAR
+  produces:
+  - product: M_FODRP_PD_FIRP_CTFAR
+    from:
+    - M_FODRP_LE_FIRP_CTFAR
+- id: C_MRFBRP
+  question: The person furnishing the details is a registered person? (Section 39(8))
+  includes:
+  - M_FODRP_LE_FIRP_MRFBRP
+  produces:
+  - product: M_FODRP_PD_FIRP_MRFBRP
+    from:
+    - M_FODRP_LE_FIRP_MRFBRP
+- id: C_RFNAIPU
+  question: The person furnishing the details is a registered person? (Section 39(10))
+  includes:
+  - M_FODRP_LE_FIRP_RFNAIPU
+  produces:
+  - product: M_FODRP_PD_FIRP_RFNAIPU
+    from:
+    - M_FODRP_LE_FIRP_RFNAIPU
+- id: C_TPBRPFR
+  question: The person furnishing the return is a registered person? (Proviso to sub-section (7) of section 39)
+  includes:
+  - M_TPBRPFR_LE_PIARP
+  produces:
+  - product: M_TPBRPFR_PD_PIARP
+    from:
+    - M_TPBRPFR_LE_PIARP
+- id: C_LFFFTFR
+  question: The person furnishing the details is a registered person? (Section 47(2))
+  includes:
+  - M_FODRP_LE_FIRP_LFFFTFR
+  produces:
+  - product: M_FODRP_PD_FIRP_LFFFTFR
+    from:
+    - M_FODRP_LE_FIRP_LFFFTFR
+time:
+  law_date: F_DOI

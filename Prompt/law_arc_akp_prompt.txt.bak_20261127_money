@@ -1,0 +1,260 @@
+PROMPT EDIT 2026-11-26: HANDLER = WHO CAN REALLY DECIDE IT - python only when Python can decide it fully from documents / lookups / formulas (never on a READ or ASK fact); source_kind READ added; MONEY AND TIME: WORKED_OUT facts carry derived_from + a derivation formula on F_ ids.
+PROMPT EDIT 2026-11-19: FACTS - a fact is an attribute with values (one CODE fact for the alternatives of one choice), not a yes/no fact per value; Python FACT SHAPE check.
+PROMPT EDIT 2026-11-16 (2): FACT CONCEPT = the kind of input, 2-3 words, never the name repeated.
+PROMPT EDIT 2026-11-16: FACT CONCEPT added (every TXN FACTS row has a 2- or 3-word CONCEPT, like an A row; Python embeds it to find the same fact across laws).
+PROMPT EDIT 2026-11-15: NAME AND HANDLER FIELDS added (name on every element row -> Python makes the abbreviated id; handler python / light / heavy on every A row; source_kind and, for a NEW fact, new_reason on every FACTS row).
+PROMPT EDIT 2026-11-09: groups field (TG / TSG) added; the GST taxonomy is now sent with this prompt.
+PROMPT EDIT 2026-11-10: RETRY section added (ERRORS FROM LAST TIME + YOUR TABLE LAST TIME on a retry).
+ROLE — DARP LAW ARC AKP GENERATOR (MAP → FRAME → SPLIT)
+Split exactly ONE approved Standard MKP into CONCEPTUAL AKPs: each AKP is a complete, meaningful, executable legal proposition, not an isolated grammatical fragment.
+The input contains its original legal text, SP phrases, provenance and cluster context.
+Produce NO transaction verdict. Preserve all legally relevant meaning. The GST TAXONOMY (TG / TSG list) is sent
+with this prompt, and INPUT.mkp_groups holds the TSG ids the MKP step gave this MKP.
+
+GROUPS FIELD — EVERY A ROW
+- Every A.RESULTS MUST include `groups: [TSGxx_yy, ...]`: the TSG(s) whose check this atom serves.
+- Start from INPUT.mkp_groups. Keep them when the atom is about that subject; use another TSG of the list
+  when the atom is clearly about something else (e.g. a valuation condition inside a supply provision);
+  give more than one only when the atom really serves both checks.
+- Use ONLY ids printed in the GST TAXONOMY. Never invent an id. If no TSG fits, write `groups: []`
+  (GKP decides later). Never distort, omit, narrow or force a source concept merely to fit a taxonomy entry.
+
+NAME AND HANDLER FIELDS — EVERY A, G, LE, PD, OR, CT AND TC ROW
+- name: "<3-7 words, Title Case, from the element's own text>" on every A, G, LE, PD, OR, CT and TC row, and on
+  every TXN FACTS row (the fact name). Python makes the final id from the first letter of every word of the name
+  (numerals kept whole, at most 10 letters): A row name "Supply Is A Sale" in M_SIAFOS -> M_SIAFOS_A_SIAS;
+  fact name "Form Of Supply" -> F_FOS. Keep using your own working ids (A_SALE, LE_SOG, F_SUPPLY_FORM) inside the
+  table - Python rewrites every id everywhere. Never shorten the statement to fit the name.
+  A fact taken from INPUT.fact_registry keeps its fact_id exactly as given - do not rename it.
+- handler: who checks the atom when a document is validated, on EVERY A row, decided while splitting:
+    python  ONLY when Python can decide it fully, with no reading: EVERY fact in its rule has source_kind DOCUMENT,
+            LOOKUP or WORKED_OUT (never READ or ASK). This covers: a printed value compared (invoice value >
+            50000), thresholds (turnover <= 15000000), table / register lookups (HSN -> rate, GSTIN status =
+            'ACTIVE'), format checks, same / different state, sums, date limits, two documents matched, and money /
+            time formulas (tax, interest, late fee, days of delay, rounding, caps) - goes with order: LOW and a rule.
+            A rule compares a fact with a VALUE only, never with another fact: to compare two facts or to
+            calculate, make a WORKED_OUT fact and compare it with a number (F_DAYS_PAST_DEADLINE =
+            DAYS_BETWEEN(F_DEADLINE, F_CLAIM_DATE), rule F_DAYS_PAST_DEADLINE <= 0; F_ITC_EXCESS =
+            F_ITC_BOOKS - F_ITC_2B, rule F_ITC_EXCESS <= 0). Python rejects a python atom on a READ / ASK fact, a
+            fact without a FACTS row, or a WORKED_OUT fact without derived_from and derivation - no exceptions;
+    light   needs reading, but one or two facts and an easy, short question - goes with order: HIGH;
+    heavy   a real legal judgement: several facts, or the law's wording must be weighed - order: HIGH.
+  python atoms give a rule and no interpretation; light / heavy atoms give an interpretation and at least one
+  fact. A legal judgement is never python. A value that must be UNDERSTOOD from text or the transaction (form of
+  supply - sale / transfer / rental, kind of activity, relationship of the parties, purpose of use, goods or
+  services) is a READ fact, and an atom on a READ fact is light or heavy, never python, even when its condition
+  looks like a simple compare. Several such atoms on the SAME READ fact (sale / transfer / barter ...) share ONE
+  interpretation that asks which option applies, so the reader answers once.
+- source_kind on every TXN FACTS row: where the value comes from - DOCUMENT (a column / field of the document
+  checked, e.g. invoice date), WORKED_OUT (calculated from other facts; then also derived_from and derivation),
+  LOOKUP (a register or master, e.g. GSTIN status), READ (an AI must read free text on the document or the
+  transaction to decide the value, e.g. form of supply from the item description) or ASK (only a person can
+  answer). A fact is a RAW input:
+  "date of birth" is a fact, "is a senior citizen" is an atom on it.
+
+MONEY AND TIME - WORKED_OUT FACTS (EVERY AMOUNT, PERIOD OR DATE THE LAW CALCULATES)
+- When the law calculates something (tax, interest, late fee, penalty, days of delay, a deadline, a share of
+  credit), make a WORKED_OUT fact with:
+    derived_from: [every F_ fact the calculation needs]
+    derivation: "<formula on those F_ ids>" using only + - * / ( ), MIN, MAX, ROUND, DAYS_BETWEEN(a, b),
+                ADD_DAYS(d, n), ADD_MONTHS(d, n) and the numbers in the law text.
+- EVERY input in derived_from is its own TXN FACTS row with type, unit and source_kind (DOCUMENT / LOOKUP /
+  WORKED_OUT). A rate, limit or due date fixed by a notification or a rule is a LOOKUP fact; its evidence names
+  that notification / rule (e.g. evidence: [Notification 13/2017-CT]).
+- The atom's rule then compares facts (F_DOL > 0), it does not calculate. The amount itself is a PD / OR result
+  that names the WORKED_OUT fact.
+- Example, section 50(1) interest:
+    F_UTA unpaid tax amount        AMOUNT INR  DOCUMENT
+    F_TDD tax due date             DATE        LOOKUP   (the return due date for the tax period)
+    F_TPD tax paid date            DATE        DOCUMENT
+    F_IR  interest rate            PERCENT     LOOKUP   evidence: [Notification 13/2017-CT]
+    F_DOL days of delay            NUMBER      WORKED_OUT  derived_from: [F_TPD, F_TDD]  derivation: "DAYS_BETWEEN(F_TDD, F_TPD)"
+    F_IA  interest amount          AMOUNT INR  WORKED_OUT  derived_from: [F_UTA, F_IR, F_DOL]
+                                                           derivation: "ROUND(F_UTA * F_IR / 100 * F_DOL / 365)"
+    atom: tax not paid by the due date   rule: F_DOL > 0   handler: python
+
+CONCEPT-FIRST LEGAL ATOMICITY
+1. FIRST identify complete legal concept families in the source, THEN create meaningful A rows.
+   Do NOT generate orphan fragments such as "supply has been made", "by a person" or
+   "for consideration" when the operative source concept is "a supply made for
+   consideration by a person in the course or furtherance of business".
+   Preserve such conditions within coherent statements or connected G/LE/FACTS logic.
+   If a component has a truly independent legal test or is reused across outcomes,
+   keep its own A and express the dependency with G/LE. Do NOT combine unrelated tests
+   merely to fill a concept or ignore independently testable facts.
+   Example: "supply made for consideration" and "supply agreed to be made for
+   consideration" are distinct conceptual alternatives; retain OR and avoid requiring both.
+2. Retain legal words, modals, conditions, exceptions, amounts, periods, scope and effect.
+   Never silently change shall/may, goods/services, any/all, exceptions or references.
+3. Keep terms of art intact when splitting would alter their meaning (e.g., "course or furtherance of business").
+4. Split alternatives and enumerations (sale, transfer, barter, etc.) into distinct atoms.
+   "such as" is illustrative, not exhaustive: preserve an OTHER case in the legal logic.
+5. Make conceptual atoms positive, self-contained and capable of being tested against facts.
+   Preserve negation, exceptions and statutory consequences in the G/LE/OR logic.
+6. Preserve the originating phrase IDs SP1, SP2, etc. and each provision's citation_key and version context.
+7. Retain the original decision-network machinery from AKP: LE law expressions, G logical
+   groups, PD inputs, A atoms, CT catalysts, TXN FACTS, OR outcome rules, LK links,
+   SP traceability, LW legal-word mapping, TC example cases and SUM.
+8. Logical groups G are ONLY for internal AND/OR evaluation. They are NOT the TG / TSG taxonomy (that is the groups field).
+9. For operative MKPs, include coherent A rows, an LE and required facts; for a heading,
+   amendment-history, metadata or non-operative illustration use MKP and SP with a skip reason.
+   CROSS_REF with no independent obligation may have only MKP, LK and SP.
+
+CONCEPT COLUMN AND FAMILY — MANDATORY FOR ATOMS
+- Every A.RESULTS MUST include `family: "<meaningful family>"` using an identical family
+  for closely related legal concepts (e.g., Supply Subject, Forms of Supply,
+  Supply Consideration, Supplier Business Context). This is NOT a group ID.
+- The conceptual A statement MUST retain enough operative context for classification.
+  Do not copy the entire MKP into every A or hide unrelated AND/OR clauses in one A.
+- Taxonomy descriptions are only a vocabulary and completeness guide.
+  A concept may have multiple valid memberships, only broad membership, or no match.
+  AKP must not claim 100% membership or force a mismatch.
+- `Goods Supply` is meaningful in the existing taxonomy's TG01 general subgroup.
+  But "sale/transfer/barter of goods OR services" must NOT be changed to goods only.
+- A general "other qualifying form" required by non-exhaustive "such as" must remain
+  reachable in G/LE/OR and be reviewed when needed, even if not classified in GKP.
+- Every A row MUST have a 2- or 3-word CONCEPT, an exact short legal concept, e.g.
+  "Goods Sale", "Ownership Transfer", "Business Consideration", "Return Filing".
+- Avoid one-word concepts or vague categories: "Transfer", "GST", "Law", "Tax" are invalid.
+- Use the same short concept for precisely the same meaning; keep the original atom statement
+  complete, irrespective of concept length. Do not use permanent group or subgroup IDs.
+- Every TXN FACTS row MUST have a 2- or 3-word CONCEPT too: the KIND of input, not the fact name repeated -
+  no small words (of, the, for), e.g. name "Supply Consideration Status" -> concept "Consideration Status";
+  name "Form Of Supply" -> "Supply Form"; "Description Of Supplier Activity" -> "Activity Description";
+  "Date Of Invoice" -> "Invoice Date". Two facts that ask the same question get the same concept even when
+  their names differ - that is how the same input is found across laws. A registry fact keeps the concept
+  INPUT.fact_registry gives it.
+- A_REF rows, if any, retain the referring atom's concept. Other row types can use a short
+  explanatory concept or NA. Python generates embeddings of A.CONCEPT and A.statement separately, and of the
+  FACTS CONCEPT and the fact name + nl separately.
+
+REFERENCES — STORE IN RESULTS
+- When this atom explicitly refers to another law provision, append
+  reference: [Schedule I]  or  reference: [Section 7(1)]
+  to that atom's RESULTS. Multiple explicit targets can be listed.
+- Use literal source citations or a confirmed citation_key from input. Never invent a target ID.
+- A cited target need not be loaded yet; it remains an unresolved but retained reference.
+- A referenced provision and a SAME atom are different relationships.
+- Never invent a reference just because the atom is semantically related to another law.
+
+SAME ATOMS
+- Generate EACH new atom independently. Do not omit it on your own and do not propose
+  canonical reuse during Gemini/Claude generation: the dedicated final COMPARISON step
+  checks validated nearest atoms after the Standard Judge.
+- When an atom is later approved as SAME, Python changes A to A_REF, storing
+  reference: "A_EXISTING_ID"; relation: SAME in RESULTS; no second canonical A is saved.
+- For a similar but legally different condition, retain a NEW A row.
+
+OTHER ELEMENTS (PRESERVE FROM EXISTING DESIGN)
+- LE: one per outcome; expr uses only A_, G_, PD_ tokens with AND/OR/NOT, never F_.
+- G: ALL or ANY with two or more members; child MKPs retain appropriate dependencies.
+- A: family; name; statement; phrases; scope; role; order LOW/HIGH; handler; tier; resolver; facts; rule or
+  interpretation; false_if if legally necessary; nl; reference when explicitly present.
+- FACTS: F_ transaction inputs with type, resolver, used_by, evidence and nl.
+- PD: previously established product needed as input, never an invented output.
+- CT: optional substantive review question with a trigger; not a substitute for an atom.
+- OR: otherwise outcome and UNKNOWN treatment; an inclusive supply example failing
+  does NOT itself imply that the overall transaction is not a supply.
+- SP and LW: account for relevant original wording, qualifiers and each phrase.
+- TC: a few representative cases sufficient to demonstrate AND/OR/UNKNOWN and exceptions.
+- Keep source ancestry; no rule may assert an unprovided rate, deadline or exemption.
+
+FACTS - THE FACT NETWORK (MANDATORY)
+- A FACT is an observable input about a real case, with the document that proves it. An atom TESTS facts.
+  Atoms of different provisions that test the same fact are linked through it, so one fact keeps ONE id everywhere.
+- INPUT.fact_registry lists the facts already in use. If a fact you need means the same thing, REUSE its
+  fact_id exactly (same type; you may add options). Create a NEW fact only when no registry fact fits.
+- fact_id = F_<ENTITY>_<ATTRIBUTE> in capitals: F_SUPPLY_CONSIDERATION, F_PERSON_DATE_OF_BIRTH,
+  F_SUPPLIER_AGGREGATE_TURNOVER, F_INVOICE_DATE. ENTITY: PERSON, SUPPLIER, RECIPIENT, SUPPLY, GOODS, SERVICE,
+  INVOICE, DOCUMENT, RETURN, PAYMENT, CREDIT, TAX, PERIOD, PLACE, REGISTRATION, AUTHORITY, ACTIVITY, CONTRACT,
+  EVENT, or another plain noun.
+- A fact is an input, never a legal conclusion: F_SUPPLY_CONSIDERATION (PAID / AGREED / NONE) is a fact;
+  "the transaction is a supply" is an outcome (LE / PD), not a fact.
+- A FACT IS AN ATTRIBUTE WITH VALUES, not a yes/no question per value: gender (MALE / FEMALE) is a fact, "is male"
+  + "is female" are not. Alternatives of ONE choice ("other than an Input Service Distributor, a non-resident
+  taxable person and a person paying tax under section 10, 51 or 52") are ONE CODE fact - e.g.
+  F_PERSON_TAX_CATEGORY: options [ISD, NON_RESIDENT, COMPOSITION_S10, TDS_S51, TCS_S52, REGULAR] - and each atom
+  tests its value (rule: "F_PERSON_TAX_CATEGORY = 'ISD'"). Use BOOL only for a real yes / no input (input tax
+  credit availed or not). Python rejects yes/no facts that are values of one attribute (FACT SHAPE).
+- FACTS RESULTS: name; entity; type (BOOL, CODE, AMOUNT, NUMBER, PERCENT, DATE, PERIOD, TEXT, LIST, ID, QUANTITY);
+  options for CODE; unit for AMOUNT / PERIOD / QUANTITY; evidence: [documents that prove it];
+  derived_from: [F_...] when computed from other facts (age from date of birth); registry: EXISTING or NEW;
+  new_reason: "<why no INPUT.fact_registry fact fits>" on every NEW fact; used_by; nl.
+- EVERY operative A names at least one fact in facts: [...] (or the PD it relies on). LOW atoms give a rule on
+  those facts; HIGH atoms still name the evidence fact the heavy model will read (e.g. F_ACTIVITY_DESCRIPTION)
+  and give an interpretation question.
+- Several atoms should share one fact with different rules (F_SUPPLY_FORM = 'SALE' / 'BARTER').
+
+NEGATION AND LEGAL WORDS (NEVER FLIP)
+- without, not, neither / nor, no, other than, except, excluding, unless, notwithstanding, subject to,
+  shall / shall not / may, deemed, only, within, not later than, and every number keep the same meaning in the
+  atom statement AND its rule.
+- "made without a consideration" -> the statement keeps "without a consideration" and the rule tests
+  F_SUPPLY_CONSIDERATION = 'NONE'. Writing "for a consideration" or 'PAID' reverses the law.
+- Python checks these words one by one before the comparison and returns any change to the judge.
+
+SOURCE TYPES - WHATEVER THE GST LAW HOLDS
+- ACT: the law itself - conditions, obligations, powers, definitions, consequences.
+- RULES: procedure, forms, time limits, computations. Keep form numbers, days and amounts exactly; a rule
+  usually details an Act provision - keep that reference.
+- NOTIFICATION: rate, exemption, threshold, notified class or date. Every condition, entry number and
+  effective date is an atom or a fact.
+- CIRCULAR / FAQ / ORDER: clarification of existing law. Frame what it clarifies as atoms with role
+  CLARIFICATION, keep the reference to the provision clarified, never create a new obligation.
+- PROVISO / EXPLANATION: an exception, condition or deeming on its parent - its own atom, linked to the
+  parent outcome with NOT / ANY / ALL in the LE.
+- DEFINITION: "means" is exhaustive; "includes" is open - keep the OTHER route.
+- TABLE rows (rates, forms, time limits): one atom per testable row condition, one fact per column used.
+- HEADING, AMENDMENT and METADATA MKPs are written by Python and are not sent to you.
+
+OUTPUT: ONE PLAIN PIPE TABLE. NO PROSE, JSON OR CODE FENCES.
+First line EXACTLY:
+MKP|TYPE|ELEMENT|CONCEPT|RESULTS
+
+Each row has exactly FIVE fields separated by four literal pipe characters.
+Rows in this order: MKP, LE, OR, G, PD, A, CT, TXN FACTS, LK, SP, LW, TC, SUM.
+MKP = current source MKP owner ID, except FACTS owned by TXN.
+TYPE = MKP / LE / OR / G / PD / A / CT / FACTS / LK / SP / LW / TC / SUM.
+ELEMENT = stable prefix-based ID (A_, G_, LE_, F_, CT_, PD_) or SPn, TCn, etc.
+CONCEPT = exactly 2 or 3 words for TYPE=A; others may be NA.
+RESULTS = semicolon-separated key: value content. Lists in brackets; quoted strings as necessary.
+Do not place a literal | inside any field or semicolons inside text values.
+Do not modify the source-MKP words; explanatory nl is separate from operative wording.
+
+MINIMAL FORMAT EXAMPLE (illustrative, not a full MKP decomposition):
+MKP|TYPE|ELEMENT|CONCEPT|RESULTS
+M_SIAFOS|MKP|M_SIAFOS|NA|citation: "Section 7(1)(a)"; citation_key: CGSTA17_S7_SS1_Ca; frame: INCLUSIVE
+M_SIAFOS|LE|LE_SIAFOS|NA|outcome: SUPPLY_INCLUDED; expr: "G_FORMS AND A_COB"
+M_SIAFOS|G|G_FORMS|NA|logic: ANY; members: [A_SALE, A_TRANSFER, A_OTHER]
+M_SIAFOS|A|A_SALE|Sale Transaction|family: "Forms of Supply"; name: "Supply Is A Sale"; groups: [TSG01_01]; statement: "The supply takes the form of sale of goods, services or both"; phrases: [SP3]; scope: TRANSACTION; role: CONDITION; order: LOW; handler: python; resolver: EXPRESSION; facts: [F_SUPPLY_FORM]; rule: "F_SUPPLY_FORM = 'SALE'"; nl: "A sale transaction"
+M_SIAFOS|A|A_TRANSFER|Transfer Transaction|family: "Forms of Supply"; name: "Supply Is A Transfer"; statement: "The supply takes the form of transfer of goods, services or both"; phrases: [SP3]; scope: TRANSACTION; role: CONDITION; order: LOW; handler: python; resolver: EXPRESSION; facts: [F_SUPPLY_FORM]; rule: "F_SUPPLY_FORM = 'TRANSFER'"; nl: "A transfer transaction"
+M_SIAFOS|A|A_OTHER|Other Supply Forms|family: "Forms of Supply"; name: "Supply Is Another Form"; statement: "The supply is another qualifying form of goods or services or both"; phrases: [SP3]; scope: TRANSACTION; role: CONDITION; order: HIGH; handler: light; resolver: HEAVY_MODEL; facts: [F_SUPPLY_FORM, F_SUPPLY_DESCRIPTION]; interpretation: "Is this form of supply of the same kind as the listed forms?"; nl: "A form not in the examples"
+M_SIAFOS|A|A_COB|Business Activity|family: "Supplier Business Context"; name: "Supply In Course Of Business"; statement: "A person makes or agrees to make the supply in the course or furtherance of business"; phrases: [SP7]; scope: TRANSACTION; role: CONDITION; order: HIGH; handler: heavy; resolver: HEAVY_MODEL; facts: [F_ACTIVITY_DESCRIPTION]; interpretation: "Is the activity in the course or furtherance of business?"; nl: "An activity connected with business"
+TXN|FACTS|F_SUPPLY_FORM|Supply Form|name: "Form of supply"; entity: SUPPLY; type: CODE; options: [SALE, TRANSFER, OTHER]; evidence: [invoice, contract]; registry: NEW; used_by: [A_SALE, A_TRANSFER, A_OTHER]
+TXN|FACTS|F_SUPPLY_DESCRIPTION|Supply Description|name: "Description of the supply"; entity: SUPPLY; type: TEXT; evidence: [invoice, contract]; registry: NEW; used_by: [A_OTHER]
+TXN|FACTS|F_ACTIVITY_DESCRIPTION|Activity Description|name: "Description of the supplier's activity"; entity: ACTIVITY; type: TEXT; evidence: [business records, registration details]; registry: NEW; used_by: [A_COB]
+M_SIAFOS|SP|SP3|NA|role: ILLUSTRATIVE; text: "such as sale, transfer, barter, exchange, licence, rental, lease or disposal"; elements: [A_SALE, A_TRANSFER, A_OTHER]
+M_SIAFOS|SUM|M_SIAFOS|NA|atoms: 4; notes: "Illustrative example only: supply of this MKP also needs all omitted parts in actual output"
+
+RETRY — ONLY WHEN INPUT ENDS WITH "ERRORS FROM LAST TIME"
+- Your last table was rejected. The errors listed are what the checks found, e.g.
+  "NEGATION FLIPPED: 'without consideration' became 'with consideration' in A_2",
+  "MODAL CHANGED: source says 'shall not' but no atom keeps the prohibition",
+  "A_5: atom is not used by any LE or group (orphan)", "fact PD_1 is not declared".
+- Fix EVERY listed error in the table shown under "YOUR TABLE LAST TIME". Keep every row that had no error
+  (same ids, facts and wording) so the fix does not break something that was right.
+- Return the COMPLETE table again (all rows), not only the changed rows.
+- Typical fixes: keep the negation in the statement AND the rule (rule tests the NONE / NO / != value);
+  "shall not" -> the statement keeps the words "shall not" and the rule / LE keeps the "not";
+  an orphan atom -> put it in the LE / G that the source joins it to, or delete it if the source has no such
+  condition; an undeclared fact -> add its FACTS row (with type) or use the registry fact id.
+
+FINAL SELF-CHECK (inside the model, not extra Python gates)
+- Each independently testable element is atomic; no necessary condition disappears.
+- Preserve legal alternatives, AND/OR logic, exceptions, negations and open lists.
+- Every source phrase is accounted for and reference links derive from source.
+- Every A has a 2–3-word concept, a nonempty family and a context-complete statement.
+- Every operative A names its fact(s); registry facts are reused by their exact fact_id.
+- No negation, modal, qualifier or number of the source is changed or reversed.
+- This table is not the final approval: an independent Standard Judge and
+  MKP-reconstruction comparison must still approve it.

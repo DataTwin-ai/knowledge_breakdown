@@ -5,7 +5,7 @@ F_SUPPLY_CONSIDERATION = PAID / NONE, evidence invoice). Atoms TEST facts. Atoms
 the same fact are connected through it - so the same fact must keep ONE id everywhere.
 
 akp_fact        one row per canonical fact: id, name, entity, type, unit, options, evidence, derived_from, embedding,
-                aliases (other names of the same fact), source_kind (DOCUMENT / WORKED_OUT / LOOKUP / ASK), derivation
+                aliases (other names of the same fact), source_kind (DOCUMENT / WORKED_OUT / LOOKUP / READ / ASK), derivation
 akp_atom_fact   edge atom -> fact (with the atom's rule), per AKP version, is_latest
 """
 from __future__ import annotations
@@ -22,7 +22,7 @@ from .parse import field_list, rfield
 
 DATA_TYPES = {"BOOL", "BOOLEAN", "CODE", "ENUM", "AMOUNT", "MONEY", "NUMBER", "INTEGER", "PERCENT", "RATE", "DATE",
               "PERIOD", "DURATION", "TEXT", "STRING", "LIST", "ID", "QUANTITY"}
-SOURCE_KINDS = {"DOCUMENT", "WORKED_OUT", "LOOKUP", "ASK"}    # where a fact's value comes from (notes section 2)
+SOURCE_KINDS = {"DOCUMENT", "WORKED_OUT", "LOOKUP", "READ", "ASK"}    # where a fact's value comes from (notes section 2)
 CANON_TYPE = {"BOOLEAN": "BOOL", "ENUM": "CODE", "MONEY": "AMOUNT", "INTEGER": "NUMBER", "RATE": "PERCENT",
               "STRING": "TEXT", "DURATION": "PERIOD"}
 
@@ -153,12 +153,15 @@ class FactRegistry:
     # ---------------- reads
     def all_ids(self) -> Dict[str, dict]:
         with self.conn.cursor() as cur:
-            cur.execute(sql.SQL("SELECT fact_id, name, data_type, aliases, entity, options FROM {}")
-                        .format(self.t(self.fact_t)))
+            cur.execute(sql.SQL("SELECT fact_id, name, data_type, aliases, entity, options, source_kind, derivation, "
+                                "derived_from FROM {}").format(self.t(self.fact_t)))
             # entity + options: Python's SAME gate also runs on a match by name (fact flow layer 2)
+            # source_kind / derivation / derived_from (2026-11-27): a python atom on a registry fact is checked too
             return {f: {"name": n, "type": t, "aliases": list(al or []) if isinstance(al, list) else [],
-                        "entity": e or "", "options": list(o or []) if isinstance(o, list) else []}
-                    for f, n, t, al, e, o in cur.fetchall()}
+                        "entity": e or "", "options": list(o or []) if isinstance(o, list) else [],
+                        "source_kind": sk or "", "derivation": dv or "",
+                        "derived_from": list(df or []) if isinstance(df, list) else []}
+                    for f, n, t, al, e, o, sk, dv, df in cur.fetchall()}
 
     def slice(self, unit_prefix: str, vector=None, limit: int = 30, tsgs: Optional[List[str]] = None,
               gkp_table: str = "", ref_keys: Optional[List[str]] = None) -> List[dict]:

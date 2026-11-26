@@ -1,30 +1,53 @@
 # GOVERNANCE MASTER TSG05_05 Tax period & reporting period (TG05 Time & Period)
-# LAW ARC - 5 laws - status APPROVED
+# LAW ARC - 8 laws - status NEEDS_REVIEW
 name: TSG05_05 Tax period & reporting period - GOVERNANCE MASTER rulebook
 version: TSG05_05
 facts:
   # ---- level 1: gate facts - if one is false, that law stops here
-  F_NRB:  # 1. 1 gate | 3 law(s)
-    name: Notification Recommending Body
+  F_DOF:  # 1. 1 gate | 3 law(s)
+    name: Date Of Furnishing
+    type: DATE
+    tier: T1
+    origin:
+      document: GST_RETURN
+      method: FIELD
+      uses: [GST_RETURN.arn_date]
+      how_to_get: Take the filing acknowledgement of the return in question and read arn_date.
+      fallback: 'Ask the user: On what date did you file this return?'
+      when_missing: ASK
+      as_of: date of filing
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: '2024-05-18'
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_MOFD:  # 2. 1 gate | 3 law(s)
+    name: Mode Of Furnishing Details
     type: CODE
     options:
-    - COUNCIL
-    - NONE_STATED
+    - ELECTRONIC
     - OTHER
-    tier: T1
-  F_MATP:  # 2. 1 gate | 1 law(s)
-    name: Months After Tax Period
-    type: AMOUNT
-    tier: T1
-  F_NRFF:  # 3. 1 gate | 1 law(s)
-    name: Notified Return Filing Frequency
-    type: CODE
-    options:
-    - QUARTERLY
-    - MONTHLY
-    - OTHER
-    tier: T1
-  F_PRS:  # 4. 1 gate | 1 law(s)
+    tier: T0
+    origin:
+      document: GST_RETURN
+      method: FIELD
+      uses: [GST_RETURN.filing_mode]
+      how_to_get: Take GST_RETURN.filing_mode. If it shows online filing on the GST portal, through a GSP, or with digital or EVC signature, the value is ELECTRONIC. If it shows paper or any other way, the value is OTHER.
+      fallback: 'If filing_mode is empty, treat a valid ARN in GST_RETURN.arn as ELECTRONIC. Otherwise ask the user: ''Did you file the return online on the GST portal?'''
+      when_missing: ASK
+      as_of: date of filing (ARN date)
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: ELECTRONIC
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_PRS:  # 3. 1 gate | 3 law(s)
     name: Person Registration Status
     type: CODE
     options:
@@ -33,32 +56,323 @@ facts:
     - SUSPENDED
     - UNREGISTERED
     tier: T0
+    origin:
+      document: GST_REGISTRATION
+      method: LOOKUP
+      uses: [GST_RETURN.gstin, SALE_INVOICE.supplier_gstin, GST_REGISTRATION.registration_status, GST_REGISTRATION.cancellation_date]
+      how_to_get: Take the GSTIN of the person from GST_RETURN.gstin or SALE_INVOICE.supplier_gstin. Look it up in the GST portal or GSP search taxpayer API and take registration_status. Active gives REGISTERED, Cancelled gives CANCELLED, and Suspended gives SUSPENDED. If the GSTIN is not found, the value is UNREGISTERED. If the status is Cancelled, check that cancellation_date is on or before the as-of date. If cancellation_date is later, the value is REGISTERED.
+      fallback: 'Read the registration certificate (REG-06) if the user has one. Otherwise ask: ''Is the person registered under GST? What is the GSTIN?'''
+      when_missing: ASK
+      as_of: end of the tax period or date of the return
+      level: TAXPAYER
+      ai_level: NONE
+      cost: MEDIUM
+      example: REGISTERED
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_PTC:  # 4. 1 gate | 3 law(s)
+    name: Person Tax Category
+    type: CODE
+    options:
+    - COMPOSITION_S10
+    - ISD
+    - NON_RESIDENT
+    - REGULAR
+    - TCS_S52
+    - TDS_S51
+    tier: T0
+    origin:
+      document: GST_REGISTRATION
+      method: LOOKUP
+      uses: [GST_RETURN.gstin, GST_REGISTRATION.taxpayer_type, GST_REGISTRATION.composition]
+      how_to_get: 'Take the GSTIN of the person who furnishes the return (GST_RETURN.gstin, or the supplier GSTIN on the invoice). Look it up in the GST portal / GSP search taxpayer API or the REG-06 certificate. Read taxpayer_type and composition. Map: composition = yes or ''Composition'' gives COMPOSITION_S10; ''Input Service Distributor'' gives ISD; ''Non-Resident Taxable Person'' gives NON_RESIDENT; ''Tax Collector (e-commerce)'' gives TCS_S52; ''Tax Deductor'' gives TDS_S51; ''Regular'' gives REGULAR. A person with several roles gets the role that applies to the return being checked.'
+      fallback: 'Ask the user: ''Is this person a regular taxpayer, a composition dealer, an Input Service Distributor, a non-resident taxable person, a TDS deductor or an e-commerce TCS collector?'''
+      when_missing: ASK
+      as_of: end of the tax period
+      level: TAXPAYER
+      ai_level: NONE
+      cost: MEDIUM
+      example: REGULAR
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_MATP:  # 5. 1 gate | 2 law(s)
+    name: Months After Tax Period
+    type: AMOUNT
+    tier: T1
+    derived_from:
+    - F_DOF
+    - F_TPOR
+    formula: Number of calendar months from the tax period month to the month of F_DOF, where 1 means the succeeding month
+    unit: MONTH
+    origin:
+      document: GST_RETURN
+      method: DERIVED
+      uses: [F_DOF, F_TPOR, GST_RETURN.arn_date, GST_RETURN.ret_period]
+      how_to_get: Take the date the details were furnished (F_DOF, from GST_RETURN.arn_date) and the end of the tax period (F_TPOR, from GST_RETURN.ret_period). Count the whole calendar months from the end of the tax period to the furnishing date. Furnishing in the month right after the period gives 1.
+      fallback: 'If arn_date is missing, ask the user: ''On what date did you file the return?'''
+      when_missing: ASK
+      as_of: date of furnishing the details
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: '1'
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_NRB:  # 6. 1 gate | 2 law(s)
+    name: Notification Recommending Body
+    type: CODE
+    options:
+    - COUNCIL
+    - NONE_STATED
+    - OTHER
+    tier: T1
+    source_kind: DOCUMENT
+    origin:
+      document: NOTIFICATION
+      method: FIELD
+      uses: [NOTIFICATION.recommended_by]
+      how_to_get: Take NOTIFICATION.recommended_by from the notification in Law/. If it names the GST Council, the value is COUNCIL. If the field is empty or says nothing about a recommendation, the value is NONE_STATED. If it names any other body, the value is OTHER.
+      fallback: Read the preamble of the notification text for the words 'on the recommendations of the Council'.
+      when_missing: STOP
+      as_of: notification date
+      level: DOCUMENT
+      ai_level: NONE
+      cost: LOW
+      example: COUNCIL
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_RFT:  # 7. 1 gate | 2 law(s)
+    name: Return Furnishing Timing
+    type: CODE
+    options:
+    - AFTER_DUE_DATE
+    - ON_OR_BEFORE_DUE_DATE
+    tier: T0
+    derived_from:
+    - F_DOF
+    - F_TPOR
+  F_DOFM:  # 8. 1 gate | 1 law(s)
+    name: Day Of Furnishing Month
+    type: AMOUNT
+    tier: T1
+    derived_from:
+    - F_DOF
+    formula: Calendar day number of F_DOF within its month
+    unit: DAY
+    origin:
+      document: GST_RETURN
+      method: DERIVED
+      uses: [F_DOF]
+      how_to_get: Take F_DOF, the date of furnishing, and keep only the day of the month as a number from 1 to 31.
+      fallback: If F_DOF is missing, use GST_RETURN.arn_date directly. If that is also missing, ask the user for the filing date.
+      when_missing: ASK
+      as_of: date of furnishing
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: '12'
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_NRFF:  # 9. 1 gate | 1 law(s)
+    name: Notified Return Filing Frequency
+    type: CODE
+    options:
+    - QUARTERLY
+    - MONTHLY
+    - OTHER
+    tier: T1
+    source_kind: DOCUMENT
+    origin:
+      document: NOTIFICATION
+      method: LOOKUP
+      uses: [NOTIFICATION.notification_no, NOTIFICATION.notified_class]
+      how_to_get: Find the notification that applies to the taxpayer's class in our Law/ notification table, using notification_no and notified_class. Take the return filing frequency recorded for that notification. Return QUARTERLY if it requires quarterly returns, MONTHLY if monthly, otherwise OTHER. If no notification covers the class, return OTHER. Never ask the user.
+      fallback: Read NOTIFICATION.conditions and NOTIFICATION.notified_class text on our side to find the frequency named there.
+      when_missing: UNKNOWN
+      as_of: start of the tax period for which the return is due (the notification must be in force then)
+      level: TAXPAYER
+      ai_level: NONE
+      cost: MEDIUM
+      example: QUARTERLY
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_RPC:  # 10. 1 gate | 1 law(s)
+    name: Return Period Coverage
+    type: CODE
+    options:
+    - FULL_FINANCIAL_YEAR
+    - PART_FINANCIAL_YEAR
+    - OTHER
+    tier: T1
   # ---- level 2: asked only when that law's gates pass
-  F_NSAC:  # 5. 2 | 1 law(s) | asked only if M_GPTNQR: F_NRB + F_NRFF + F_PRS
+  F_NSAC:  # 11. 2 | 1 law(s) | asked only if M_GPTNQR: F_PRS + F_NRB + F_NRFF
     name: Notification Specifies Any Condition
     type: BOOLEAN
     tier: T1
+    source_kind: DOCUMENT
+    origin:
+      document: NOTIFICATION
+      method: DERIVED
+      uses: [NOTIFICATION.conditions]
+      how_to_get: Find the applicable notification in Law/. Look at NOTIFICATION.conditions. The value is true if conditions holds at least one condition or restriction, and false if it is empty or says none.
+      fallback: If the conditions field is not filled in, read the notification text on our side for words such as 'subject to conditions'.
+      when_missing: UNKNOWN
+      as_of: date the notification takes effect (effective_from)
+      level: TAXPAYER
+      ai_level: NONE
+      cost: LOW
+      example: 'true'
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
   # ---- LAST: only heavy checks (free text) need these
-  F_CTIN:  # 6. LAST (heavy check only) | 1 law(s) | asked only if M_GPTNQR: F_NRB + F_NRFF + F_PRS
-    name: Conditions Text In Notification
-    type: TEXT
-    tier: T1
-  F_NCD:  # 7. LAST (heavy check only) | 1 law(s) | asked only if M_GPTNQR: F_NRB + F_NRFF + F_PRS
-    name: Notification Class Description
-    type: TEXT
-    tier: T1
-  F_PCR:  # 8. LAST (heavy check only) | 1 law(s) | asked only if M_GPTNQR: F_NRB + F_NRFF + F_PRS
-    name: Person Compliance Records
-    type: TEXT
-    tier: T0
-  F_PPD:  # 9. LAST (heavy check only) | 1 law(s) | asked only if M_GPTNQR: F_NRB + F_NRFF + F_PRS
-    name: Person Profile Details
-    type: TEXT
-    tier: T0
-  F_TPOR:  # 10. LAST (heavy check only) | 1 law(s)
+  F_TPOR:  # 12. LAST (heavy check only) | 4 law(s) | asked only if M_NTPRF: F_DOF + F_MOFD + F_PRS + F_PTC + F_RFT | M_ISDMR: F_DOF + F_MOFD + F_PTC + F_RFT | M_RPFTR: F_DOF + F_MOFD + F_PRS + F_PTC + F_MATP + F_DOFM
     name: Tax Period Of Return
     type: AMOUNT
     tier: T0
+    unit: MONTH
+    origin:
+      document: GST_RETURN
+      method: FIELD
+      uses: [GST_RETURN.ret_period, GST_RETURN.filing_frequency]
+      how_to_get: Open the return (GSTR-1, GSTR-3B or other) or its filing acknowledgement. Read the field ret_period, which holds the month or quarter the return covers. Use it as the tax period. If the return is quarterly, the value is the quarter. Use the return's filing_frequency only to interpret whether ret_period is a month or a quarter.
+      fallback: 'If the return or ret_period is not available, ask the user: ''For which month or quarter is this return filed?'''
+      when_missing: ASK
+      as_of: end of the tax period
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: April 2024 (042024)
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_RFUFF:  # 13. LAST (heavy check only) | 3 law(s) | asked only if M_NTPRF: F_DOF + F_MOFD + F_PRS + F_PTC + F_RFT | M_ISDMR: F_DOF + F_MOFD + F_PTC + F_RFT | M_RPFTR: F_DOF + F_MOFD + F_PRS + F_PTC + F_MATP + F_DOFM
+    name: Return Form Used For Furnishing
+    type: TEXT
+    tier: T0
+    origin:
+      document: GST_RETURN
+      method: DERIVED
+      uses: [GST_RETURN.return_type, GST_RETURN.filing_mode]
+      how_to_get: On the return or its filing acknowledgement, read return_type (e.g. GSTR-1, GSTR-3B) and filing_mode (e.g. online portal, GSP, offline utility). Join them into one text, for example 'GSTR-3B filed electronically on the portal'.
+      fallback: 'Ask the user: ''Which return form did you file, and was it filed electronically on the GST portal?'''
+      when_missing: ASK
+      as_of: date of filing (ARN date)
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: GSTR-1, electronic filing on GST portal
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_CTIN:  # 14. LAST (heavy check only) | 1 law(s) | asked only if M_GPTNQR: F_PRS + F_NRB + F_NRFF
+    name: Conditions Text In Notification
+    type: TEXT
+    tier: T1
+    source_kind: DOCUMENT
+    origin:
+      document: NOTIFICATION
+      method: LOOKUP
+      uses: [NOTIFICATION.conditions]
+      how_to_get: In our Law/ notifications table, find the notification that lets a class of registered persons file quarterly returns under section 39(1). Read its conditions field as written.
+      fallback: If no matching notification is found, treat the value as unknown. Never ask the user.
+      when_missing: UNKNOWN
+      as_of: effective_from date of the notification, or the tax period if the conditions changed
+      level: DOCUMENT
+      ai_level: NONE
+      cost: MEDIUM
+      example: Aggregate turnover up to Rs 5 crore in the preceding financial year; option to be exercised on the portal
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_NCD:  # 15. LAST (heavy check only) | 1 law(s) | asked only if M_GPTNQR: F_PRS + F_NRB + F_NRFF
+    name: Notification Class Description
+    type: TEXT
+    tier: T1
+    source_kind: DOCUMENT
+    origin:
+      document: NOTIFICATION
+      method: FIELD
+      uses: [NOTIFICATION.notified_class, NOTIFICATION.notification_no]
+      how_to_get: Find the relevant notification in our own Law/ records using its notification_no. Take the text in NOTIFICATION.notified_class exactly as written. Never ask the user.
+      fallback: Use the conditions text in NOTIFICATION.conditions if the class text is empty.
+      when_missing: STOP
+      as_of: notification effective date
+      level: DOCUMENT
+      ai_level: NONE
+      cost: LOW
+      example: Registered persons with aggregate turnover up to Rs. 5 crore in the preceding financial year
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_PCR:  # 16. LAST (heavy check only) | 1 law(s) | asked only if M_GPTNQR: F_PRS + F_NRB + F_NRFF
+    name: Person Compliance Records
+    type: TEXT
+    tier: T0
+    source_kind: DOCUMENT
+    origin:
+      document: GST_RETURN
+      method: FIELD
+      uses: [GST_RETURN.other_particulars]
+      how_to_get: Take the person's returns for the period. Copy other_particulars, which records what was done for the notified conditions (for example the quarterly option, or the payment made in the months between quarterly returns). Use filing_frequency and filing_mode on the same return as supporting notes.
+      fallback: 'Ask the user: ''Please give your records showing what you did for each condition in the notification.'''
+      when_missing: ASK
+      as_of: end of the tax period
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: Opted for quarterly filing; tax paid for months 1 and 2 using the payment challan
+      confidence: low
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_PPD:  # 17. LAST (heavy check only) | 1 law(s) | asked only if M_GPTNQR: F_PRS + F_NRB + F_NRFF
+    name: Person Profile Details
+    type: TEXT
+    tier: T0
+    source_kind: DOCUMENT
+    origin:
+      document: PROFILE
+      method: DERIVED
+      uses: [PROFILE.person_type, PROFILE.designation, PROFILE.post_held, PROFILE.professional_qualification, PROFILE.body_type]
+      how_to_get: 'Join the person''s profile fields into one text: person type, designation, post held, professional qualification and body type. Skip any blank field. The notification''s class description is compared with this text later.'
+      fallback: 'Ask the user: ''Please describe the person: what type of person or body is it, and what is its designation or qualification?'''
+      when_missing: ASK
+      as_of: date of supply or date of the return
+      level: TAXPAYER
+      ai_level: NONE
+      cost: LOW
+      example: Individual; Cost Accountant; member of ICMAI
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_RMC:  # 18. LAST (heavy check only) | 1 law(s) | asked only if M_ISDMR: F_DOF + F_MOFD + F_PTC + F_RFT
+    name: Return Manner Compliant
+    type: BOOLEAN
+    tier: T0
+  F_TDP:  # 19. LAST (heavy check only) | 1 law(s) | asked only if M_RPFTR: F_DOF + F_MOFD + F_PRS + F_PTC + F_MATP + F_DOFM
+    name: Tax Deduction Period
+    type: AMOUNT
+    tier: T1
+    unit: MONTH
   F_DOI:
     name: Date Of Invoice
     type: DATE
@@ -69,6 +383,8 @@ predicates:
     order: LOW
     rule: F_MATP = 1
     handler: python
+    compute:
+      F_MATP: Number of calendar months from the tax period month to the month of F_DOF, where 1 means the succeeding month
   M_GPTNQR_A_NOCR:
     statement: The Government's notification of the class of registered persons is made on the recommendations of the Council
     order: LOW
@@ -115,6 +431,91 @@ predicates:
     grounding:
     - F_TPOR
     handler: light
+  M_NTPRF_A_PIR:
+    statement: The non-resident taxable person is registered
+    order: LOW
+    rule: F_PRS = 'REGISTERED'
+    handler: python
+  M_NTPRF_A_RHBF:
+    statement: The registered non-resident taxable person has furnished a return
+    order: LOW
+    rule: F_DOF IS_SET
+    handler: python
+  M_NTPRF_A_RIPF:
+    statement: The return is furnished in such form and manner as may be prescribed
+    order: HIGH
+    interpretation: Is the return furnished in the form and manner prescribed for it?
+    grounding:
+    - F_RFUFF
+    handler: light
+  M_NTPRF_A_RFE:
+    statement: The return is furnished electronically
+    order: LOW
+    rule: F_MOFD = 'ELECTRONIC'
+    handler: python
+  M_NTPRF_A_FWED:
+    statement: The return is furnished within twenty days after the end of a calendar month or within seven days after the
+      last day of the period of registration specified under sub-section (1) of section 27, whichever is earlier
+    order: LOW
+    rule: F_RFT = 'ON_OR_BEFORE_DUE_DATE'
+    handler: python
+  M_RPOSD_A_PINTP:
+    statement: The person is a non-resident taxable person
+    order: LOW
+    rule: F_PTC = 'NON_RESIDENT'
+    handler: python
+  M_ISDMR_A_TPRAI:
+    statement: The taxable person is registered as an Input Service Distributor
+    order: LOW
+    rule: F_PTC = 'ISD'
+    handler: python
+  M_ISDMR_A_RIPFAM:
+    statement: The return is furnished in such form and manner as may be prescribed
+    order: HIGH
+    interpretation: Is the form used, and the manner of furnishing, what the prescribed requirements specify for an Input
+      Service Distributor return, which this text does not state?
+    grounding:
+    - F_RFUFF
+    - F_RMC
+    handler: heavy
+  M_ISDMR_A_RFWTD:
+    statement: The return is furnished within thirteen days after the end of such month
+    order: LOW
+    rule: F_RFT = 'ON_OR_BEFORE_DUE_DATE'
+    handler: python
+  M_CTFAR_A_RFFYOP:
+    statement: The return is for each financial year or part thereof
+    order: LOW
+    rule: F_RPC IN ['FULL_FINANCIAL_YEAR', 'PART_FINANCIAL_YEAR']
+    handler: python
+  M_RPFTR_A_RPDT:
+    statement: The person is a registered person required to deduct tax at source under the provisions of section 51
+    order: LOW
+    rule: F_PRS = 'REGISTERED' AND F_PTC = 'TDS_S51'
+    handler: python
+  M_RPFTR_A_RFMOD:
+    statement: The return is furnished for the month in which such deductions have been made
+    order: HIGH
+    interpretation: Is the tax period the return covers the same calendar month in which the tax deductions at source were
+      made?
+    grounding:
+    - F_TPOR
+    - F_TDP
+    handler: light
+  M_CTFAR_A_RPFR:
+    statement: The registered person furnishes a return as required by the shall obligation
+    order: LOW
+    rule: F_DOF IS_SET
+    handler: python
+  M_RPOSD_A_FBTDS:
+    statement: The person shall furnish the details on or before the tenth day of the month succeeding the said tax period
+    order: LOW
+    if_false: furnished after the tenth day of the month succeeding the tax period
+    rule: F_MATP < 1 OR (F_MATP = 1 AND F_DOFM <= 10)
+    handler: python
+    compute:
+      F_MATP: Number of calendar months from the tax period month to the month of F_DOF, where 1 means the succeeding month
+      F_DOFM: Calendar day number of F_DOF within its month
 groups:
   M_GPTNQR_G_RPINC:
     name: Registered Person In Notified Class
@@ -131,6 +532,52 @@ groups:
     - M_GPTNQR_A_NCSBP
     description: Either the notification specifies no condition or restriction, or the person satisfies the conditions and
       restrictions the notification specifies.
+  M_NTPRF_G_RNPS:
+    name: Registered Non-Resident Person Status
+    logic: ALL
+    members:
+    - M_RPOSD_A_PINTP
+    - M_NTPRF_A_PIR
+    description: The person is both a non-resident taxable person and registered.
+  M_NTPRF_G_PEFM:
+    name: Prescribed Electronic Form Manner
+    logic: ALL
+    members:
+    - M_NTPRF_A_RIPF
+    - M_NTPRF_A_RFE
+    description: The return is furnished in the prescribed form and manner and also electronically.
+  M_ISDMR_G_RSC:
+    name: Return Scope Conditions
+    logic: ALL
+    members:
+    - M_ISDMR_A_TPRAI
+    - M_RPFMR_A_RCCMOP
+    description: The person is an Input Service Distributor and the return covers the calendar month or part
+  M_ISDMR_G_RFC:
+    name: Return Filing Conditions
+    logic: ALL
+    members:
+    - M_NTPRF_A_RHBF
+    - M_ISDMR_A_RIPFAM
+    - M_NTPRF_A_RFE
+    - M_ISDMR_A_RFWTD
+    description: The return is furnished in prescribed form and manner, electronically and within thirteen days after month
+      end
+  M_RPFTR_G_RFC:
+    name: Return Filing Conditions
+    logic: ALL
+    members:
+    - M_CTFAR_A_RPFR
+    - M_NTPRF_A_RFE
+    - M_NTPRF_A_RIPF
+    description: Filing conditions of the shall furnish obligation
+  M_RPFTR_G_PADC:
+    name: Period And Deadline Conditions
+    logic: ALL
+    members:
+    - M_RPFTR_A_RFMOD
+    - M_RPOSD_A_FBTDS
+    description: Period and timing conditions of the return
 outcomes:
   M_FODRP_LE_FISM:
     outcome: FURNISHED_IN_SUCCEEDING_MONTH
@@ -149,14 +596,30 @@ outcomes:
     expr: M_RPFMR_A_RCCMOP
     module: M_RPFMR
     description: The return is furnished for every calendar month or part thereof (Section 39(1), part of the law)
+  M_NTPRF_LE_NROM:
+    outcome: RETURN_FURNISHING_OBLIGATION_MET
+    expr: M_NTPRF_G_RNPS AND M_NTPRF_A_RHBF AND M_RPFMR_A_RCCMOP AND M_NTPRF_G_PEFM AND M_NTPRF_A_FWED
+    module: M_NTPRF
+    description: The obligation is met when a registered non-resident taxable person has furnished the return for the calendar
+      month or part thereof, in the prescribed form and manner, electronically, within the earlier deadline.
+  M_ISDMR_LE_IMRC:
+    outcome: ISD_RETURN_COMPLIANT
+    expr: M_ISDMR_G_RSC AND M_ISDMR_G_RFC
+    module: M_ISDMR
+    description: The ISD monthly return obligation is met only when the person is an Input Service Distributor, the return
+      covers the calendar month and every filing condition holds
+  M_CTFAR_LE_RFFYOP:
+    outcome: RETURN_FOR_FINANCIAL_YEAR_OR_PART
+    expr: M_CTFAR_A_RFFYOP
+    module: M_CTFAR
+    description: The return is for each financial year or part thereof (Section 39(2), part of the law)
+  M_RPFTR_LE_TRFC:
+    outcome: TDS_RETURN_FURNISHED_COMPLIANTLY
+    expr: M_RPFTR_A_RPDT AND M_RPFTR_G_RFC AND M_RPFTR_G_PADC
+    module: M_RPFTR
+    description: The obligation is met only when every source condition is met
   M_GPTNQR_LE_NOCR:
-    outcome: NOTIFIED_ON_COUNCIL_RECOMMENDATION
-    expr: M_GPTNQR_A_NOCR
-    module: M_NGANGNS
-    description: The Government's notification of the class of registered persons is made on the recommendations of the Council
-      (Section 7(2), part of the law)
-  M_GPTNQR_LE_NOCR_NTTAS:
-    outcome: COUNCIL_RECOMMENDS_THE_NOTIFICATION
+    outcome: NOTIFICATION_IS_ON_COUNCIL_RECOMMENDATION
     expr: M_GPTNQR_A_NOCR
     module: M_NTTAS
     description: The Government's notification of the class of registered persons is made on the recommendations of the Council
@@ -169,10 +632,18 @@ products:
       part thereof, subject to the notified conditions and restrictions.
   M_RPFMR_PD_RCCMOP:
     statement: The return is furnished for every calendar month or part thereof
+  M_NTPRF_PD_NROM:
+    statement: The obligation is met when a registered non-resident taxable person has furnished the return for the calendar
+      month or part thereof, in the prescribed form and manner, electronically, within the earlier deadline.
+  M_ISDMR_PD_IMRC:
+    statement: The ISD monthly return obligation is met only when the person is an Input Service Distributor, the return covers
+      the calendar month and every filing condition holds
+  M_CTFAR_PD_RFFYOP:
+    statement: The return is for each financial year or part thereof
+  M_RPFTR_PD_TRFC:
+    statement: The obligation is met only when every source condition is met
   M_GPTNQR_PD_NOCR:
-    statement: The notification is made by the Government on the recommendations of the Council.
-  M_GPTNQR_PD_NOCR_NTTAS:
-    statement: The Government specifies the transactions on the recommendations of the Council.
+    statement: The notification is made on the recommendations of the Council.
 compounds:
 - id: C_FODRP
   question: The details are furnished during the month succeeding the tax period? (Section 37(1), proviso)
@@ -198,23 +669,47 @@ compounds:
   - product: M_RPFMR_PD_RCCMOP
     from:
     - M_RPFMR_LE_RCCMOP
-- id: C_NGANGNS
+- id: C_NTPRF
+  question: 'Section 39(5): Non-Resident Taxable Person Return Filing?'
+  includes:
+  - M_NTPRF_LE_NROM
+  produces:
+  - product: M_NTPRF_PD_NROM
+    from:
+    - M_NTPRF_LE_NROM
+- id: C_ISDMR
+  question: 'Section 39(4): Input Service Distributor Monthly Return?'
+  includes:
+  - M_ISDMR_LE_IMRC
+  produces:
+  - product: M_ISDMR_PD_IMRC
+    from:
+    - M_ISDMR_LE_IMRC
+  exclusive: []
+- id: C_CTFAR
+  question: The return is for each financial year or part thereof? (Section 39(2))
+  includes:
+  - M_CTFAR_LE_RFFYOP
+  produces:
+  - product: M_CTFAR_PD_RFFYOP
+    from:
+    - M_CTFAR_LE_RFFYOP
+- id: C_RPFTR
+  question: 'Section 39(3): Registered Person Furnish TDS Return?'
+  includes:
+  - M_RPFTR_LE_TRFC
+  produces:
+  - product: M_RPFTR_PD_TRFC
+    from:
+    - M_RPFTR_LE_TRFC
+- id: C_NTTAS
   question: The Government's notification of the class of registered persons is made on the recommendations of the Council?
-    (Section 7(2))
+    (Section 7(3))
   includes:
   - M_GPTNQR_LE_NOCR
   produces:
   - product: M_GPTNQR_PD_NOCR
     from:
     - M_GPTNQR_LE_NOCR
-- id: C_NTTAS
-  question: The Government's notification of the class of registered persons is made on the recommendations of the Council?
-    (Section 7(3))
-  includes:
-  - M_GPTNQR_LE_NOCR_NTTAS
-  produces:
-  - product: M_GPTNQR_PD_NOCR_NTTAS
-    from:
-    - M_GPTNQR_LE_NOCR_NTTAS
 time:
   law_date: F_DOI

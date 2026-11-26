@@ -59,6 +59,8 @@ def parse_rows(raw: str, mkp_id: str) -> List[dict]:
         if row["TYPE"] not in TYPES or row["MKP"] not in (mkp_id, "TXN"):
             raise ValueError(f"Invalid row TYPE/owner {row['TYPE']}/{row['MKP']}: {line[:160]}")
         if row["TYPE"] == "A" and len(row["CONCEPT"].split()) not in (2, 3):
+            row["CONCEPT"] = concept_words(row["CONCEPT"], row["RESULTS"]) or row["CONCEPT"]   # 2026-11-27: Python repair
+        if row["TYPE"] == "A" and len(row["CONCEPT"].split()) not in (2, 3):
             raise ValueError(f"Atom concept must be 2-3 words: {row['ELEMENT']}")
         if row["TYPE"] == "A" and not family(row):
             raise ValueError(f"Atom needs family in RESULTS: {row['ELEMENT']}")
@@ -134,3 +136,23 @@ def raw_rows(raw: str, mkp_id: str) -> List[dict]:
         raw = raw or ""
         return [{"MKP": mkp_id, "TYPE": "RAW", "ELEMENT": f"RAW_{i + 1}", "CONCEPT": "",
                  "RESULTS": raw[i * 30000:(i + 1) * 30000]} for i in range((len(raw) + 29999) // 30000)]
+
+_CONCEPT_SKIP = {"A", "AN", "THE", "OF", "TO", "BY", "IN", "ON", "FOR", "AND", "OR", "IS", "ARE", "BE", "THAT", "WHICH",
+                 "THIS", "ITS", "AS", "AT", "WITH", "FROM", "UNDER", "SUCH", "ANY", "EVERY"}
+
+
+def concept_words(concept: str, results: str = "") -> str:
+    """2026-11-27: the 2-3 word CONCEPT of an atom, repaired by Python when the model wrote an id or a phrase.
+    A_RETURN_S44_NOT_FURNISHED -> 'Return Not Furnished'; one word -> the first content words of the statement.
+    Returns '' when nothing usable is found (the row is then refused as before)."""
+    words = [w for w in re.split(r"[\s_\-]+", str(concept or "").strip()) if w]
+    if words and re.fullmatch(r"(A|G|LE|PD|OR|CT|TC|SP|M)", words[0], re.I) and "_" in str(concept):
+        words = words[1:]
+    words = [w for w in words if not re.search(r"\d", w) and w.upper() not in _CONCEPT_SKIP]
+    if len(words) < 2:
+        m = re.search(r"statement\s*:\s*\"?([^\";]*)", str(results or ""), re.I)
+        st = [w for w in re.findall(r"[A-Za-z]+", m.group(1) if m else "") if w.upper() not in _CONCEPT_SKIP]
+        words = (words + st)[:3]
+    words = words[:3]
+    return " ".join(w.capitalize() for w in words) if len(words) >= 2 else ""
+

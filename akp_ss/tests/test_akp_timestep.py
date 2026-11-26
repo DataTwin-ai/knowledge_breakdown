@@ -14,8 +14,8 @@ M = "M_CLRM"
 
 def table():
     return [
-        {"MKP": "TXN", "TYPE": "FACTS", "ELEMENT": "F_OPTED", "CONCEPT": "NA", "RESULTS": 'name: "Opted"; type: BOOL'},
-        {"MKP": "TXN", "TYPE": "FACTS", "ELEMENT": "F_TURNOVER", "CONCEPT": "NA", "RESULTS": 'name: "Turnover"; type: AMOUNT'},
+        {"MKP": "TXN", "TYPE": "FACTS", "ELEMENT": "F_OPTED", "CONCEPT": "NA", "RESULTS": 'name: "Opted"; type: BOOL; source_kind: DOCUMENT'},
+        {"MKP": "TXN", "TYPE": "FACTS", "ELEMENT": "F_TURNOVER", "CONCEPT": "NA", "RESULTS": 'name: "Turnover"; type: AMOUNT; source_kind: DOCUMENT'},
         {"MKP": M, "TYPE": "A", "ELEMENT": "A_OPT", "CONCEPT": "",
          "RESULTS": 'name: "Person Opts For Composition"; statement: "The person opts to pay tax under sub-section (1) of section 9"; '
                     'order: LOW; handler: python; facts: [F_OPTED]; rule: "F_OPTED = TRUE"'},

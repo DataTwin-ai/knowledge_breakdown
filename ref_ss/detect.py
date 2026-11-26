@@ -9,6 +9,9 @@ CROSS = anything outside the document: notifications, circulars, amending Acts, 
 A footnote "Ins. by / Subs. by / Omitted by ..." is an AMENDING reference (relation AMENDED_BY). It is recorded
 as PENDING like any other outside document: ref_engine.py fetches it (Law/Amendments), because the law before / after
 the change is needed (notes section 13; features.push_amending_notifications is no longer used).
+PRESCRIBED (2026-11-25): an Act's words "as may be prescribed" mean the Rules (CGST Act s.2(87)). Python records ONE
+reference per MKP to the Rules (refs.prescribed: Act code -> Rules code) with relation PRESCRIBED_BY and no target yet;
+after the workers the exact rule / sub-rule is found (Python first, then the ref_part_prompt model) - ref_ss/auto.py.
 """
 from __future__ import annotations
 
@@ -25,6 +28,7 @@ SAME_DOC_WORDS = re.compile(r"^(?:this|the said)\b", re.I)
 FULL_ACT = re.compile(r"(?:\bThe\s+)?[A-Z][A-Za-z&,()'\s-]*?\bAct\b,?\s*(?:19|20)\d{2}\s*\(\s*No\.?\s*\d{1,3}\s+of\s+"
                       r"(?:19|20)\d{2}\s*\)")
 # the date after a notification / circular number: "..., dated 25.01.2018" / "dt. 24.09.2021"
+PRESCRIBED = re.compile(r"\bprescribed\b", re.I)
 DATED = re.compile(r"^\s*,?\s*(?:dated|dt\.?)\s*(\d{1,2}\s*[./-]\s*\d{1,2}\s*[./-]\s*\d{4})", re.I)
 
 
@@ -110,13 +114,29 @@ def _outside(text: str, own_doc: str, relation: str, where: str, name: str = "")
     return out
 
 
+def prescribed(text: str, rules_code: Optional[str], own_doc: str) -> List[dict]:
+    """ "as may be prescribed" in an Act -> one reference to its Rules (relation PRESCRIBED_BY, target found later).
+    The mention keeps the words around it, so the part finder knows what the rule must prescribe."""
+    if not rules_code or rules_code == own_doc:
+        return []
+    m = PRESCRIBED.search(text or "")
+    if not m:
+        return []
+    a, b = max(0, m.start() - 180), min(len(text), m.end() + 60)
+    words = " ".join(text[a:b].split())
+    return [{"ref_id": rules_code, "scope": "CROSS", "kind": "RULES", "mention": words[:300],
+             "relation": "PRESCRIBED_BY", "target_key": "", "where": "TEXT", "amending": False}]
+
+
 def detect(own_doc: str, text: str, footnotes: Iterable[str] = (), xrefs: Iterable[dict] = (),
-           llm_refs: Iterable[str] = (), act_code: Optional[str] = None) -> List[dict]:
+           llm_refs: Iterable[str] = (), act_code: Optional[str] = None,
+           rules_code: Optional[str] = None) -> List[dict]:
     """All references of one MKP, de-duplicated by (scope, ref_id, target_key).
 
     xrefs     IKP cross references of the provision / lead-ins / closing line: {"cue", "to", "resolved"}
     llm_refs  the MKP's own cross_refs labels (the LLM's list): used for outside documents it names
     act_code  for Rules / notifications: the parent Act code that "section 15 of the Act" means
+    rules_code for an Act: the Rules its "as may be prescribed" means (refs.prescribed), else None
     """
     found: List[dict] = []
     for x in xrefs or []:
@@ -142,6 +162,9 @@ def detect(own_doc: str, text: str, footnotes: Iterable[str] = (), xrefs: Iterab
             found.append({"ref_id": act_code, "scope": "CROSS", "kind": "ACT", "mention": " ".join(m.group(0).split()),
                           "relation": "REFERS", "target_key": _key(act_code, "section", m.group(1), m.group(2)),
                           "where": "TEXT", "amending": False})
+    # "as may be prescribed": only when no rule of those Rules is already named (that one is the exact part)
+    if not any(r["scope"] == "CROSS" and r["ref_id"] == rules_code and r["target_key"] for r in found):
+        found += prescribed(text, rules_code, own_doc)
     # the same outside document found as a part ("section 2 of the X Act, 1959") and as a whole ("the X Act, 1959"):
     # keep the part only (an amending footnote has no part and stays)
     parts = {r["ref_id"] for r in found if r["scope"] == "CROSS" and r["target_key"]}

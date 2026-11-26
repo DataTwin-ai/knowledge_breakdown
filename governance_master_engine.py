@@ -207,6 +207,29 @@ def _comment_facts(text: str, tsg_rows: List[dict]) -> str:
     return "\n".join(out)
 
 
+def _with_origins(text: str, conn) -> str:
+    """2026-11-26: every fact gets its `origin:` block (where and how to get its value) from the fact_origin table, so a
+    rebuilt yaml keeps what fact_origin_engine.py wrote. No table or no database: the yaml is written without it."""
+    if conn is None:
+        return text
+    try:
+        st = json.loads(_path("Config/fact_origin.json").read_text(encoding="utf-8-sig"))
+        if not st.get("write_yaml", True):
+            return text
+        from db_insert import get_db_schema
+        from fact_origin_ss.store import OriginStore
+        from fact_origin_ss.yaml_origin import apply_text
+        rows = OriginStore(conn, get_db_schema(), st.get("table", "fact_origin")).rows()
+    except Exception as exc:                    # e.g. fact_origin not made yet
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        log(f"NOTE governance master: no fact origins in the yaml ({type(exc).__name__}: {str(exc)[:120]})")
+        return text
+    return apply_text(text, rows)[0]
+
+
 def build_governance_master(tsg: str, snapshot: Snapshot, conn, permission: dict, s: dict) -> dict:
     names = taxonomy_names(permission)
     if tsg not in names:
@@ -253,6 +276,7 @@ def build_governance_master(tsg: str, snapshot: Snapshot, conn, permission: dict
             f"# LAW ARC - {len(built.included)} laws" + (" + the spine" if spine else "") + f" - status {status}\n"
             + _comment_facts(_comment_partners(yaml.safe_dump(built.rulebook, sort_keys=False, allow_unicode=True,
                                                               width=120), rep.get("spine_partners", [])), order[0]))
+    text = _with_origins(text, conn)            # 2026-11-26: each fact's origin block (fact_origin_engine.py)
     rows = pack_mod.rows(built.rulebook, rep, built.id_map, spine, n, status)
     partners = {}
     for x in rep.get("spine_partners", []):

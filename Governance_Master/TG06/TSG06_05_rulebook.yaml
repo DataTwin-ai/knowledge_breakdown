@@ -11,6 +11,22 @@ facts:
     - CEASED_TAXABLE_PERSON
     - CONTINUING_TAXABLE_PERSON
     tier: T0
+    origin:
+      document: GST_REGISTRATION
+      method: DERIVED
+      uses: [GST_REGISTRATION.registration_status, GST_REGISTRATION.cancellation_date]
+      how_to_get: Search the registration by gstin. If registration_status is Cancelled (or surrendered) and cancellation_date is on or before the as-of date, return CEASED_TAXABLE_PERSON. If the status is Active, or the cancellation_date is after the as-of date, return CONTINUING_TAXABLE_PERSON.
+      fallback: 'Ask the user: ''Has the person stopped being a taxable person (for example the registration was cancelled)? From what date?'''
+      when_missing: ASK
+      as_of: date immediately before the person ceases to be a taxable person
+      level: TAXPAYER
+      ai_level: NONE
+      cost: MEDIUM
+      example: CEASED_TAXABLE_PERSON
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
   F_DOI:
     name: Date Of Invoice
     type: DATE

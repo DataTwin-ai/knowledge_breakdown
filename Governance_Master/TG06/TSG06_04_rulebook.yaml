@@ -1,18 +1,10 @@
 # GOVERNANCE MASTER TSG06_04 Distinct & related persons (TG06 Parties & Registration)
-# LAW ARC - 5 laws - status APPROVED
+# LAW ARC - 3 laws - status APPROVED
 name: TSG06_04 Distinct & related persons - GOVERNANCE MASTER rulebook
 version: TSG06_04
 facts:
   # ---- level 1: gate facts - if one is false, that law stops here
-  F_SKOT:  # 1. 1 gate | 4 law(s)
-    name: Supply Kind Of Transaction
-    type: CODE
-    options:
-    - BOTH
-    - GOODS
-    - SERVICES
-    tier: T1
-  F_PRR:  # 2. 1 gate | 3 law(s)
+  F_PRR:  # 1. 1 gate | 1 law(s)
     name: Provider Recipient Relation
     type: CODE
     options:
@@ -23,7 +15,24 @@ facts:
     - PRINCIPAL_AGENT
     - RELATED_PERSONS
     tier: T1
-  F_SCS:  # 3. 1 gate | 2 law(s)
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.relation_between_parties, CONTRACT.parties, CONTRACT.employment_terms]
+      how_to_get: Read the relation between the parties in the contract. Map it to EMPLOYEE_EMPLOYER, PRINCIPAL_AGENT, CONTRACTOR_CLIENT, RELATED_PERSONS or DISTINCT_PERSONS. If there is no stated relation, use the parties and the employment terms to decide. Use OTHER if none fits.
+      fallback: 'Ask the user: ''What is the relationship between the provider and the recipient: employee-employer, principal-agent, or something else?'''
+      when_missing: ASK
+      as_of: date of supply
+      level: TRANSACTION
+      ai_level: LOW
+      cost: HIGH
+      example: EMPLOYEE_EMPLOYER
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  # ---- LAST: only heavy checks (free text) need these
+  F_SCS:  # 2. LAST (heavy check only) | 2 law(s)
     name: Supply Consideration Status
     type: CODE
     options:
@@ -31,16 +40,43 @@ facts:
     - NONE
     - PAID
     tier: T1
-  F_SCT:  # 4. 1 gate | 1 law(s)
-    name: Supply Consideration Type
-    type: CODE
-    options:
-    - MONEY
-    - NON_MONEY
-    - NONE
+    origin:
+      document: CONTRACT
+      method: DERIVED
+      uses: [CONTRACT.consideration, CONTRACT.consideration_type]
+      how_to_get: Read consideration and consideration_type from the contract. If consideration is blank or nil / zero (or the type says no consideration, e.g. gift), the value is NONE. If consideration_type or the papers show it has been paid (cash, bank, advance received), the value is PAID. If an amount or benefit is promised but not yet paid, the value is AGREED.
+      fallback: 'Use SALE_INVOICE.total_value: if it is above zero there is a consideration (AGREED, or PAID if payment is shown). Otherwise ask the user: ''Is anything paid or promised in return for this supply?'''
+      when_missing: ASK
+      as_of: date of supply
+      level: TRANSACTION
+      ai_level: NONE
+      cost: MEDIUM
+      example: AGREED
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_DOAOT:  # 3. LAST (heavy check only) | 1 law(s)
+    name: Description Of Activity Or Transaction
+    type: TEXT
     tier: T1
-  # ---- level 2: asked only when that law's gates pass
-  F_FOS:  # 5. 2 | 1 law(s) | asked only if M_SIAFOS: F_SKOT + F_SCS
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.subject, CONTRACT.property_description, CONTRACT.employment_terms]
+      how_to_get: Read the contract subject, then property_description if it is about property, or employment_terms if it is about employment. Write a short plain-text description of the activity or transaction and who does it for whom.
+      fallback: 'Use SALE_INVOICE.line_description. If that is also missing, ask the user: Please describe the activity or transaction.'
+      when_missing: ASK
+      as_of: date of the activity or transaction
+      level: TRANSACTION
+      ai_level: LOW
+      cost: HIGH
+      example: Sale of a vacant plot of land to a buyer
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_FOS:  # 4. LAST (heavy check only) | 1 law(s)
     name: Form Of Supply
     type: CODE
     options:
@@ -54,18 +90,40 @@ facts:
     - SALE
     - TRANSFER
     tier: T1
-  # ---- LAST: only heavy checks (free text) need these
-  F_DOTA:  # 6. LAST (heavy check only) | 3 law(s) | asked only if M_SBRODP: F_SKOT | M_SIAFOS: F_SKOT + F_SCS | M_SIAWC: F_SCS
-    name: Description Of The Activity
-    type: TEXT
-    tier: T1
-  F_SOOT:  # 7. LAST (heavy check only) | 1 law(s) | asked only if M_IOSFC: F_SCT
-    name: Supply Origin Of Transaction
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.subject, CONTRACT.consideration_type, SALE_INVOICE.line_description]
+      how_to_get: 'Read CONTRACT.subject and CONTRACT.consideration_type. Decide the form of supply: SALE for a price in money with transfer of title, BARTER if the consideration is other goods or services, EXCHANGE, LEASE, RENTAL, LICENCE, TRANSFER or DISPOSAL as the wording says. Use OTHER if none fits.'
+      fallback: If there is no contract, read SALE_INVOICE.line_description and invoice_type. If that is also unclear, ask the user how the supply was made.
+      when_missing: ASK
+      as_of: date of supply
+      level: TRANSACTION
+      ai_level: HIGH
+      cost: HIGH
+      example: SALE
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_SBC:  # 5. LAST (heavy check only) | 1 law(s)
+    name: Supply Business Context
     type: CODE
     options:
-    - IMPORT
-    - DOMESTIC
-    - EXPORT
+    - IN_BUSINESS
+    - NOT_IN_BUSINESS
+    - UNKNOWN
+    tier: T1
+    source_kind: READ
+  F_TN:  # 6. LAST (heavy check only) | 1 law(s)
+    name: Transaction Nature
+    type: CODE
+    options:
+    - DOMESTIC_GOODS
+    - DOMESTIC_SERVICES
+    - IMPORT_GOODS
+    - IMPORT_SERVICES
+    - OTHER
     tier: T1
   F_DOI:
     name: Date Of Invoice
@@ -73,218 +131,180 @@ facts:
     tier: T0
 predicates:
   M_SIAFOS_A_SIAS:
-    statement: The supply takes the form of a sale of goods or services or both
-    order: LOW
-    rule: F_FOS = 'SALE'
-    handler: python
-  M_SIAFOS_A_SIAT:
-    statement: The supply takes the form of a transfer of goods or services or both
-    order: LOW
-    rule: F_FOS = 'TRANSFER'
-    handler: python
-  M_SIAFOS_A_SIAB:
-    statement: The supply takes the form of a barter of goods or services or both
-    order: LOW
-    rule: F_FOS = 'BARTER'
-    handler: python
-  M_SIAFOS_A_SIAE:
-    statement: The supply takes the form of an exchange of goods or services or both
-    order: LOW
-    rule: F_FOS = 'EXCHANGE'
-    handler: python
-  M_SIAFOS_A_SIALG:
-    statement: The supply takes the form of a licence of goods or services or both
-    order: LOW
-    rule: F_FOS = 'LICENCE'
-    handler: python
-  M_SIAFOS_A_SIAR:
-    statement: The supply takes the form of a rental of goods or services or both
-    order: LOW
-    rule: F_FOS = 'RENTAL'
-    handler: python
-  M_SIAFOS_A_SIAL:
-    statement: The supply takes the form of a lease of goods or services or both
-    order: LOW
-    rule: F_FOS = 'LEASE'
-    handler: python
-  M_SIAFOS_A_SIAD:
-    statement: The supply takes the form of a disposal of goods or services or both
-    order: LOW
-    rule: F_FOS = 'DISPOSAL'
-    handler: python
-  M_SIAFOS_A_SIAQF:
-    statement: The supply is another qualifying form of supply of goods or services or both, not one of the listed forms
+    statement: The supply of goods or services or both is a sale.
     order: HIGH
-    interpretation: Is this unlisted form of supply a form of supply of the same kind as sale, transfer, barter, exchange,
-      licence, rental, lease or disposal, given that the list is only illustrative?
+    interpretation: 'Decide whether: The supply of goods or services or both is a sale'
     grounding:
     - F_FOS
-    - F_DOTA
-    handler: heavy
-  M_SIAFOS_A_SIOGOS:
-    statement: The supply is of goods or services or both
-    order: LOW
-    rule: F_SKOT IN ['GOODS', 'SERVICES', 'BOTH']
-    handler: python
-  M_SIAFOS_A_SIMFC:
-    statement: The supply is made for a consideration
-    order: LOW
-    rule: F_SCS = 'PAID'
-    handler: python
-  M_SIAFOS_A_SIAFC:
-    statement: The supply is agreed to be made for a consideration
-    order: LOW
-    rule: F_SCS = 'AGREED'
-    handler: python
-  M_SIAFOS_A_SBPIB:
-    statement: The supply is made by a person in the course or furtherance of business
-    order: HIGH
-    interpretation: Is the person making the supply doing so in the course or furtherance of business, judged from the description
-      of the activity?
-    grounding:
-    - F_DOTA
-    handler: heavy
-  M_IOSFC_A_TISI:
-    statement: The transaction is an import of services
-    order: HIGH
-    interpretation: Does the documented transaction amount to an import of services under the Act, given its supply origin
-      and whether the supply is of services?
-    grounding:
-    - F_SOOT
-    - F_SKOT
     handler: light
-  M_IOSFC_A_IMFC:
-    statement: The import of services was made for a consideration
-    order: LOW
-    rule: F_SCT IN ['MONEY', 'NON_MONEY']
-    handler: python
-  M_SBRODP_A_SBRP:
-    statement: The supply is between related persons.
-    order: LOW
-    rule: F_PRR = 'RELATED_PERSONS'
-    handler: python
-  M_SBRODP_A_SBDP:
-    statement: The supply is between distinct persons as specified in section 25.
+  M_SIAFOS_A_SIAT:
+    statement: The supply of goods or services or both is a transfer.
     order: HIGH
-    interpretation: Are the supplier and the recipient distinct persons as specified in section 25, judged from the recorded
-      party relationship?
+    interpretation: 'Decide whether: The supply of goods or services or both is a transfer'
     grounding:
-    - F_PRR
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAB:
+    statement: The supply of goods or services or both is a barter.
+    order: HIGH
+    interpretation: 'Decide whether: The supply of goods or services or both is a barter'
+    grounding:
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAE:
+    statement: The supply of goods or services or both is an exchange.
+    order: HIGH
+    interpretation: 'Decide whether: The supply of goods or services or both is an exchange'
+    grounding:
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAL:
+    statement: The supply of goods or services or both is a licence.
+    order: HIGH
+    interpretation: 'Decide whether: The supply of goods or services or both is a licence'
+    grounding:
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAR:
+    statement: The supply of goods or services or both is a rental.
+    order: HIGH
+    interpretation: 'Decide whether: The supply of goods or services or both is a rental'
+    grounding:
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAL2:
+    statement: The supply of goods or services or both is a lease.
+    order: HIGH
+    interpretation: 'Decide whether: The supply of goods or services or both is a lease'
+    grounding:
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAD:
+    statement: The supply of goods or services or both is a disposal.
+    order: HIGH
+    interpretation: 'Decide whether: The supply of goods or services or both is a disposal'
+    grounding:
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAF:
+    statement: The supply of goods or services or both is a form other than the specified examples.
+    order: HIGH
+    interpretation: Does the described activity qualify as a form of supply under Section 7(1)(a), even though it is not one
+      of the listed examples (sale, transfer, etc.)?
+    grounding:
+    - F_FOS
+    - F_DOAOT
+    handler: light
+  M_SIAFOS_A_SMFC:
+    statement: The supply is made for a consideration.
+    order: HIGH
+    interpretation: 'Decide whether: The supply is made for a consideration'
+    grounding:
+    - F_SCS
+    handler: light
+  M_SIAFOS_A_SAFC:
+    statement: The supply is agreed to be made for a consideration.
+    order: HIGH
+    interpretation: 'Decide whether: The supply is agreed to be made for a consideration'
+    grounding:
+    - F_SCS
+    handler: light
+  M_SIAFOS_A_SICOB:
+    statement: The supply is made by a person in the course or furtherance of business.
+    order: HIGH
+    interpretation: Is the supply made in the course or furtherance of the person's business?
+    grounding:
+    - F_SBC
+    - F_DOAOT
     handler: heavy
+  M_IOSFC_A_TIAIOS:
+    statement: The transaction is an import of services.
+    order: HIGH
+    interpretation: 'Decide whether: The transaction is an import of services'
+    grounding:
+    - F_TN
+    handler: light
+  M_IOSFC_A_IIFAC:
+    statement: The import of services is for a consideration.
+    order: HIGH
+    interpretation: 'Decide whether: The import of services is for a consideration'
+    grounding:
+    - F_SCS
+    handler: light
   M_IOSFRP_A_SIRP:
     statement: The import of services is made from a related person
     order: LOW
     rule: F_PRR = 'RELATED_PERSONS'
     handler: python
-  M_SIAWC_A_AMWC:
-    statement: The activity was made, or agreed to be made, without a consideration.
-    order: LOW
-    rule: F_SCS = 'NONE'
-    handler: python
 groups:
-  M_SIAFOS_G_SFA:
-    name: Supply Form Alternatives
+  M_SIAFOS_G_QFOS:
+    name: Qualifying Forms Of Supply
     logic: ANY
     members:
     - M_SIAFOS_A_SIAS
     - M_SIAFOS_A_SIAT
     - M_SIAFOS_A_SIAB
     - M_SIAFOS_A_SIAE
-    - M_SIAFOS_A_SIALG
-    - M_SIAFOS_A_SIAR
     - M_SIAFOS_A_SIAL
+    - M_SIAFOS_A_SIAR
+    - M_SIAFOS_A_SIAL2
     - M_SIAFOS_A_SIAD
-    - M_SIAFOS_A_SIAQF
-    description: Any one listed form or any other qualifying form of supply. The list after such as is illustrative and not
-      closed.
-  M_SIAFOS_G_MOAC:
-    name: Made Or Agreed Consideration
+    - M_SIAFOS_A_SIAF
+    description: The supply must take one of the listed forms or another qualifying form.
+  M_SIAFOS_G_SFC:
+    name: Supply For Consideration
     logic: ANY
     members:
-    - M_SIAFOS_A_SIMFC
-    - M_SIAFOS_A_SIAFC
-    description: The supply is either made for a consideration or agreed to be made for a consideration. Both events are not
-      required.
-  M_IOSFC_G_IFCG:
-    name: Import For Consideration Group
+    - M_SIAFOS_A_SMFC
+    - M_SIAFOS_A_SAFC
+    description: The supply must be made or agreed to be made for a consideration.
+  M_IOSFC_G_CFIOSTBS:
+    name: Conditions For Import Of Service To Be Supply
     logic: ALL
     members:
-    - M_IOSFC_A_TISI
-    - M_IOSFC_A_IMFC
-    description: Both the import of services and its consideration are required for the inclusion
-  M_SBRODP_G_RODP:
-    name: Related Or Distinct Parties
-    logic: ANY
-    members:
-    - M_SBRODP_A_SBRP
-    - M_SBRODP_A_SBDP
-    description: The supply is between related persons or between distinct persons as specified in section 25.
-  M_SIAWC_A_ASISI:
-    name: Any of the referred steps (M_SIAWC_A_ASISI)
-    logic: ANY
-    members:
-    - M_IOSFRP_PD_SIRP
-    - M_SBRODP_PD_SEWC
-    description: TRUE when any step of the law this check refers to is TRUE
-  M_SIAWC_G_SAWC:
-    name: Schedule Activity Without Consideration
-    logic: ALL
-    members:
-    - M_SIAWC_A_ASISI
-    - M_SIAWC_A_AMWC
-    description: Both the Schedule I activity test and the nil consideration test must be met for this inclusion.
+    - M_IOSFC_A_TIAIOS
+    - M_IOSFC_A_IIFAC
+    description: Both conditions must be met. The business test is explicitly not a condition for this type of supply.
 outcomes:
-  M_SIAFOS_LE_SIBC:
+  M_SIAFOS_LE_IISUS71A:
     outcome: SUPPLY_INCLUDED
-    expr: M_SIAFOS_G_SFA AND M_SIAFOS_A_SIOGOS AND M_SIAFOS_G_MOAC AND M_SIAFOS_A_SBPIB
+    expr: M_SIAFOS_G_QFOS AND M_SIAFOS_G_SFC AND M_SIAFOS_A_SICOB
     module: M_SIAFOS
-    description: The transaction is included in supply under Section 7(1)(a) when it is in a qualifying form, is of goods
-      or services or both, is made or agreed to be made for a consideration, and is by a person in the course or furtherance
-      of business.
-  M_IOSFC_LE_IOSI:
+    description: A transaction is included in the definition of supply if it is a qualifying form of supply, for a consideration,
+      and in the course or furtherance of business.
+  M_IOSFC_LE_IOSFCIS:
     outcome: SUPPLY_INCLUDED
-    expr: M_IOSFC_G_IFCG
+    expr: M_IOSFC_G_CFIOSTBS
     module: M_IOSFC
-    description: Import of services for a consideration is included in supply; the business test is not a member of this expression
-  M_SBRODP_LE_SEWC:
-    outcome: SUPPLY_EVEN_WITHOUT_CONSIDERATION
-    expr: M_SIAFOS_A_SIOGOS AND M_SBRODP_G_RODP AND M_SIAFOS_A_SBPIB
-    module: M_SBRODP
-    description: All three conditions are met, so the transaction is treated as supply under Schedule I paragraph 2 even if
-      made without consideration.
+    description: The transaction is included in the scope of supply if it meets the conditions for an import of service for
+      consideration.
   M_IOSFRP_LE_SIRP:
     outcome: SUPPLIER_IS_RELATED_PERSON
     expr: M_IOSFRP_A_SIRP
     module: M_IOSFRP
     description: The import of services is made from a related person (Schedule I, paragraph 4, part of the law)
-  M_SIAWC_LE_SIO:
-    outcome: SUPPLY_INCLUDED
-    expr: M_SIAWC_G_SAWC
-    module: M_SIAWC
-    description: The supply is included under this limb only when the Schedule I activity group is met.
 products:
-  M_SIAFOS_PD_SIBC:
-    statement: The transaction is included in supply under Section 7(1)(a) when it is in a qualifying form, is of goods or
-      services or both, is made or agreed to be made for a consideration, and is by a person in the course or furtherance
-      of business.
-  M_IOSFC_PD_IOSI:
-    statement: Import of services for a consideration is included in supply; the business test is not a member of this expression
-  M_SBRODP_PD_SEWC:
-    statement: All three conditions are met, so the transaction is treated as supply under Schedule I paragraph 2 even if
-      made without consideration.
+  M_SIAFOS_PD_IISUS71A:
+    statement: A transaction is included in the definition of supply if it is a qualifying form of supply, for a consideration,
+      and in the course or furtherance of business.
+  M_IOSFC_PD_IOSFCIS:
+    statement: The transaction is included in the scope of supply if it meets the conditions for an import of service for
+      consideration.
   M_IOSFRP_PD_SIRP:
     statement: The import of services is made from a related person
-  M_SIAWC_PD_SIO:
-    statement: The supply is included under this limb only when the Schedule I activity group is met.
 compounds:
-- id: C_SBRODP
-  question: 'Schedule I, paragraph 2: Supply Between Related Or Distinct Persons?'
+- id: C_S7_SS1
+  question: 'Section 7(1): which clause applies?'
   includes:
-  - M_SBRODP_LE_SEWC
+  - M_SIAFOS_LE_IISUS71A
+  - M_IOSFC_LE_IOSFCIS
   produces:
-  - product: M_SBRODP_PD_SEWC
+  - product: M_SIAFOS_PD_IISUS71A
     from:
-    - M_SBRODP_LE_SEWC
+    - M_SIAFOS_LE_IISUS71A
+  - product: M_IOSFC_PD_IOSFCIS
+    from:
+    - M_IOSFC_LE_IOSFCIS
 - id: C_IOSFRP
   question: The import of services is made from a related person? (Schedule I, paragraph 4)
   includes:
@@ -293,21 +313,5 @@ compounds:
   - product: M_IOSFRP_PD_SIRP
     from:
     - M_IOSFRP_LE_SIRP
-- id: C_S7_SS1
-  question: 'Section 7(1): which clause applies?'
-  includes:
-  - M_SIAFOS_LE_SIBC
-  - M_IOSFC_LE_IOSI
-  - M_SIAWC_LE_SIO
-  produces:
-  - product: M_SIAFOS_PD_SIBC
-    from:
-    - M_SIAFOS_LE_SIBC
-  - product: M_IOSFC_PD_IOSI
-    from:
-    - M_IOSFC_LE_IOSI
-  - product: M_SIAWC_PD_SIO
-    from:
-    - M_SIAWC_LE_SIO
 time:
   law_date: F_DOI

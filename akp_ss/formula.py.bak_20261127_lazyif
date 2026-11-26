@@ -1,0 +1,454 @@
+"""Formula grammar of WORKED_OUT facts (2026-11-27): the calculation a python atom needs, checked by Python.
+
+A formula works out ONE fact from other facts, numbers and the law's values. Python runs it at validation time,
+so it must be exact and complete. Allowed:
+  facts        F_ ids (a leading @ is dropped: @F_RATE -> F_RATE)
+  values       numbers (100, 0.25), quoted codes ('AFTER_DUE_DATE'), TRUE / FALSE
+  arithmetic   + - * / and ( )
+  comparison   = != > >= < <=          (inside IF or as a TRUE / FALSE formula)
+  logic        AND OR NOT
+  functions    MIN(a, b, ...)  MAX(a, b, ...)  ROUND(x)  ROUND(x, digits)  ABS(x)
+               IF(condition, then, else)
+               DAYS_BETWEEN(from, to)        days from the first date to the second (to - from)
+               MONTHS_BETWEEN(from, to)      whole months from the first date to the second
+               ADD_DAYS(date, n)  ADD_MONTHS(date, n)  END_OF_MONTH(date)  DATE(year, month, day)
+               YEAR(date)  MONTH(date)  DAY(date)
+Examples:
+  DAYS_BETWEEN(F_DUE_DATE, F_FILED_DATE)
+  MIN(F_DAYS_LATE * F_FEE_PER_DAY, F_FEE_CAP)
+  IF(F_FILED_DATE > F_DUE_DATE, 'AFTER_DUE_DATE', 'ON_OR_BEFORE_DUE_DATE')
+  ROUND(F_UNPAID_TAX * F_INTEREST_RATE / 100 * F_DAYS_LATE / 365)
+"""
+from __future__ import annotations
+
+import re
+from typing import Dict, Iterable, List, Set, Tuple
+
+FUNCTIONS = {                      # name: (min args, max args)
+    "MIN": (2, 99), "MAX": (2, 99), "ROUND": (1, 2), "ABS": (1, 1), "IF": (3, 3),
+    "DAYS_BETWEEN": (2, 2), "MONTHS_BETWEEN": (2, 2), "ADD_DAYS": (2, 2), "ADD_MONTHS": (2, 2),
+    "END_OF_MONTH": (1, 1), "DATE": (3, 3), "YEAR": (1, 1), "MONTH": (1, 1), "DAY": (1, 1),
+}
+_TOKEN = re.compile(r"\s*(?:(?P<num>\d+(?:\.\d+)?)|(?P<str>'[^']*')|"
+                    r"(?P<id>@?[A-Za-z_][A-Za-z0-9_]*(?:\.[a-z][a-z0-9_]*)?)|"
+                    r"(?P<op><=|>=|!=|==|<>|[-+*/(),=<>]))")
+STEP_NAME = re.compile(r"^[a-z][a-z0-9_]*$")
+COMPARE = ("=", "!=", ">", ">=", "<", "<=")
+
+
+def normalise(text: str) -> str:
+    """What models typically write -> the grammar, never changing the meaning: outer quotes, @F_X, ==, <>,
+    "quoted" codes, x and y / x or y in lower case."""
+    t = str(text or "").strip()
+    if len(t) >= 2 and t[0] == t[-1] and t[0] in "\"'" and t.count(t[0]) == 2:
+        t = t[1:-1].strip()
+    t = re.sub(r"@(?=F_)", "", t)
+    t = re.sub(r'"([^"]*)"', r"'\1'", t)
+    t = t.replace("==", "=").replace("<>", "!=")
+    t = re.sub(r"\b(and|or|not|if|min|max|round|abs|true|false)\b", lambda m: m.group(1).upper(), t)
+    return t
+
+
+def own(text: str, fact_id: str) -> str:
+    """A formula written as an assignment of its own fact ("F_FEE = MIN(...)" or "F_FEE := ...") -> the right side."""
+    raw = str(text or "").strip()
+    if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in "\"'" and raw.count(raw[0]) == 2:
+        raw = raw[1:-1].strip()
+    m = re.match(r"^\s*@?" + re.escape(fact_id) + r"\s*(?::=|=(?!=))\s*", raw)
+    return normalise(raw[m.end():] if m else raw)
+
+
+def tokens(text: str) -> List[Tuple[str, str]]:
+    out, i, t = [], 0, text
+    while i < len(t):
+        if t[i:].strip() == "":
+            break
+        m = _TOKEN.match(t, i)
+        if not m or m.end() == i:
+            raise ValueError(f"unexpected character at {i}: '{t[i:i + 12]}'")
+        kind = m.lastgroup
+        out.append((kind, m.group(kind)))
+        i = m.end()
+    return out
+
+
+def check(text: str, names: Iterable[str] = ()) -> Tuple[Set[str], List[str]]:
+    """(facts the formula uses, problems). Empty problems = Python can run it. `names`: the steps it may use
+    (earlier steps of the atom, and ATOM.step of its `when` atom)."""
+    allowed = set(names or ())
+    try:
+        toks = tokens(normalise(text))
+    except ValueError as exc:
+        return set(), [str(exc)]
+    if not toks:
+        return set(), ["empty formula"]
+    facts: Set[str] = set()
+    pos = [0]
+
+    def peek(k=0):
+        return toks[pos[0] + k] if pos[0] + k < len(toks) else ("end", "")
+
+    def take(value=None):
+        tok = peek()
+        if value is not None and tok[1].upper() != value:
+            raise ValueError(f"expected '{value}' but found '{tok[1] or 'the end'}'")
+        pos[0] += 1
+        return tok
+
+    def primary():
+        kind, val = peek()
+        if kind in ("num", "str"):
+            take()
+            return
+        if kind == "op" and val == "(":
+            take()
+            expr()
+            take(")")
+            return
+        if kind == "op" and val == "-":
+            take()
+            primary()
+            return
+        if kind == "id":
+            name = val.lstrip("@")
+            up = name.upper()
+            if up in ("TRUE", "FALSE"):
+                take()
+                return
+            if name.startswith("F_") and "." not in name:
+                take()
+                facts.add(name)
+                return
+            if name in allowed:
+                take()
+                return
+            if STEP_NAME.match(name) or "." in name:
+                raise ValueError(f"'{name}' is not a step defined before it" + (
+                    f" (steps here: {', '.join(sorted(allowed))})" if allowed else ""))
+            if up in FUNCTIONS:
+                take()
+                take("(")
+                n = 0
+                if peek()[1] != ")":
+                    expr()
+                    n = 1
+                    while peek()[1] == ",":
+                        take()
+                        expr()
+                        n += 1
+                take(")")
+                lo, hi = FUNCTIONS[up]
+                if not lo <= n <= hi:
+                    raise ValueError(f"{up} takes {lo}{'' if lo == hi else '-' + str(hi) if hi < 99 else ' or more'} "
+                                     f"argument(s), not {n}")
+                return
+            raise ValueError(f"'{name}' is not an F_ fact or an allowed function "
+                             f"({', '.join(sorted(FUNCTIONS))})")
+        raise ValueError(f"expected a value but found '{val or 'the end'}'")
+
+    def term():
+        primary()
+        while peek()[1] in ("*", "/"):
+            take()
+            primary()
+
+    def total():
+        term()
+        while peek()[1] in ("+", "-"):
+            take()
+            term()
+
+    def compare():
+        total()
+        if peek()[1] in ("=", "!=", ">", ">=", "<", "<="):
+            take()
+            total()
+
+    def negation():
+        if peek()[0] == "id" and peek()[1].upper() == "NOT":
+            take()
+        compare()
+
+    def conj():
+        negation()
+        while peek()[0] == "id" and peek()[1].upper() == "AND":
+            take()
+            negation()
+
+    def expr():
+        conj()
+        while peek()[0] == "id" and peek()[1].upper() == "OR":
+            take()
+            conj()
+
+    try:
+        expr()
+        if pos[0] != len(toks):
+            raise ValueError(f"unexpected '{peek()[1]}' after the end of the formula")
+    except ValueError as exc:
+        return facts, [str(exc)]
+    return facts, []
+
+
+def is_comparison(text: str) -> bool:
+    """TRUE when the formula's result is TRUE / FALSE at the top level (a rule)."""
+    try:
+        toks = tokens(normalise(text))
+    except ValueError:
+        return False
+    depth = 0
+    for kind, val in toks:
+        if val == "(":
+            depth += 1
+        elif val == ")":
+            depth -= 1
+        elif depth == 0 and (val in COMPARE or (kind == "id" and val.upper() in ("AND", "OR", "NOT", "TRUE", "FALSE"))):
+            return True
+    return False
+
+
+def check_steps(steps: "Dict[str, str]", rule: str = "", result: str = "", outside: Iterable[str] = ()
+                ) -> Tuple[Set[str], List[str]]:
+    """The calculation inside one atom: each step uses facts, numbers, earlier steps and `outside` (ATOM.step of its
+    when atom); the rule is a comparison on facts / steps; the result is a step. Returns (facts used, problems)."""
+    facts: Set[str] = set()
+    problems: List[str] = []
+    seen = set(outside or ())
+    for name, formula in steps.items():
+        if not STEP_NAME.match(name):
+            problems.append(f"step name '{name}' must be lower case words joined by _ (e.g. days_late)")
+        used, errs = check(formula, seen)
+        facts |= used
+        problems += [f"step {name} = {formula[:80]}: {e}" for e in errs]
+        seen.add(name)
+    if rule:
+        used, errs = check(rule, seen)
+        facts |= used
+        problems += [f"rule {rule[:80]}: {e}" for e in errs]
+        if not errs and not is_comparison(rule):
+            problems.append(f"rule {rule[:80]}: a rule compares (=, >, <, ...) - e.g. days_late > 0")
+    if result and result not in steps and not result.startswith("F_"):
+        problems.append(f"result {result} is not a step of this atom")
+    return facts, problems
+
+
+# ---------------------------------------------------------------- running a formula / rule (2026-11-27)
+# Python's self-test of a python atom: the steps and the rule are RUN on sample inputs. Also reads the engine rule
+# grammar (F_X IN ['A','B'], F_X IS_SET, DATE '2025-01-31'), so one evaluator runs every python atom.
+
+import datetime as _dt
+import calendar as _cal
+
+_RUN_TOKEN = re.compile(r"\s*(?:(?P<num>-?\d+(?:\.\d+)?)|(?P<str>'(?:[^']|'')*')|"
+                        r"(?P<id>@?[A-Za-z_][A-Za-z0-9_]*(?:\.[a-z][a-z0-9_]*)?)|"
+                        r"(?P<op><=|>=|!=|==|<>|[-+*/(),=<>\[\]]))")
+
+
+class RunError(ValueError):
+    pass
+
+
+def _days(a, b):
+    if not isinstance(a, _dt.date) or not isinstance(b, _dt.date):
+        raise RunError("DAYS_BETWEEN needs two dates")
+    return float((b - a).days)
+
+
+def _add_months(d, n):
+    if not isinstance(d, _dt.date):
+        raise RunError("ADD_MONTHS needs a date")
+    m = d.month - 1 + int(n)
+    y, m = d.year + m // 12, m % 12 + 1
+    return _dt.date(y, m, min(d.day, _cal.monthrange(y, m)[1]))
+
+
+def _num(x, what):
+    if isinstance(x, bool) or not isinstance(x, (int, float)):
+        raise RunError(f"{what} needs numbers, got {type(x).__name__}")
+    return float(x)
+
+
+_FUNCS = {
+    "MIN": lambda *a: min(_num(x, "MIN") for x in a), "MAX": lambda *a: max(_num(x, "MAX") for x in a),
+    "ROUND": lambda x, d=0: round(_num(x, "ROUND"), int(d)), "ABS": lambda x: abs(_num(x, "ABS")),
+    "DAYS_BETWEEN": _days,
+    "MONTHS_BETWEEN": lambda a, b: float((b.year - a.year) * 12 + b.month - a.month),
+    "ADD_DAYS": lambda d, n: d + _dt.timedelta(days=int(_num(n, "ADD_DAYS"))),
+    "ADD_MONTHS": _add_months,
+    "END_OF_MONTH": lambda d: _dt.date(d.year, d.month, _cal.monthrange(d.year, d.month)[1]),
+    "DATE": lambda y, m, d: _dt.date(int(y), int(m), int(d)),
+    "YEAR": lambda d: float(d.year), "MONTH": lambda d: float(d.month), "DAY": lambda d: float(d.day),
+}
+
+
+def run(text: str, env: Dict[str, object]):
+    """The value of a formula or rule with the inputs in `env` (facts and steps). Raises RunError when Python
+    cannot work it out (a missing input, a date added to a word, a step that does not exist ...)."""
+    t = normalise(text)
+    t = re.sub(r"\bIS NOT NULL\b", "IS_SET", t, flags=re.I)
+    toks, i = [], 0
+    while i < len(t):
+        if not t[i:].strip():
+            break
+        m = _RUN_TOKEN.match(t, i)
+        if not m or m.end() == i:
+            raise RunError(f"unexpected character at {i}: '{t[i:i + 12]}'")
+        toks.append((m.lastgroup, m.group(m.lastgroup)))
+        i = m.end()
+    pos = [0]
+
+    def peek(k=0):
+        return toks[pos[0] + k] if pos[0] + k < len(toks) else ("end", "")
+
+    def take(v=None):
+        tok = peek()
+        if v is not None and tok[1].upper() != v:
+            raise RunError(f"expected '{v}' but found '{tok[1] or 'the end'}'")
+        pos[0] += 1
+        return tok
+
+    def word(v):
+        return peek()[0] == "id" and peek()[1].upper() == v
+
+    def literal():
+        kind, val = take()
+        if kind == "num":
+            return float(val)
+        if kind == "str":
+            return val[1:-1].replace("''", "'")
+        if kind == "id" and val.upper() in ("TRUE", "FALSE"):
+            return val.upper() == "TRUE"
+        raise RunError(f"expected a value, found '{val}'")
+
+    def primary():
+        kind, val = peek()
+        if kind == "num":
+            take()
+            return float(val)
+        if kind == "str":
+            take()
+            return val[1:-1].replace("''", "'")
+        if kind == "op" and val == "(":
+            take()
+            v = expr()
+            take(")")
+            return v
+        if kind == "op" and val == "-":
+            take()
+            return -_num(primary(), "-")
+        if kind == "id":
+            name = val.lstrip("@")
+            up = name.upper()
+            if up in ("TRUE", "FALSE"):
+                take()
+                return up == "TRUE"
+            if up == "DATE" and peek(1)[0] == "str":          # engine literal DATE '2025-01-31'
+                take()
+                return _dt.date.fromisoformat(take()[1][1:-1])
+            if up in _FUNCS and peek(1)[1] == "(":
+                take()
+                take("(")
+                args = []
+                if peek()[1] != ")":
+                    args.append(expr())
+                    while peek()[1] == ",":
+                        take()
+                        args.append(expr())
+                take(")")
+                try:
+                    return _FUNCS[up](*args)
+                except RunError:
+                    raise
+                except Exception as exc:
+                    raise RunError(f"{up}: {exc}") from exc
+            if up == "IF" and peek(1)[1] == "(":
+                take()
+                take("(")
+                c = expr()
+                take(",")
+                a = expr()
+                take(",")
+                b = expr()
+                take(")")
+                return a if c is True else b
+            take()
+            if name not in env or env[name] is None:
+                raise RunError(f"no value for {name}")
+            return env[name]
+        raise RunError(f"expected a value but found '{val or 'the end'}'")
+
+    def term():
+        v = primary()
+        while peek()[1] in ("*", "/"):
+            op = take()[1]
+            r = primary()
+            a, b = _num(v, op), _num(r, op)
+            if op == "/" and b == 0:
+                raise RunError("division by zero")
+            v = a * b if op == "*" else a / b
+        return v
+
+    def total():
+        v = term()
+        while peek()[1] in ("+", "-"):
+            op = take()[1]
+            r = term()
+            v = _num(v, op) + _num(r, op) if op == "+" else _num(v, op) - _num(r, op)
+        return v
+
+    def compare():
+        v = total()
+        if word("IS_SET"):
+            take()
+            return v is not None and v != ""
+        if word("IS_EMPTY"):
+            take()
+            return v is None or v == ""
+        if word("IN"):
+            take()
+            take("[")
+            vals = [literal()]
+            while peek()[1] == ",":
+                take()
+                vals.append(literal())
+            take("]")
+            return v in vals
+        if peek()[1] in ("=", "!=", ">", ">=", "<", "<="):
+            op = take()[1]
+            r = total()
+            if op in ("=", "!="):
+                return (v == r) if op == "=" else (v != r)
+            if type(v) is not type(r) and not (isinstance(v, (int, float)) and isinstance(r, (int, float))):
+                raise RunError(f"cannot compare {type(v).__name__} with {type(r).__name__}")
+            return {">": v > r, ">=": v >= r, "<": v < r, "<=": v <= r}[op]
+        return v
+
+    def negation():
+        if word("NOT"):
+            take()
+            v = negation()
+            if not isinstance(v, bool):
+                raise RunError("NOT needs TRUE / FALSE")
+            return not v
+        return compare()
+
+    def conj():
+        v = negation()
+        while word("AND"):
+            take()
+            r = negation()
+            v = bool(v) and bool(r)
+        return v
+
+    def expr():
+        v = conj()
+        while word("OR"):
+            take()
+            r = conj()
+            v = bool(v) or bool(r)
+        return v
+
+    v = expr()
+    if pos[0] != len(toks):
+        raise RunError(f"unexpected '{peek()[1]}' after the end")
+    return v

@@ -8,7 +8,7 @@ Each returns a list of short, fixable error sentences (empty = pass). They go ba
 from __future__ import annotations
 
 import re
-from typing import Dict, Iterable, List, Set
+from typing import Dict, Iterable, List, Set, Tuple
 
 from transport import get_field
 
@@ -228,8 +228,8 @@ def structure(rows: List[dict], sp_source: List[dict], operative: bool, registry
         if t in groups:
             stack.extend(field_list(groups[t], "members"))
     for a in atoms:
-        if les and a not in reach:
-            errors.append(f"{a}: atom is not used by any LE or group (orphan)")
+        if les and a not in reach and not (get_field(atoms[a], "when") and get_field(atoms[a], "result")):
+            errors.append(f"{a}: atom is not used by any LE or group (orphan)")   # a when + result atom hangs on its when
 
     # atoms: complete proposition + facts
     for a_id, a in atoms.items():
@@ -245,7 +245,7 @@ def structure(rows: List[dict], sp_source: List[dict], operative: bool, registry
     for f_id, f in facts.items():
         if f["MKP"] != "TXN":
             errors.append(f"{f_id}: FACTS rows are owned by TXN")
-        if not re.fullmatch(r"F_[A-Z0-9]+(?:_[A-Z0-9]+)+", f_id):
+        if f_id not in registry_ids and not re.fullmatch(r"F_[A-Z0-9]+(?:_[A-Z0-9]+)+", f_id):   # registry ids are kept as given
             errors.append(f"{f_id}: fact id must be F_<ENTITY>_<ATTRIBUTE> in capitals")
         if not rfield(f, "type"):
             errors.append(f"{f_id}: fact needs a type")
@@ -306,16 +306,10 @@ def engine_ready(rows: List[dict], registry: dict = None) -> List[str]:
       options;  HIGH -> an interpretation question and at least one fact.  Errors go back to the judge."""
     from governance_master_ss import rules as R
     registry = registry or {}
-    facts, bool_facts = {}, set()
-    for r in rows:
-        if r["TYPE"] == "FACTS":
-            opts = [str(o).strip().strip("'\"") for o in _field_list(r, "options") if str(o).strip().upper() != "NA"]
-            ftype = get_field(r, "type").upper()
-            facts[r["ELEMENT"]] = {"type": ftype, "options": opts}
-            if ftype in ("BOOL", "BOOLEAN"):
-                bool_facts.add(r["ELEMENT"])
+    facts = fact_specs(rows, registry)
+    bool_facts = {f for f, s in facts.items() if s["type"] in ("BOOL", "BOOLEAN")}
     known = set(facts) | set(registry)
-    errs = []
+    errs = worked_out(facts, known) + money_atoms(rows, facts)
     for r in rows:
         if r["TYPE"] != "A":
             continue
@@ -339,6 +333,10 @@ def engine_ready(rows: List[dict], registry: dict = None) -> List[str]:
             if not rule or rule.upper() == "NA":
                 errs.append(f"RULE: {el} is LOW but has no rule; write a rule on its facts or make it HIGH")
                 continue
+            steps = atom_steps(r)
+            if steps or uses_steps(rule):              # 2026-11-27: the calculation is inside the atom
+                errs += step_checks(el, r, steps, rule, rows, facts, known, handler)
+                continue
             clean = R.clean(rule, bool_facts, {})
             problems = R.check(clean, known)
             if problems:
@@ -350,6 +348,8 @@ def engine_ready(rows: List[dict], registry: dict = None) -> List[str]:
                 bad = sorted(v for v in vals if opts and v not in opts)
                 if bad:
                     errs.append(f"VALUE: {el} compares {fid} with {bad}, which are not among its options {opts}")
+            if handler == "python":
+                errs += python_only(el, R.parse(clean)["facts"], facts)
         else:
             if not get_field(r, "interpretation") or get_field(r, "interpretation").upper() == "NA":
                 errs.append(f"QUESTION: {el} is HIGH but has no interpretation (the question the judge answers)")
@@ -364,3 +364,429 @@ def _field_list(row: dict, name: str) -> List[str]:
     if raw.startswith("[") and raw.endswith("]"):
         raw = raw[1:-1]
     return [x.strip() for x in raw.split(",") if x.strip()]
+
+
+# ---------------------------------------------------------------- python means python (2026-11-26)
+
+PYTHON_KINDS = ("DOCUMENT", "LOOKUP", "WORKED_OUT")
+SOURCE_KINDS = ("DOCUMENT", "LOOKUP", "WORKED_OUT", "READ", "ASK")
+
+
+def _kind(v) -> str:
+    k = str(v or "").strip().upper().replace(" ", "_")
+    return k if k in SOURCE_KINDS else ""
+
+
+# 2026-11-27: lookups we have no table for yet - the value is decided by the LLM (READ) until the data exists.
+# The user's call: the rate of goods / services (HSN, SAC) has no data now.
+LLM_LOOKUP_WORDS = ("HSN", "SAC", "TARIFF", "RATE OF TAX", "TAX RATE", "GST RATE", "RATE OF GST", "RATE SCHEDULE")
+
+
+def _needs_llm_lookup(name: str, evidence: str = "") -> bool:
+    text = f" {name} {evidence} ".upper().replace("_", " ")
+    return any(w in text for w in LLM_LOOKUP_WORDS)
+
+
+def fact_specs(rows: List[dict], registry: dict = None) -> Dict[str, dict]:
+    """Every fact the table can use: its FACTS row, else the fact registry. A fact with a formula is WORKED_OUT
+    even when the model forgot to say so; its derived_from is completed from the formula."""
+    from .formula import check as fcheck
+    registry = registry or {}
+    if not isinstance(registry, dict):                  # a plain list / set of registry ids
+        registry = {f: {} for f in registry}
+    out: Dict[str, dict] = {}
+    for fid, reg in registry.items():
+        reg = reg or {}
+        out[fid] = {"type": str(reg.get("type") or "").upper(), "options": list(reg.get("options") or []),
+                    "kind": _kind(reg.get("source_kind")), "derived_from": list(reg.get("derived_from") or []),
+                    "derivation": str(reg.get("derivation") or ""), "row": False, "registered": True}
+    for r in rows:
+        if r["TYPE"] != "FACTS":
+            continue
+        fid, old = r["ELEMENT"], out.get(r["ELEMENT"], {})
+        opts = [str(o).strip().strip("'\"") for o in _field_list(r, "options") if str(o).strip().upper() != "NA"]
+        from .formula import own
+        formula = get_field(r, "derivation")
+        formula = "" if formula.upper() == "NA" else own(formula, fid)
+        ins = [x for x in _field_list(r, "derived_from") if x.upper() != "NA"]
+        kind = _kind(get_field(r, "source_kind")) or old.get("kind", "")
+        if formula and kind in ("", "DOCUMENT", "LOOKUP"):
+            kind = "WORKED_OUT"
+        if kind == "LOOKUP" and _needs_llm_lookup(get_field(r, "name"), get_field(r, "evidence")):
+            kind = "READ"                                  # no rate table yet: the LLM decides it
+        if formula:
+            used, _ = fcheck(formula)
+            ins = list(dict.fromkeys(ins + sorted(used - {fid})))
+        out[fid] = {"type": str(rfield(r, "type") or "").upper() or old.get("type", ""), "options": opts or old.get("options", []),
+                    "kind": kind, "derived_from": ins or old.get("derived_from", []),
+                    "derivation": formula or old.get("derivation", ""), "row": True,
+                    "registered": bool(old.get("registered"))}
+    return out
+
+
+def python_only(el: str, used: Iterable[str], facts: Dict[str, dict]) -> List[str]:
+    """A python atom is decided by Python alone: every fact behind its rule - and behind every WORKED_OUT fact it
+    reaches - is DOCUMENT / LOOKUP / WORKED_OUT (from its FACTS row or the registry). A READ / ASK fact needs reading
+    or a person, so the atom must be light or heavy. No exceptions."""
+    errs, seen, todo = [], set(), list(used)
+    while todo:
+        fid = todo.pop()
+        if fid in seen:
+            continue
+        seen.add(fid)
+        f = facts.get(fid)
+        if f is None:
+            errs.append(f"PYTHON: {el} uses {fid}, which is neither a FACTS row nor a registry fact - write its "
+                        f"FACTS row with source_kind (DOCUMENT / LOOKUP / WORKED_OUT)")
+            continue
+        kind = f.get("kind") or ""
+        if kind not in PYTHON_KINDS:
+            errs.append(f"PYTHON: {el} is python but {fid} has source_kind '{kind or 'none'}' - a python atom may use "
+                        f"only DOCUMENT / LOOKUP / WORKED_OUT facts. If the value must be read or asked, set "
+                        f"source_kind READ / ASK and make {el} light or heavy with an interpretation")
+        if kind == "WORKED_OUT":
+            todo.extend(f.get("derived_from") or [])
+    return errs
+
+
+def worked_out(facts: Dict[str, dict], known: Set[str]) -> List[str]:
+    """Every WORKED_OUT fact of the table carries a formula Python can run (akp_ss/formula.py grammar) on known facts."""
+    from .formula import FUNCTIONS, check as fcheck
+    errs = []
+    for fid, f in facts.items():
+        if f.get("kind") != "WORKED_OUT" or not f.get("row"):
+            continue
+        if not f.get("registered"):                       # 2026-11-27: a calculated value is a step, not a fact
+            errs.append(f"FACT: {fid} is a calculated value - facts are raw inputs only. Remove its FACTS row and write "
+                        f"the formula as a step of the atom that uses it (stepN: \"<name> = <formula>\")")
+            continue
+        formula = (f.get("derivation") or "").strip()
+        if not formula:
+            errs.append(f"FORMULA: {fid} is WORKED_OUT but has no derivation - give the formula on its F_ inputs, e.g. "
+                        "derivation: \"DAYS_BETWEEN(F_DUE_DATE, F_FILED_DATE)\"")
+            continue
+        used, problems = fcheck(formula)
+        if problems:
+            errs.append(f"FORMULA: {fid} derivation '{formula[:120]}' is not formula grammar ({problems[0]}). Use F_ "
+                        f"facts, numbers, 'CODES', + - * / ( ), = != > >= < <=, AND OR NOT and "
+                        f"{', '.join(sorted(FUNCTIONS))} - e.g. IF(F_A > F_B, 'LATE', 'IN_TIME')")
+            continue
+        if fid in used:
+            errs.append(f"FORMULA: {fid} derivation uses {fid} itself")
+        for x in sorted(used - {fid}):
+            if x not in known:
+                errs.append(f"FORMULA: {fid} derivation uses {x}, which is neither a FACTS row nor a registry fact - "
+                            f"write its FACTS row (type, unit, source_kind)")
+    return errs
+
+
+def money_atoms(rows: List[dict], facts: Dict[str, dict]) -> List[str]:
+    """2026-11-27: an amount atom - when: <atom> + result: <WORKED_OUT fact> - is python, its `when` is an atom of the
+    table and its result is a WORKED_OUT fact with a formula. An OR amount / value names a WORKED_OUT fact too."""
+    atoms = {r["ELEMENT"] for r in rows if r["TYPE"] in ("A", "A_REF")}
+    errs = []
+    for r in rows:
+        el = r["ELEMENT"]
+        if r["TYPE"] == "A":
+            when, result = get_field(r, "when"), get_field(r, "result")
+            when = "" if when.upper() == "NA" else when
+            result = "" if result.upper() == "NA" else result.lstrip("@")
+            if when and when not in atoms:
+                errs.append(f"WHEN: {el} when: {when} is not an atom of this table")
+            if result:
+                if get_field(r, "handler").lower() != "python":
+                    errs.append(f"RESULT: {el} gives result {result} - an amount atom is handler: python, order: LOW")
+                how = get_field(r, "how")
+                if not how or how.upper() == "NA":
+                    errs.append(f"HOW: {el} is an amount atom without how - write how Python gets every input "
+                                f"(document field / table) and works out the amount")
+                elif atom_steps(r):
+                    ok, reason = python_test(r, rows, facts, amount=True)
+                    if not ok:
+                        errs.append(f"PYTHON TEST: {el} could not be worked out by Python - {reason}")
+                if result.startswith("F_"):                       # older form: a WORKED_OUT fact
+                    f = facts.get(result)
+                    if not f or f.get("kind") != "WORKED_OUT" or not f.get("derivation"):
+                        errs.append(f"RESULT: {el} result {result} must be a step of the atom (e.g. late_fee)")
+                elif result not in atom_steps(r):
+                    errs.append(f"RESULT: {el} result {result} is not a step of the atom - write step1 ... with it")
+        if r["TYPE"] == "OR":
+            for key in ("amount", "value"):
+                v = get_field(r, key).strip().lstrip("@")
+                m = re.fullmatch(r"([A-Z][A-Z0-9_]*)\.([a-z][a-z0-9_]*)", v)
+                if m:                                              # ATOM.step - the amount atom's result
+                    a = next((x for x in rows if x["TYPE"] == "A" and x["ELEMENT"] == m.group(1)), None)
+                    if not a or m.group(2) not in atom_steps(a):
+                        errs.append(f"OR: {el} {key}: {v} - {m.group(1)} has no step {m.group(2)}")
+                    continue
+                if re.fullmatch(r"F_[A-Z0-9_]+", v):
+                    f = facts.get(v)
+                    if not f or f.get("kind") != "WORKED_OUT" or not f.get("derivation"):
+                        errs.append(f"OR: {el} {key}: {v} must be a WORKED_OUT fact with its derivation formula")
+    return errs
+
+
+def fill_source_kind(rows: List[dict], candidates: List[dict], registry: dict = None) -> List[str]:
+    """The judge sometimes drops a FACTS row's source_kind (and derivation): Python copies it from the generators'
+    row for the same fact, else from the registry. Nothing is invented. Returns one note per fact filled."""
+    registry = registry or {}
+    cand: Dict[str, dict] = {}
+    for c in candidates or []:
+        if c.get("TYPE") == "FACTS":
+            for key in ("source_kind", "derivation", "derived_from"):
+                v = get_field(c, key)
+                if v and v.upper() != "NA":
+                    cand.setdefault(c["ELEMENT"], {}).setdefault(key, v)
+    notes = []
+    for r in rows:
+        if r["TYPE"] != "FACTS":
+            continue
+        fid, got = r["ELEMENT"], []
+        for key in ("source_kind", "derivation", "derived_from"):
+            if get_field(r, key) and get_field(r, key).upper() != "NA":
+                continue
+            v = (cand.get(fid) or {}).get(key) or (registry.get(fid) or {}).get(key)
+            if isinstance(v, list):
+                v = "[" + ", ".join(map(str, v)) + "]" if v else ""
+            if v:
+                if key == "derivation" and not str(v).startswith('"'):
+                    v = '"' + str(v).replace('"', "'") + '"'
+                _set(r, key, v)
+                got.append(key)
+        if got:
+            notes.append(f"FACT FILLED            : {fid} {', '.join(got)} copied from the generators / registry")
+    return notes
+
+
+def atom_steps(row: dict) -> "Dict[str, str]":
+    """The calculation steps of an atom, in order: step1: "days_late = DAYS_BETWEEN(F_ARDD, F_ARFD)", step2: ...
+    (name = formula). Returns {name: formula}; an unnamed step is kept under its own field name."""
+    from .formula import own
+    out: Dict[str, str] = {}
+    res = str(row.get("RESULTS") or "")
+    nums = sorted({int(n) for n in re.findall(r"(?:^|;)\s*step(\d+)\s*:", res, re.I)})
+    for n in nums:
+        raw = get_field(row, f"step{n}")
+        if not raw or raw.upper() == "NA":
+            continue
+        m = re.match(r"^\s*([A-Za-z][A-Za-z0-9_]*)\s*(?::=|=(?!=))\s*(.+)$", raw.strip().strip('"'), re.S)
+        if m:
+            out[m.group(1).strip().lower()] = own(m.group(2), m.group(1))
+        else:
+            out[f"step{n}"] = own(raw, f"step{n}")
+    return out
+
+
+def uses_steps(text: str) -> bool:
+    """A rule / result that names a step (lower case, or ATOM.step) instead of only F_ facts."""
+    t = re.sub(r"'[^']*'", "", str(text or ""))
+    return bool(re.search(r"(?<![A-Za-z0-9_])[a-z][a-z0-9_]*(?![A-Za-z0-9_(])", re.sub(
+        r"\b(and|or|not|true|false)\b", "", t))) or bool(re.search(r"[A-Z0-9_]\.[a-z]", t))
+
+
+def step_checks(el: str, r: dict, steps: Dict[str, str], rule: str, rows: List[dict], facts: Dict[str, dict],
+                known: Set[str], handler: str) -> List[str]:
+    """An atom that carries its calculation: every step is formula grammar on facts / numbers / earlier steps /
+    ATOM.step of its `when` atom, the rule compares a step or a fact, the result is a step, every fact used is
+    declared (FACTS row or registry) and listed in the atom's facts, and the atom is python on DOCUMENT / LOOKUP
+    facts only. No exceptions."""
+    from .formula import check_steps
+    errs = []
+    when = get_field(r, "when")
+    when = "" if when.upper() == "NA" else when
+    outside = []
+    if when:
+        w = next((x for x in rows if x["TYPE"] in ("A", "A_REF") and x["ELEMENT"] == when), None)
+        outside = [f"{when}.{s}" for s in (atom_steps(w) if w else {})]
+    result = get_field(r, "result").lstrip("@")
+    result = "" if result.upper() == "NA" else result
+    used, problems = check_steps(steps, rule, result, outside)
+    errs += [f"STEP: {el} {p}" for p in problems]
+    listed = set(_field_list(r, "facts"))
+    for f in sorted(used):
+        if f not in known:
+            errs.append(f"STEP: {el} uses {f}, which is neither a FACTS row nor a registry fact - write its FACTS row "
+                        f"(type, unit, source_kind DOCUMENT or LOOKUP)")
+        elif f not in listed:
+            errs.append(f"STEP: {el} uses {f} - list it in the atom's facts: [...]")
+    if handler != "python":
+        errs.append(f"HANDLER: {el} carries a calculation (steps) - it is handler: python, order: LOW")
+    errs += python_only(el, used, facts)
+    return errs
+
+
+def _set(row: dict, key: str, value) -> None:
+    """Set (or, with value None, remove) one `key: value` field of an AKP RESULTS string, in place."""
+    res = str(row.get("RESULTS") or "")
+    pat = re.compile(r"(^|;)\s*" + re.escape(key) + r"\s*:\s*(?:\"[^\"]*\"|[^;]*)", re.I)
+    if value is None:
+        res = pat.sub(lambda m: m.group(1), res)
+    elif pat.search(res):
+        res = pat.sub(lambda m: f"{m.group(1)}{' ' if m.group(1) else ''}{key}: {value}", res, count=1)
+    else:
+        res = (res.rstrip("; ") + f"; {key}: {value}") if res.strip() else f"{key}: {value}"
+    row["RESULTS"] = re.sub(r";\s*;", ";", res).strip("; ").strip()
+
+
+def repair_handlers(rows: List[dict], registry: dict = None) -> List[str]:
+    """A python atom on a fact that must be READ or ASKed - or whose source_kind is not given, so it is not proven
+    that Python can get the value - cannot be decided by Python. Python moves it to the LLM
+    itself (order HIGH, handler light, an interpretation question, the rule's facts as its facts) - always safe, the
+    legal meaning (statement, LE, groups) is untouched. A light / heavy atom left with order LOW is moved to HIGH too.
+    Returns one note per atom changed."""
+    specs = fact_specs(rows, registry)
+    kinds = {f: s["kind"] for f, s in specs.items()}
+
+    def chain(start):                                  # the facts behind the rule, through every WORKED_OUT fact
+        seen, todo = set(), list(start)
+        while todo:
+            f = todo.pop()
+            if f not in seen:
+                seen.add(f)
+                if kinds.get(f) == "WORKED_OUT":
+                    todo.extend(specs[f].get("derived_from") or [])
+        return seen
+    notes = []
+    for r in rows:
+        if r["TYPE"] != "A":
+            continue
+        order, handler = get_field(r, "order").upper(), get_field(r, "handler").lower()
+        rule = get_field(r, "rule")
+        used = set(re.findall(r"\bF_[A-Z0-9_]+\b", rule)) | set(_field_list(r, "facts"))
+        behind = chain(used)
+        needs_reading = sorted(f for f in behind if kinds.get(f) in ("READ", "ASK"))
+        unknown = sorted(f for f in behind if not kinds.get(f))    # no FACTS row / no source_kind: not proven python
+        why = ""
+        amount_atom = bool(get_field(r, "result") and get_field(r, "result").upper() != "NA")
+        if amount_atom:
+            continue                     # money is never sent to the LLM: its errors go back to the judge
+        if order == "LOW" and handler in ("python", "") and not (needs_reading or unknown):
+            how = get_field(r, "how")
+            if not how or how.upper() == "NA":
+                why = "has no how (how Python gets every input and works it out)"
+            else:
+                ok, reason = python_test(r, rows, specs)
+                if not ok:
+                    why = f"failed the Python test ({reason})"
+        if why:
+            pass
+        elif order == "LOW" and handler in ("python", "") and (needs_reading or unknown):
+            why = "uses " + "; ".join(x for x in (", ".join(needs_reading) + " (READ / ASK)" if needs_reading else "",
+                                                  ", ".join(unknown) + " (source_kind not given)" if unknown else "") if x)
+        elif order == "LOW" and handler in ("light", "heavy"):
+            why = f"handler {handler} with order LOW"
+        if not why:
+            continue
+        statement = get_field(r, "statement") or r["ELEMENT"]
+        if not get_field(r, "interpretation") or get_field(r, "interpretation").upper() == "NA":
+            q = statement.rstrip(". ")
+            _set(r, "interpretation", f'"Decide whether: {q}"')
+        if not _field_list(r, "facts") and used:
+            _set(r, "facts", "[" + ", ".join(sorted(used)) + "]")
+        _set(r, "order", "HIGH")
+        _set(r, "handler", handler if handler in ("light", "heavy") else "light")
+        _set(r, "rule", None)
+        for n in re.findall(r"(?:^|;)\s*(step\d+)\s*:", str(r.get("RESULTS") or ""), re.I):
+            _set(r, n, None)                               # the LLM decides it: no calculation left behind
+        notes.append(f"HANDLER REPAIR         : {r['ELEMENT']} {why} - moved to the LLM (order HIGH, handler "
+                     f"{get_field(r, 'handler')}, question from its statement)")
+    return notes
+
+
+# ---------------------------------------------------------------- the Python test of a python atom (2026-11-27)
+
+def _samples(spec: dict, numbers=(), dates=()):
+    """Test values for one raw fact, by its type - around every number / date the law's rule uses, so a threshold
+    (turnover > 15000000) is tested on both sides. None = Python cannot make a test value (text, list ...)."""
+    import datetime as dt
+    t = str(spec.get("type") or "").upper()
+    if t in ("DATE",):
+        out = [dt.date(2025, 1, 10), dt.date(2025, 6, 30), dt.date(2026, 3, 31)]
+        for d in dates:
+            out += [d - dt.timedelta(days=1), d + dt.timedelta(days=1)]
+        return list(dict.fromkeys(out))
+    if t in ("BOOL", "BOOLEAN"):
+        return [True, False]
+    if t in ("AMOUNT", "MONEY", "NUMBER", "INTEGER", "QUANTITY", "PERIOD", "DURATION", "PERCENT", "RATE"):
+        out = [0.25, 18.0] if t in ("PERCENT", "RATE") else [0.0, 5.0, 400.0, 250000.0]
+        for n in numbers:
+            out += [n - 1, n + 1, n * 10 + 1]
+        return list(dict.fromkeys(x for x in out if x >= 0))
+    if t in ("CODE", "ENUM"):
+        return list(spec.get("options") or []) or None
+    return None
+
+
+def python_test(row: dict, rows: List[dict], specs: Dict[str, dict], limit: int = 256,
+                amount: bool = False) -> Tuple[bool, str]:
+    """RUN the atom the way the validation engine will: give every raw fact test values of its type (all options
+    of a CODE, both values of a BOOL, early / late dates, small / large amounts), work out every step, then the
+    rule. The atom is python only when this works for every input and the rule can come out both TRUE and FALSE.
+    Returns (passed, reason)."""
+    import itertools
+    import random
+    from .formula import RunError, run
+    by_id = {x["ELEMENT"]: x for x in rows if x["TYPE"] in ("A", "A_REF")}
+    chain, a = [], row
+    while a is not None and a["ELEMENT"] not in [c["ELEMENT"] for c in chain]:   # the when atoms first
+        chain.insert(0, a)
+        w = get_field(a, "when")
+        a = by_id.get(w) if w and w.upper() != "NA" else None
+    rule = get_field(row, "rule")
+    used: List[str] = []
+    for c in chain:
+        texts = [get_field(c, "rule")] + list(atom_steps(c).values())
+        for f in re.findall(r"\bF_[A-Z0-9_]+\b", " ".join(texts)) + _field_list(c, "facts"):
+            if f not in used:
+                used.append(f)
+    import datetime as dt
+    texts_all = " ".join([get_field(c, "rule") for c in chain] + [v for c in chain for v in atom_steps(c).values()])
+    plain = re.sub(r"'[^']*'", " ", texts_all)
+    numbers = [float(n) for n in re.findall(r"(?<![A-Za-z0-9_.])\d+(?:\.\d+)?(?![A-Za-z0-9_])", plain)]
+    dates = []
+    for y, m, d in re.findall(r"'(\d{4})-(\d{2})-(\d{2})'", texts_all):
+        try:
+            dates.append(dt.date(int(y), int(m), int(d)))
+        except ValueError:
+            pass
+    values = []
+    for f in used:
+        s = _samples(specs.get(f) or {}, numbers, dates)
+        if not s:
+            spec = specs.get(f) or {}
+            return False, (f"{f} is {spec.get('type') or 'of no known type'}"
+                           + (" without options" if str(spec.get("type")).upper() in ("CODE", "ENUM") else "")
+                           + " - Python cannot work with it")
+        values.append(s)
+    combos = list(itertools.product(*values)) if values else [()]
+    if len(combos) > limit:
+        combos = random.Random(0).sample(combos, limit)
+    seen = set()
+    for combo in combos:
+        env: Dict[str, object] = dict(zip(used, combo))
+        try:
+            for c in chain:
+                for name, formula in atom_steps(c).items():
+                    v = run(formula, env)
+                    env[name] = v
+                    env[f"{c['ELEMENT']}.{name}"] = v
+            out = run(rule, env)
+        except RunError as exc:
+            if "division by zero" in str(exc):
+                continue                                  # a zero test value under a division: not the law's fault
+            sample = ", ".join(f"{k}={v}" for k, v in list(zip(used, combo))[:4])
+            return False, f"{exc} (with {sample})"
+        if not isinstance(out, bool):
+            return False, f"the rule gives {out!r}, not TRUE / FALSE"
+        if amount and out:
+            res = env.get(get_field(row, "result").lstrip("@"))
+            if isinstance(res, bool) or not isinstance(res, (int, float)):
+                return False, f"the result {get_field(row, 'result')} is {res!r}, not an amount"
+        seen.add(out)
+    if not seen:
+        return False, "no test input could be worked out"
+    if amount:
+        return (True, "") if True in seen else (False, "the amount is never above zero")
+    if len(seen) < 2:
+        return False, f"the rule is always {next(iter(seen))} - it tests nothing"
+    return True, ""

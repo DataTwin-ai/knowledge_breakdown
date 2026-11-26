@@ -1,0 +1,363 @@
+# GOVERNANCE MASTER TSG06_03 Composition & special taxpayers / recipients (TG06 Parties & Registration)
+# LAW ARC - 6 laws - status APPROVED
+name: TSG06_03 Composition & special taxpayers / recipients - GOVERNANCE MASTER rulebook
+version: TSG06_03
+facts:
+  # ---- level 1: gate facts - if one is false, that law stops here
+  F_PTC:  # 1. 1 gate | 4 law(s)
+    name: Person Tax Category
+    type: CODE
+    options:
+    - COMPOSITION_S10
+    - ISD
+    - NON_RESIDENT
+    - REGULAR
+    - TCS_S52
+    - TDS_S51
+    tier: T0
+    origin:
+      document: GST_REGISTRATION
+      method: LOOKUP
+      uses: [GST_RETURN.gstin, GST_REGISTRATION.taxpayer_type, GST_REGISTRATION.composition]
+      how_to_get: 'Take the GSTIN of the person who furnishes the return (GST_RETURN.gstin, or the supplier GSTIN on the invoice). Look it up in the GST portal / GSP search taxpayer API or the REG-06 certificate. Read taxpayer_type and composition. Map: composition = yes or ''Composition'' gives COMPOSITION_S10; ''Input Service Distributor'' gives ISD; ''Non-Resident Taxable Person'' gives NON_RESIDENT; ''Tax Collector (e-commerce)'' gives TCS_S52; ''Tax Deductor'' gives TDS_S51; ''Regular'' gives REGULAR. A person with several roles gets the role that applies to the return being checked.'
+      fallback: 'Ask the user: ''Is this person a regular taxpayer, a composition dealer, an Input Service Distributor, a non-resident taxable person, a TDS deductor or an e-commerce TCS collector?'''
+      when_missing: ASK
+      as_of: end of the tax period
+      level: TAXPAYER
+      ai_level: NONE
+      cost: MEDIUM
+      example: REGULAR
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_MOFD:  # 2. 1 gate | 3 law(s)
+    name: Mode Of Furnishing Details
+    type: CODE
+    options:
+    - ELECTRONIC
+    - OTHER
+    tier: T0
+    origin:
+      document: GST_RETURN
+      method: FIELD
+      uses: [GST_RETURN.filing_mode]
+      how_to_get: Take GST_RETURN.filing_mode. If it shows online filing on the GST portal, through a GSP, or with digital or EVC signature, the value is ELECTRONIC. If it shows paper or any other way, the value is OTHER.
+      fallback: 'If filing_mode is empty, treat a valid ARN in GST_RETURN.arn as ELECTRONIC. Otherwise ask the user: ''Did you file the return online on the GST portal?'''
+      when_missing: ASK
+      as_of: date of filing (ARN date)
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: ELECTRONIC
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_DOF:  # 3. 1 gate | 2 law(s)
+    name: Date Of Furnishing
+    type: DATE
+    tier: T1
+    origin:
+      document: GST_RETURN
+      method: FIELD
+      uses: [GST_RETURN.arn_date]
+      how_to_get: Take the filing acknowledgement of the return in question and read arn_date.
+      fallback: 'Ask the user: On what date did you file this return?'
+      when_missing: ASK
+      as_of: date of filing
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: '2024-05-18'
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_PRS:  # 4. 1 gate | 1 law(s)
+    name: Person Registration Status
+    type: CODE
+    options:
+    - CANCELLED
+    - REGISTERED
+    - SUSPENDED
+    - UNREGISTERED
+    tier: T0
+    origin:
+      document: GST_REGISTRATION
+      method: LOOKUP
+      uses: [GST_RETURN.gstin, SALE_INVOICE.supplier_gstin, GST_REGISTRATION.registration_status, GST_REGISTRATION.cancellation_date]
+      how_to_get: Take the GSTIN of the person from GST_RETURN.gstin or SALE_INVOICE.supplier_gstin. Look it up in the GST portal or GSP search taxpayer API and take registration_status. Active gives REGISTERED, Cancelled gives CANCELLED, and Suspended gives SUSPENDED. If the GSTIN is not found, the value is UNREGISTERED. If the status is Cancelled, check that cancellation_date is on or before the as-of date. If cancellation_date is later, the value is REGISTERED.
+      fallback: 'Read the registration certificate (REG-06) if the user has one. Otherwise ask: ''Is the person registered under GST? What is the GSTIN?'''
+      when_missing: ASK
+      as_of: end of the tax period or date of the return
+      level: TAXPAYER
+      ai_level: NONE
+      cost: MEDIUM
+      example: REGISTERED
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_RFT:  # 5. 1 gate | 1 law(s)
+    name: Return Furnishing Timing
+    type: CODE
+    options:
+    - AFTER_DUE_DATE
+    - ON_OR_BEFORE_DUE_DATE
+    tier: T0
+    derived_from:
+    - F_DOF
+    - F_TPOR
+  # ---- LAST: only heavy checks (free text) need these
+  F_RFUFF:  # 6. LAST (heavy check only) | 2 law(s) | asked only if M_NTPRF: F_PTC + F_MOFD + F_DOF + F_PRS + F_RFT
+    name: Return Form Used For Furnishing
+    type: TEXT
+    tier: T0
+    origin:
+      document: GST_RETURN
+      method: DERIVED
+      uses: [GST_RETURN.return_type, GST_RETURN.filing_mode]
+      how_to_get: On the return or its filing acknowledgement, read return_type (e.g. GSTR-1, GSTR-3B) and filing_mode (e.g. online portal, GSP, offline utility). Join them into one text, for example 'GSTR-3B filed electronically on the portal'.
+      fallback: 'Ask the user: ''Which return form did you file, and was it filed electronically on the GST portal?'''
+      when_missing: ASK
+      as_of: date of filing (ARN date)
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: GSTR-1, electronic filing on GST portal
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_TPOR:  # 7. LAST (heavy check only) | 1 law(s) | asked only if M_NTPRF: F_PTC + F_MOFD + F_DOF + F_PRS + F_RFT
+    name: Tax Period Of Return
+    type: AMOUNT
+    tier: T0
+    unit: MONTH
+    origin:
+      document: GST_RETURN
+      method: FIELD
+      uses: [GST_RETURN.ret_period, GST_RETURN.filing_frequency]
+      how_to_get: Open the return (GSTR-1, GSTR-3B or other) or its filing acknowledgement. Read the field ret_period, which holds the month or quarter the return covers. Use it as the tax period. If the return is quarterly, the value is the quarter. Use the return's filing_frequency only to interpret whether ret_period is a month or a quarter.
+      fallback: 'If the return or ret_period is not available, ask the user: ''For which month or quarter is this return filed?'''
+      when_missing: ASK
+      as_of: end of the tax period
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: April 2024 (042024)
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_RPOSD_A_PINTP:
+    statement: The person is a non-resident taxable person
+    order: LOW
+    rule: F_PTC = 'NON_RESIDENT'
+    handler: python
+  M_RPOSD_A_PPTUS10:
+    statement: The person is a person paying tax under the provisions of section 10
+    order: LOW
+    rule: F_PTC = 'COMPOSITION_S10'
+    handler: python
+  M_NTPRF_A_PIR:
+    statement: The non-resident taxable person is registered
+    order: LOW
+    rule: F_PRS = 'REGISTERED'
+    handler: python
+  M_NTPRF_A_RHBF:
+    statement: The registered non-resident taxable person has furnished a return
+    order: LOW
+    rule: F_DOF IS_SET
+    handler: python
+  M_NTPRF_A_RIPF:
+    statement: The return is furnished in such form and manner as may be prescribed
+    order: HIGH
+    interpretation: Is the return furnished in the form and manner prescribed for it?
+    grounding:
+    - F_RFUFF
+    handler: light
+  M_NTPRF_A_RFE:
+    statement: The return is furnished electronically
+    order: LOW
+    rule: F_MOFD = 'ELECTRONIC'
+    handler: python
+  M_NTPRF_A_FWED:
+    statement: The return is furnished within twenty days after the end of a calendar month or within seven days after the
+      last day of the period of registration specified under sub-section (1) of section 27, whichever is earlier
+    order: LOW
+    rule: F_RFT = 'ON_OR_BEFORE_DUE_DATE'
+    handler: python
+  M_RPFMR_A_RCCMOP:
+    statement: The return is furnished for every calendar month or part thereof
+    order: HIGH
+    interpretation: Does the tax period of the return cover a calendar month or a part of a calendar month?
+    grounding:
+    - F_TPOR
+    handler: light
+groups:
+  M_NTPRF_G_RNPS:
+    name: Registered Non-Resident Person Status
+    logic: ALL
+    members:
+    - M_RPOSD_A_PINTP
+    - M_NTPRF_A_PIR
+    description: The person is both a non-resident taxable person and registered.
+  M_NTPRF_G_PEFM:
+    name: Prescribed Electronic Form Manner
+    logic: ALL
+    members:
+    - M_NTPRF_A_RIPF
+    - M_NTPRF_A_RFE
+    description: The return is furnished in the prescribed form and manner and also electronically.
+outcomes:
+  M_RPOSD_LE_PINTP:
+    outcome: PERSON_IS_NON_RESIDENT_TAXABLE_PERSON
+    expr: M_RPOSD_A_PINTP
+    module: M_RPOSD
+    description: The person is a non-resident taxable person (Section 37(1), part of the law)
+  M_RPOSD_LE_PPTUS10:
+    outcome: PERSON_PAYS_TAX_UNDER_SECTION_10
+    expr: M_RPOSD_A_PPTUS10
+    module: M_RPOSD
+    description: The person is a person paying tax under the provisions of section 10 (Section 37(1), part of the law)
+  M_RPOSD_LE_PINTP_RPFMR:
+    outcome: PERSON_IS_NON_RESIDENT_TAXABLE_PERSON
+    expr: M_RPOSD_A_PINTP
+    module: M_RPFMR
+    description: The person is a non-resident taxable person (Section 39(1), part of the law)
+  M_RPOSD_LE_PPTUS10_RPFMR:
+    outcome: PERSON_PAYS_TAX_UNDER_SECTION_10
+    expr: M_RPOSD_A_PPTUS10
+    module: M_RPFMR
+    description: The person is a person paying tax under the provisions of section 10 (Section 39(1), part of the law)
+  M_NTPRF_LE_NROM:
+    outcome: RETURN_FURNISHING_OBLIGATION_MET
+    expr: M_NTPRF_G_RNPS AND M_NTPRF_A_RHBF AND M_RPFMR_A_RCCMOP AND M_NTPRF_G_PEFM AND M_NTPRF_A_FWED
+    module: M_NTPRF
+    description: The obligation is met when a registered non-resident taxable person has furnished the return for the calendar
+      month or part thereof, in the prescribed form and manner, electronically, within the earlier deadline.
+  M_NTPRF_LE_RHBF:
+    outcome: TAXABLE_PERSON_FURNISHES_RETURN
+    expr: M_NTPRF_A_RHBF
+    module: M_ISDMR
+    description: The registered non-resident taxable person has furnished a return (Section 39(4), part of the law)
+  M_NTPRF_LE_RFE:
+    outcome: RETURN_FURNISHED_ELECTRONICALLY
+    expr: M_NTPRF_A_RFE
+    module: M_ISDMR
+    description: The return is furnished electronically (Section 39(4), part of the law)
+  M_RPOSD_LE_PPTUS10_CTFAR:
+    outcome: PERSON_PAYS_TAX_UNDER_SECTION_10
+    expr: M_RPOSD_A_PPTUS10
+    module: M_CTFAR
+    description: The person is a person paying tax under the provisions of section 10 (Section 39(2), part of the law)
+  M_NTPRF_LE_RFE_RPFTR:
+    outcome: RETURN_FURNISHED_ELECTRONICALLY
+    expr: M_NTPRF_A_RFE
+    module: M_RPFTR
+    description: The return is furnished electronically (Section 39(3), part of the law)
+  M_NTPRF_LE_RIPF:
+    outcome: RETURN_IN_PRESCRIBED_FORM_AND_MANNER
+    expr: M_NTPRF_A_RIPF
+    module: M_RPFTR
+    description: The return is furnished in such form and manner as may be prescribed (Section 39(3), part of the law)
+products:
+  M_RPOSD_PD_PINTP:
+    statement: The person is a non-resident taxable person
+  M_RPOSD_PD_PPTUS10:
+    statement: The person is a person paying tax under the provisions of section 10
+  M_RPOSD_PD_PINTP_RPFMR:
+    statement: The person is a non-resident taxable person
+  M_RPOSD_PD_PPTUS10_RPFMR:
+    statement: The person is paying tax under the provisions of section 10
+  M_NTPRF_PD_NROM:
+    statement: The obligation is met when a registered non-resident taxable person has furnished the return for the calendar
+      month or part thereof, in the prescribed form and manner, electronically, within the earlier deadline.
+  M_NTPRF_PD_RHBF:
+    statement: The taxable person furnishes the return for the calendar month
+  M_NTPRF_PD_RFE:
+    statement: The return is furnished electronically
+  M_RPOSD_PD_PPTUS10_CTFAR:
+    statement: The registered person pays tax under the provisions of section 10
+  M_NTPRF_PD_RFE_RPFTR:
+    statement: The return is furnished electronically
+  M_NTPRF_PD_RIPF:
+    statement: The return is furnished in such form and manner as may be prescribed
+compounds:
+- id: C_RPOSD
+  question: The person is a non-resident taxable person; The person is a person paying tax under the provisions of section
+    10? (Section 37(1))
+  includes:
+  - M_RPOSD_LE_PINTP
+  - M_RPOSD_LE_PPTUS10
+  produces:
+  - product: M_RPOSD_PD_PINTP
+    from:
+    - M_RPOSD_LE_PINTP
+  - product: M_RPOSD_PD_PPTUS10
+    from:
+    - M_RPOSD_LE_PPTUS10
+- id: C_RPFMR
+  question: The person is a non-resident taxable person; The person is a person paying tax under the provisions of section
+    10? (Section 39(1))
+  includes:
+  - M_RPOSD_LE_PINTP_RPFMR
+  - M_RPOSD_LE_PPTUS10_RPFMR
+  produces:
+  - product: M_RPOSD_PD_PINTP_RPFMR
+    from:
+    - M_RPOSD_LE_PINTP_RPFMR
+  - product: M_RPOSD_PD_PPTUS10_RPFMR
+    from:
+    - M_RPOSD_LE_PPTUS10_RPFMR
+- id: C_NTPRF
+  question: 'Section 39(5): Non-Resident Taxable Person Return Filing?'
+  includes:
+  - M_NTPRF_LE_NROM
+  produces:
+  - product: M_NTPRF_PD_NROM
+    from:
+    - M_NTPRF_LE_NROM
+- id: C_ISDMR
+  question: The registered non-resident taxable person has furnished a return; The return is furnished electronically? (Section
+    39(4))
+  includes:
+  - M_NTPRF_LE_RHBF
+  - M_NTPRF_LE_RFE
+  produces:
+  - product: M_NTPRF_PD_RHBF
+    from:
+    - M_NTPRF_LE_RHBF
+  - product: M_NTPRF_PD_RFE
+    from:
+    - M_NTPRF_LE_RFE
+- id: C_CTFAR
+  question: The person is a person paying tax under the provisions of section 10? (Section 39(2))
+  includes:
+  - M_RPOSD_LE_PPTUS10_CTFAR
+  produces:
+  - product: M_RPOSD_PD_PPTUS10_CTFAR
+    from:
+    - M_RPOSD_LE_PPTUS10_CTFAR
+- id: C_RPFTR
+  question: The return is furnished electronically; The return is furnished in such form and manner as may be prescribed?
+    (Section 39(3))
+  includes:
+  - M_NTPRF_LE_RFE_RPFTR
+  - M_NTPRF_LE_RIPF
+  produces:
+  - product: M_NTPRF_PD_RFE_RPFTR
+    from:
+    - M_NTPRF_LE_RFE_RPFTR
+  - product: M_NTPRF_PD_RIPF
+    from:
+    - M_NTPRF_LE_RIPF
+time:
+  law_date: F_DOI

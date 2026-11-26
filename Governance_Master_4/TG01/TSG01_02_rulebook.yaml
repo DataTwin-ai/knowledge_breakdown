@@ -1,0 +1,811 @@
+# GOVERNANCE MASTER TSG01_02 Supply without consideration (Schedule I) (TG01 Supply & Taxability)
+# LAW ARC - 16 laws - status NEEDS_REVIEW
+name: TSG01_02 Supply without consideration (Schedule I) - GOVERNANCE MASTER rulebook
+version: TSG01_02
+facts:
+  # ---- level 1: gate facts - if one is false, that law stops here
+  F_SKOT:  # 1. 1 gate | 8 law(s)
+    name: Supply Kind Of Transaction
+    type: CODE
+    options:
+    - BOTH
+    - GOODS
+    - SERVICES
+    tier: T1
+  F_PRR:  # 2. 1 gate | 6 law(s)
+    name: Provider Recipient Relation
+    type: CODE
+    options:
+    - CONTRACTOR_CLIENT
+    - DISTINCT_PERSONS
+    - EMPLOYEE_EMPLOYER
+    - OTHER
+    - PRINCIPAL_AGENT
+    - RELATED_PERSONS
+    tier: T1
+  F_BAS:  # 3. 1 gate | 4 law(s)
+    name: Business Asset Status
+    type: CODE
+    options:
+    - PART_OF_BUSINESS_ASSETS
+    - NOT_PART_OF_BUSINESS_ASSETS
+    tier: T1
+  F_ADT:  # 4. 1 gate | 3 law(s)
+    name: Asset Disposition Type
+    type: CODE
+    options:
+    - OTHER
+    - PERMANENT_DISPOSAL
+    - PERMANENT_TRANSFER
+    tier: T0
+  F_SCS:  # 5. 1 gate | 3 law(s)
+    name: Supply Consideration Status
+    type: CODE
+    options:
+    - AGREED
+    - NONE
+    - PAID
+    tier: T1
+  F_AGVIFY:  # 6. 1 gate | 2 law(s)
+    name: Aggregate Gift Value In Financial Year
+    type: AMOUNT
+    tier: T0
+  F_ICAA:  # 7. 1 gate | 2 law(s)
+    name: Input Credit Availed Asset
+    type: BOOLEAN
+    tier: T0
+  F_ACBN:  # 8. 1 gate | 1 law(s)
+    name: Activity Covered By Notification
+    type: BOOLEAN
+    tier: T1
+  F_AUT:  # 9. 1 gate | 1 law(s)
+    name: Activity Undertaker Type
+    type: CODE
+    options:
+    - CENTRAL_GOVT
+    - STATE_GOVT
+    - LOCAL_AUTHORITY
+    - OTHER
+    tier: T1
+  F_NRB:  # 10. 1 gate | 1 law(s)
+    name: Notification Recommending Body
+    type: CODE
+    options:
+    - COUNCIL
+    - NONE_STATED
+    - OTHER
+    tier: T1
+  F_PTAS:  # 11. 1 gate | 1 law(s)
+    name: Post Transfer Asset Status
+    type: CODE
+    options:
+    - NO_LONGER_PART_OF_ASSETS
+    - STILL_PART_OF_ASSETS
+    tier: T1
+  F_SCT:  # 12. 1 gate | 1 law(s)
+    name: Supply Consideration Type
+    type: CODE
+    options:
+    - MONEY
+    - NON_MONEY
+    - NONE
+    tier: T1
+  F_TIR:  # 13. 1 gate | 1 law(s)
+    name: Transfer Initiator Role
+    type: CODE
+    options:
+    - BY_BUSINESS_PERSON
+    - UNDER_BUSINESS_PERSON_DIRECTION
+    - OTHER
+    tier: T1
+  # ---- level 2: asked only when that law's gates pass
+  F_FOS:  # 14. 2 | 2 law(s) | asked only if M_TOTISOG: F_SKOT | M_SIAFOS: F_SKOT + F_SCS
+    name: Form Of Supply
+    type: CODE
+    options:
+    - BARTER
+    - DISPOSAL
+    - EXCHANGE
+    - LEASE
+    - LICENCE
+    - OTHER
+    - RENTAL
+    - SALE
+    - TRANSFER
+    tier: T1
+  F_SEL:  # 15. 2 | 2 law(s) | asked only if M_SIAWC: F_SCS
+    name: Supplier Establishment Location
+    type: CODE
+    options:
+    - OTHER
+    - OTHER_ESTABLISHMENT_OUTSIDE_INDIA
+    tier: T1
+  # ---- LAST: only heavy checks (free text) need these
+  F_DOTA:  # 16. LAST (heavy check only) | 6 law(s) | asked only if M_SBRODP: F_SKOT | M_SOGPTA: F_SKOT + F_PRR | M_NGANGNS: F_ACBN + F_AUT + F_NRB | M_SIAWC: F_SCS | M_SIAFOS: F_SKOT + F_SCS
+    name: Description Of The Activity
+    type: TEXT
+    tier: T1
+  F_DOAOT:  # 17. LAST (heavy check only) | 4 law(s) | asked only if M_GTENS: F_PRR + F_AGVIFY | M_TOTISOG: F_SKOT | M_SIAWC: F_SCS
+    name: Description Of Activity Or Transaction
+    type: TEXT
+    tier: T1
+  F_SOOT:  # 18. LAST (heavy check only) | 3 law(s) | asked only if M_SIAWC: F_SCS | M_IOSFC: F_SCT
+    name: Supply Origin Of Transaction
+    type: CODE
+    options:
+    - IMPORT
+    - DOMESTIC
+    - EXPORT
+    tier: T1
+  F_ARU:  # 19. LAST (heavy check only) | 2 law(s) | asked only if M_SOGATP: F_SKOT + F_PRR | M_SIAWC: F_SCS
+    name: Agent Receipt Undertaking
+    type: BOOLEAN
+    tier: T1
+  F_AUC:  # 20. LAST (heavy check only) | 2 law(s) | asked only if M_PTOBAWI: F_ADT + F_ICAA | M_SIAWC: F_SCS
+    name: Asset Use Context
+    type: CODE
+    options:
+    - BUSINESS_USE
+    - PERSONAL_USE
+    - MIXED_USE
+    tier: T1
+  F_SFD:  # 21. LAST (heavy check only) | 2 law(s) | asked only if M_SIAWC: F_SCS
+    name: Supply Flow Direction
+    type: CODE
+    options:
+    - IMPORT_OF_SERVICES
+    - OTHER
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_PTOBAWI_A_PTOD:
+    statement: The transfer or disposal of the assets is permanent, being either a permanent transfer or a permanent disposal
+    order: LOW
+    rule: F_ADT IN ['PERMANENT_TRANSFER', 'PERMANENT_DISPOSAL']
+    handler: python
+  M_PTOBAWI_A_AABA:
+    statement: The assets transferred or disposed of are business assets
+    order: HIGH
+    interpretation: Were the assets held and used for the purposes of the business rather than for personal use, judged from
+      the use context of the assets?
+    grounding:
+    - F_AUC
+    handler: heavy
+  M_PTOBAWI_A_ITCAOA:
+    statement: Input tax credit has actually been availed on the same assets that were transferred or disposed of
+    order: LOW
+    rule: F_ICAA = TRUE
+    handler: python
+  M_SBRODP_A_SBRP:
+    statement: The supply is between related persons.
+    order: LOW
+    rule: F_PRR = 'RELATED_PERSONS'
+    handler: python
+  M_SBRODP_A_SBDP:
+    statement: The supply is between distinct persons as specified in section 25.
+    order: HIGH
+    interpretation: Are the supplier and the recipient distinct persons as specified in section 25, judged from the recorded
+      party relationship?
+    grounding:
+    - F_PRR
+    handler: heavy
+  M_SIAFOS_A_SIOGOS:
+    statement: The supply is of goods or services or both
+    order: LOW
+    rule: F_SKOT IN ['GOODS', 'SERVICES', 'BOTH']
+    handler: python
+  M_SIAFOS_A_SBPIB:
+    statement: The supply is made by a person in the course or furtherance of business
+    order: HIGH
+    interpretation: Is the person making the supply doing so in the course or furtherance of business, judged from the description
+      of the activity?
+    grounding:
+    - F_DOTA
+    handler: heavy
+  M_TOBASOG_A_GFBA:
+    statement: Goods forming part of the assets of a business
+    order: LOW
+    rule: F_BAS = 'PART_OF_BUSINESS_ASSETS'
+    handler: python
+  M_GTENS_A_PSUSP:
+    statement: Apart from this proviso, the parent supply provision of Schedule I would treat the transaction as a supply
+      even if made without consideration
+    order: HIGH
+    interpretation: Would the parent supply provision of Schedule I, apart from this proviso, treat this transaction as a
+      supply even though no consideration is paid?
+    grounding:
+    - F_DOAOT
+    handler: heavy
+  M_GTENS_A_TIAG:
+    statement: The transaction is a gift, meaning a transfer made without any consideration, as the word gifts is used in
+      the proviso
+    order: HIGH
+    interpretation: Is the transaction legally a gift, meaning a transfer made without any consideration, as the word gifts
+      is used in the proviso?
+    grounding:
+    - F_SCS
+    - F_DOAOT
+    handler: heavy
+  M_GTENS_A_GBETE:
+    statement: The gift is made by an employer to an employee
+    order: LOW
+    rule: F_PRR = 'EMPLOYEE_EMPLOYER'
+    handler: python
+  M_GTENS_A_AGVNEL:
+    statement: The gifts in a financial year are not exceeding fifty thousand rupees in value
+    order: LOW
+    rule: F_AGVIFY <= 50000
+    handler: python
+  M_SOGPTA_A_SBPTA:
+    statement: The supply is made by a principal to his agent
+    order: LOW
+    if_false: F_PRR holds any other party relation value
+    rule: F_PRR = 'PRINCIPAL_AGENT'
+    handler: python
+  M_SOGPTA_A_AUTSG:
+    statement: The agent undertakes to supply such goods on behalf of the principal
+    order: HIGH
+    interpretation: Does the description of the activity show that the agent undertakes to supply such goods on behalf of
+      the principal?
+    grounding:
+    - F_DOTA
+    handler: light
+  M_SOGPTA_A_SOSG:
+    statement: The supply the agent undertakes on behalf of the principal is a supply of goods
+    order: LOW
+    rule: F_SKOT IN ['GOODS', 'BOTH']
+    handler: python
+  M_SOGATP_A_SIATP:
+    statement: The supply is made by an agent to his principal
+    order: LOW
+    rule: F_PRR = 'PRINCIPAL_AGENT'
+    handler: python
+  M_SOGATP_A_AUROG:
+    statement: The agent undertakes to receive such goods on behalf of the principal
+    order: HIGH
+    interpretation: Does the agency agreement or contract show that the agent undertook to receive these goods on behalf of
+      the principal?
+    grounding:
+    - F_ARU
+    handler: light
+  M_IOSFRP_A_SIRP:
+    statement: The import of services is made from a related person
+    order: LOW
+    rule: F_PRR = 'RELATED_PERSONS'
+    handler: python
+  M_IOSFRP_A_SIOOE:
+    statement: The import of services is made from any of his other establishments outside India
+    order: LOW
+    rule: F_SEL = 'OTHER_ESTABLISHMENT_OUTSIDE_INDIA'
+    handler: python
+  M_IOSFRP_A_IOSBTP:
+    statement: The supply is an import of services by a taxable person
+    order: HIGH
+    interpretation: Is this an import of services, and is the person who receives the imported service a taxable person under
+      the CGST Act, 2017, as the old wording 'by a taxable person' requires? The facts list has no taxable-person fact, so
+      this status must be judged from the description of the parties.
+    grounding:
+    - F_SFD
+    handler: heavy
+    valid_to: '2019-01-31'
+  M_IOSFC_A_TISI:
+    statement: The transaction is an import of services
+    order: HIGH
+    interpretation: Does the documented transaction amount to an import of services under the Act, given its supply origin
+      and whether the supply is of services?
+    grounding:
+    - F_SOOT
+    - F_SKOT
+    handler: light
+  M_TOTISOG_A_GTT:
+    statement: The transaction involves a transfer of the title in goods, meaning title in the goods passes from one person
+      to another
+    order: HIGH
+    if_false: the transaction gives only possession or use without passing title
+    interpretation: Does the transaction, as shown by its form and description, pass ownership of the goods (title) from one
+      person to another rather than only possession or a right to use them?
+    grounding:
+    - F_FOS
+    - F_DOAOT
+    handler: heavy
+  M_TOBASOG_A_TBBP:
+    statement: The transfer or disposal is by or under the directions of the person carrying on the business
+    order: LOW
+    rule: F_TIR IN ['BY_BUSINESS_PERSON', 'UNDER_BUSINESS_PERSON_DIRECTION']
+    handler: python
+  M_TOBASOG_A_NLBA:
+    statement: The goods are transferred or disposed of so as no longer to form part of those assets
+    order: LOW
+    rule: F_PTAS = 'NO_LONGER_PART_OF_ASSETS'
+    handler: python
+  M_ANGNS_A_ASISIII:
+    statement: The activity or transaction is specified in Schedule III
+    order: HIGH
+    interpretation: Does the activity or transaction described in the document match an entry specified in Schedule III?
+    grounding:
+    - F_DOAOT
+    handler: heavy
+  M_NGANGNS_A_UBGB:
+    statement: The activity or transaction is undertaken by the Central Government, a State Government or any local authority.
+    order: LOW
+    rule: F_AUT IN ['CENTRAL_GOVT', 'STATE_GOVT', 'LOCAL_AUTHORITY']
+    handler: python
+  M_NGANGNS_A_EAPA:
+    statement: The Central Government, State Government or local authority is engaged in the activity or transaction as a
+      public authority.
+    order: HIGH
+    if_false: the activity is carried on other than as a public authority
+    interpretation: On the description of the activity, is the government body engaged in it as a public authority, rather
+      than in an ordinary commercial or private capacity?
+    grounding:
+    - F_DOTA
+    handler: heavy
+  M_NGANGNS_A_AINBG:
+    statement: The activity or transaction is one that may be notified by the Government and has been so notified.
+    order: LOW
+    rule: F_ACBN = TRUE
+    handler: python
+  M_GPTNQR_A_NOCR:
+    statement: The Government's notification of the class of registered persons is made on the recommendations of the Council
+    order: LOW
+    rule: F_NRB = 'COUNCIL'
+    handler: python
+  M_SIAWC_A_AMWC:
+    statement: The activity was made, or agreed to be made, without a consideration.
+    order: LOW
+    rule: F_SCS = 'NONE'
+    handler: python
+  M_SIAFOS_A_SIAS:
+    statement: The supply takes the form of a sale of goods or services or both
+    order: LOW
+    rule: F_FOS = 'SALE'
+    handler: python
+  M_SIAFOS_A_SIAT:
+    statement: The supply takes the form of a transfer of goods or services or both
+    order: LOW
+    rule: F_FOS = 'TRANSFER'
+    handler: python
+  M_SIAFOS_A_SIAB:
+    statement: The supply takes the form of a barter of goods or services or both
+    order: LOW
+    rule: F_FOS = 'BARTER'
+    handler: python
+  M_SIAFOS_A_SIAE:
+    statement: The supply takes the form of an exchange of goods or services or both
+    order: LOW
+    rule: F_FOS = 'EXCHANGE'
+    handler: python
+  M_SIAFOS_A_SIALG:
+    statement: The supply takes the form of a licence of goods or services or both
+    order: LOW
+    rule: F_FOS = 'LICENCE'
+    handler: python
+  M_SIAFOS_A_SIAR:
+    statement: The supply takes the form of a rental of goods or services or both
+    order: LOW
+    rule: F_FOS = 'RENTAL'
+    handler: python
+  M_SIAFOS_A_SIAL:
+    statement: The supply takes the form of a lease of goods or services or both
+    order: LOW
+    rule: F_FOS = 'LEASE'
+    handler: python
+  M_SIAFOS_A_SIAD:
+    statement: The supply takes the form of a disposal of goods or services or both
+    order: LOW
+    rule: F_FOS = 'DISPOSAL'
+    handler: python
+  M_SIAFOS_A_SIAQF:
+    statement: The supply is another qualifying form of supply of goods or services or both, not one of the listed forms
+    order: HIGH
+    interpretation: Is this unlisted form of supply a form of supply of the same kind as sale, transfer, barter, exchange,
+      licence, rental, lease or disposal, given that the list is only illustrative?
+    grounding:
+    - F_FOS
+    - F_DOTA
+    handler: heavy
+  M_SIAFOS_A_SIMFC:
+    statement: The supply is made for a consideration
+    order: LOW
+    rule: F_SCS = 'PAID'
+    handler: python
+  M_SIAFOS_A_SIAFC:
+    statement: The supply is agreed to be made for a consideration
+    order: LOW
+    rule: F_SCS = 'AGREED'
+    handler: python
+  M_IOSFC_A_IMFC:
+    statement: The import of services was made for a consideration
+    order: LOW
+    rule: F_SCT IN ['MONEY', 'NON_MONEY']
+    handler: python
+groups:
+  M_SBRODP_G_RODP:
+    name: Related Or Distinct Parties
+    logic: ANY
+    members:
+    - M_SBRODP_A_SBRP
+    - M_SBRODP_A_SBDP
+    description: The supply is between related persons or between distinct persons as specified in section 25.
+  M_GTENS_G_GEC:
+    name: Gift Exception Conditions
+    logic: ALL
+    members:
+    - M_GTENS_A_TIAG
+    - M_GTENS_A_AGVNEL
+    - M_GTENS_A_GBETE
+    description: All three gift conditions must be TRUE
+  M_SOGPTA_G_ASA:
+    name: Agency Supply Arrangement
+    logic: ALL
+    members:
+    - M_SOGPTA_A_SBPTA
+    - M_SOGPTA_A_AUTSG
+    - M_SOGPTA_A_SOSG
+    description: All three conditions of paragraph 3(a) must hold
+  M_SOGATP_G_AGC:
+    name: Agent Goods Conditions
+    logic: ALL
+    members:
+    - M_SOGATP_A_SIATP
+    - M_SOGATP_A_AUROG
+    - M_SOGPTA_A_SOSG
+    description: 'Joint conditions of paragraph 3(b): agent to principal, undertaking to receive, and goods'
+  M_IOSFRP_G_SSR:
+    name: Supplier Source Route
+    logic: ANY
+    members:
+    - M_IOSFRP_A_SIRP
+    - M_IOSFRP_A_SIOOE
+    description: The import of services is from a related person or from any of his other establishments outside India
+  M_IOSFRP_G_TIIOSIF:
+    name: Transaction Is Import Of Services In Force
+    logic: ANY
+    members:
+    - M_IOSFC_A_TISI
+    - M_IOSFRP_A_IOSBTP
+    description: M_IOSFC_A_TISI from 2019-02-01, the old wording before
+  M_TOBASOG_G_TCAM:
+    name: Transfer Conditions All Met
+    logic: ALL
+    members:
+    - M_TOBASOG_A_GFBA
+    - M_PTOBAWI_A_PTOD
+    - M_TOBASOG_A_TBBP
+    - M_TOBASOG_A_NLBA
+    description: All four operative conditions of paragraph 4(a) must be met together.
+  M_SIAWC_A_ASISI:
+    name: Any of the referred steps (M_SIAWC_A_ASISI)
+    logic: ANY
+    members:
+    - M_GTENS_PD_GPE
+    - M_IOSFRP_PD_DSO
+    - M_PTOBAWI_PD_DSOBA
+    - M_SBRODP_PD_SEWC
+    - M_SOGATP_PD_AGDS
+    - M_SOGPTA_PD_AGSD
+    description: TRUE when any step of the law this check refers to is TRUE
+  M_SIAWC_G_SAWC:
+    name: Schedule Activity Without Consideration
+    logic: ALL
+    members:
+    - M_SIAWC_A_ASISI
+    - M_SIAWC_A_AMWC
+    description: Both the Schedule I activity test and the nil consideration test must be met for this inclusion.
+  M_SIAFOS_G_SFA:
+    name: Supply Form Alternatives
+    logic: ANY
+    members:
+    - M_SIAFOS_A_SIAS
+    - M_SIAFOS_A_SIAT
+    - M_SIAFOS_A_SIAB
+    - M_SIAFOS_A_SIAE
+    - M_SIAFOS_A_SIALG
+    - M_SIAFOS_A_SIAR
+    - M_SIAFOS_A_SIAL
+    - M_SIAFOS_A_SIAD
+    - M_SIAFOS_A_SIAQF
+    description: Any one listed form or any other qualifying form of supply. The list after such as is illustrative and not
+      closed.
+  M_SIAFOS_G_MOAC:
+    name: Made Or Agreed Consideration
+    logic: ANY
+    members:
+    - M_SIAFOS_A_SIMFC
+    - M_SIAFOS_A_SIAFC
+    description: The supply is either made for a consideration or agreed to be made for a consideration. Both events are not
+      required.
+  M_IOSFC_G_IFCG:
+    name: Import For Consideration Group
+    logic: ALL
+    members:
+    - M_IOSFC_A_TISI
+    - M_IOSFC_A_IMFC
+    description: Both the import of services and its consideration are required for the inclusion
+outcomes:
+  M_PTOBAWI_LE_DSOBA:
+    outcome: DEEMED_SUPPLY_WITHOUT_CONSIDERATION
+    expr: M_PTOBAWI_A_PTOD AND M_PTOBAWI_A_AABA AND M_PTOBAWI_A_ITCAOA
+    module: M_PTOBAWI
+    description: All three conditions must be met on the same assets, and consideration is not tested
+  M_SBRODP_LE_SEWC:
+    outcome: SUPPLY_EVEN_WITHOUT_CONSIDERATION
+    expr: M_SIAFOS_A_SIOGOS AND M_SBRODP_G_RODP AND M_SIAFOS_A_SBPIB
+    module: M_SBRODP
+    description: All three conditions are met, so the transaction is treated as supply under Schedule I paragraph 2 even if
+      made without consideration.
+  M_TOBASOG_LE_GFBA:
+    outcome: GOODS_FORM_BUSINESS_ASSETS
+    expr: M_TOBASOG_A_GFBA
+    module: M_COTPBTE
+    description: Goods forming part of the assets of a business (Schedule II, paragraph 4(c), part of the law)
+  M_TOBASOG_LE_GFBA_COTPRE:
+    outcome: GOODS_ARE_BUSINESS_ASSETS
+    expr: M_TOBASOG_A_GFBA
+    module: M_COTPRE
+    description: Goods forming part of the assets of a business (Schedule II, paragraph 4(c), part of the law)
+  M_GTENS_LE_GPE:
+    outcome: NOT_SUPPLY_UNDER_PROVISO
+    expr: M_GTENS_A_PSUSP AND M_GTENS_G_GEC
+    module: M_GTENS
+    description: The proviso displaces the parent supply provision only where that provision would otherwise apply and every
+      gift condition is met
+  M_SOGPTA_LE_AGSD:
+    outcome: SUPPLY_WITHOUT_CONSIDERATION
+    expr: M_SOGPTA_G_ASA
+    module: M_SOGPTA
+    description: All conditions of paragraph 3(a) hold, so the supply is treated as a supply even if made without consideration
+  M_SOGATP_LE_AGDS:
+    outcome: DEEMED_SUPPLY
+    expr: M_SOGATP_G_AGC
+    module: M_SOGATP
+    description: The deeming applies only when all three joint conditions of paragraph 3(b) hold
+  M_IOSFRP_LE_DSO:
+    outcome: SUPPLY_DEEMED
+    expr: M_IOSFRP_G_TIIOSIF AND M_IOSFRP_G_SSR AND M_SIAFOS_A_SBPIB
+    module: M_IOSFRP
+    description: All three conditions must hold for the import of services to be treated as a supply under paragraph 4, and
+      consideration is not tested
+  M_TOTISOG_LE_GDO:
+    outcome: SUPPLY_OF_GOODS
+    expr: M_TOTISOG_A_GTT AND M_SOGPTA_A_SOSG
+    module: M_TOTISOG
+    description: The transaction is a supply of goods when a transfer of the title in goods has taken place.
+  M_TOBASOG_LE_BAGS:
+    outcome: SUPPLY_OF_GOODS
+    expr: M_TOBASOG_G_TCAM
+    module: M_TOBASOG
+    description: Where all transfer conditions are met, the transfer or disposal is a deemed supply of goods by the person.
+  M_TOBASOG_LE_GFBA_PUOBGIS:
+    outcome: GOODS_HELD_OR_USED_FOR_BUSINESS
+    expr: M_TOBASOG_A_GFBA
+    module: M_PUOBGIS
+    description: Goods forming part of the assets of a business (Schedule II, paragraph 4, part of the law)
+  M_ANGNS_LE_SIIINSO:
+    outcome: NEITHER_GOODS_NOR_SERVICES
+    expr: M_ANGNS_A_ASISIII
+    module: M_ANGNS
+    description: The activity or transaction is treated neither as a supply of goods nor as a supply of services when it is
+      specified in Schedule III, notwithstanding sub-section (1).
+  M_NGANGNS_LE_NANS:
+    outcome: NEITHER_GOODS_NOR_SERVICES
+    expr: M_NGANGNS_A_UBGB AND M_NGANGNS_A_EAPA AND M_NGANGNS_A_AINBG AND M_GPTNQR_A_NOCR
+    module: M_NGANGNS
+    description: When all four conditions hold, the activity or transaction shall be treated neither as a supply of goods
+      nor a supply of services, overriding sub-section (1).
+  M_SIAWC_LE_SIO:
+    outcome: SUPPLY_INCLUDED
+    expr: M_SIAWC_G_SAWC
+    module: M_SIAWC
+    description: The supply is included under this limb only when the Schedule I activity group is met.
+  M_SIAFOS_LE_SIBC:
+    outcome: SUPPLY_INCLUDED
+    expr: M_SIAFOS_G_SFA AND M_SIAFOS_A_SIOGOS AND M_SIAFOS_G_MOAC AND M_SIAFOS_A_SBPIB
+    module: M_SIAFOS
+    description: The transaction is included in supply under Section 7(1)(a) when it is in a qualifying form, is of goods
+      or services or both, is made or agreed to be made for a consideration, and is by a person in the course or furtherance
+      of business.
+  M_IOSFC_LE_IOSI:
+    outcome: SUPPLY_INCLUDED
+    expr: M_IOSFC_G_IFCG
+    module: M_IOSFC
+    description: Import of services for a consideration is included in supply; the business test is not a member of this expression
+overrides:
+  IH_ANGNS_SIAWC:
+    outcome: NEITHER_GOODS_NOR_SERVICES
+    expr: M_ANGNS_A_ASISIII
+    module: M_ANGNS
+    description: The activity or transaction is treated neither as a supply of goods nor as a supply of services when it is
+      specified in Schedule III, notwithstanding sub-section (1).
+  IH_NGANGNS_SIAWC:
+    outcome: NEITHER_GOODS_NOR_SERVICES
+    expr: M_NGANGNS_A_UBGB AND M_NGANGNS_A_EAPA AND M_NGANGNS_A_AINBG AND M_GPTNQR_A_NOCR
+    module: M_NGANGNS
+    description: When all four conditions hold, the activity or transaction shall be treated neither as a supply of goods
+      nor a supply of services, overriding sub-section (1).
+  IH_ANGNS_SIAFOS:
+    outcome: NEITHER_GOODS_NOR_SERVICES
+    expr: M_ANGNS_A_ASISIII
+    module: M_ANGNS
+    description: The activity or transaction is treated neither as a supply of goods nor as a supply of services when it is
+      specified in Schedule III, notwithstanding sub-section (1).
+  IH_NGANGNS_SIAFOS:
+    outcome: NEITHER_GOODS_NOR_SERVICES
+    expr: M_NGANGNS_A_UBGB AND M_NGANGNS_A_EAPA AND M_NGANGNS_A_AINBG AND M_GPTNQR_A_NOCR
+    module: M_NGANGNS
+    description: When all four conditions hold, the activity or transaction shall be treated neither as a supply of goods
+      nor a supply of services, overriding sub-section (1).
+  IH_ANGNS_IOSFC:
+    outcome: NEITHER_GOODS_NOR_SERVICES
+    expr: M_ANGNS_A_ASISIII
+    module: M_ANGNS
+    description: The activity or transaction is treated neither as a supply of goods nor as a supply of services when it is
+      specified in Schedule III, notwithstanding sub-section (1).
+  IH_NGANGNS_IOSFC:
+    outcome: NEITHER_GOODS_NOR_SERVICES
+    expr: M_NGANGNS_A_UBGB AND M_NGANGNS_A_EAPA AND M_NGANGNS_A_AINBG AND M_GPTNQR_A_NOCR
+    module: M_NGANGNS
+    description: When all four conditions hold, the activity or transaction shall be treated neither as a supply of goods
+      nor a supply of services, overriding sub-section (1).
+triggers:
+  M_GTENS_CT_GNR:
+    question: Is any part of the transfer recovered from the employee or treated as payment for services?
+    trigger: F_SCS = 'PAID' OR F_SCS = 'AGREED'
+    beside: M_GTENS_LE_GPE
+products:
+  M_PTOBAWI_PD_DSOBA:
+    statement: All three conditions must be met on the same assets, and consideration is not tested
+  M_SBRODP_PD_SEWC:
+    statement: All three conditions are met, so the transaction is treated as supply under Schedule I paragraph 2 even if
+      made without consideration.
+  M_TOBASOG_PD_GFBA:
+    statement: Any goods form part of the assets of any business carried on by him
+  M_TOBASOG_PD_GFBA_COTPRE:
+    statement: Any goods form part of the assets of any business carried on by him
+  M_GTENS_PD_GPE:
+    statement: The proviso displaces the parent supply provision only where that provision would otherwise apply and every
+      gift condition is met
+  M_SOGPTA_PD_AGSD:
+    statement: All conditions of paragraph 3(a) hold, so the supply is treated as a supply even if made without consideration
+  M_SOGATP_PD_AGDS:
+    statement: The deeming applies only when all three joint conditions of paragraph 3(b) hold
+  M_IOSFRP_PD_DSO:
+    statement: All three conditions must hold for the import of services to be treated as a supply under paragraph 4, and
+      consideration is not tested
+  M_TOTISOG_PD_GDO:
+    statement: The transaction is a supply of goods when a transfer of the title in goods has taken place.
+  M_TOBASOG_PD_BAGS:
+    statement: Where all transfer conditions are met, the transfer or disposal is a deemed supply of goods by the person.
+  M_TOBASOG_PD_GFBA_PUOBGIS:
+    statement: The goods are held or used for the purposes of the business
+  M_ANGNS_PD_SIIINSO:
+    statement: The activity or transaction is treated neither as a supply of goods nor as a supply of services when it is
+      specified in Schedule III, notwithstanding sub-section (1).
+  M_NGANGNS_PD_NANS:
+    statement: When all four conditions hold, the activity or transaction shall be treated neither as a supply of goods nor
+      a supply of services, overriding sub-section (1).
+  M_SIAWC_PD_SIO:
+    statement: The supply is included under this limb only when the Schedule I activity group is met.
+  M_SIAFOS_PD_SIBC:
+    statement: The transaction is included in supply under Section 7(1)(a) when it is in a qualifying form, is of goods or
+      services or both, is made or agreed to be made for a consideration, and is by a person in the course or furtherance
+      of business.
+  M_IOSFC_PD_IOSI:
+    statement: Import of services for a consideration is included in supply; the business test is not a member of this expression
+compounds:
+- id: C_PTOBAWI
+  question: 'Schedule I, paragraph 1: Permanent Transfer Of Business Assets With ITC?'
+  includes:
+  - M_PTOBAWI_LE_DSOBA
+  produces:
+  - product: M_PTOBAWI_PD_DSOBA
+    from:
+    - M_PTOBAWI_LE_DSOBA
+- id: C_SBRODP
+  question: 'Schedule I, paragraph 2: Supply Between Related Or Distinct Persons?'
+  includes:
+  - M_SBRODP_LE_SEWC
+  produces:
+  - product: M_SBRODP_PD_SEWC
+    from:
+    - M_SBRODP_LE_SEWC
+- id: C_SCHII_EN4_CC
+  question: 'Schedule II, paragraph 4(c): which clause applies?'
+  includes:
+  - M_TOBASOG_LE_GFBA
+  - M_TOBASOG_LE_GFBA_COTPRE
+  produces:
+  - product: M_TOBASOG_PD_GFBA
+    from:
+    - M_TOBASOG_LE_GFBA
+  - product: M_TOBASOG_PD_GFBA_COTPRE
+    from:
+    - M_TOBASOG_LE_GFBA_COTPRE
+- id: C_GTENS
+  question: 'Schedule I, paragraph 2, proviso: Gifts To Employee Not Supply?'
+  includes:
+  - M_GTENS_LE_GPE
+  produces:
+  - product: M_GTENS_PD_GPE
+    from:
+    - M_GTENS_LE_GPE
+- id: C_SCHI_EN3
+  question: 'Schedule I, paragraph 3: which clause applies?'
+  includes:
+  - M_SOGPTA_LE_AGSD
+  - M_SOGATP_LE_AGDS
+  produces:
+  - product: M_SOGPTA_PD_AGSD
+    from:
+    - M_SOGPTA_LE_AGSD
+  - product: M_SOGATP_PD_AGDS
+    from:
+    - M_SOGATP_LE_AGDS
+- id: C_IOSFRP
+  question: 'Schedule I, paragraph 4: Import Of Services From Related Person?'
+  includes:
+  - M_IOSFRP_LE_DSO
+  produces:
+  - product: M_IOSFRP_PD_DSO
+    from:
+    - M_IOSFRP_LE_DSO
+- id: C_TOTISOG
+  question: 'Schedule II paragraph 1(a): Transfer Of Title Is Supply Of Goods?'
+  includes:
+  - M_TOTISOG_LE_GDO
+  produces:
+  - product: M_TOTISOG_PD_GDO
+    from:
+    - M_TOTISOG_LE_GDO
+- id: C_SCHII_EN4
+  question: 'Schedule II, paragraph 4: which clause applies?'
+  includes:
+  - M_TOBASOG_LE_BAGS
+  - M_TOBASOG_LE_GFBA_PUOBGIS
+  produces:
+  - product: M_TOBASOG_PD_BAGS
+    from:
+    - M_TOBASOG_LE_BAGS
+  - product: M_TOBASOG_PD_GFBA_PUOBGIS
+    from:
+    - M_TOBASOG_LE_GFBA_PUOBGIS
+- id: C_S7_SS2
+  question: 'Section 7(2): which clause applies?'
+  includes:
+  - M_ANGNS_LE_SIIINSO
+  - M_NGANGNS_LE_NANS
+  produces:
+  - product: M_ANGNS_PD_SIIINSO
+    from:
+    - M_ANGNS_LE_SIIINSO
+  - product: M_NGANGNS_PD_NANS
+    from:
+    - M_NGANGNS_LE_NANS
+- id: C_S7_SS1
+  question: 'Section 7(1): which clause applies?'
+  includes:
+  - M_SIAWC_LE_SIO
+  - M_SIAFOS_LE_SIBC
+  - M_IOSFC_LE_IOSI
+  produces:
+  - product: M_SIAWC_PD_SIO
+    from:
+    - M_SIAWC_LE_SIO
+  - product: M_SIAFOS_PD_SIBC
+    from:
+    - M_SIAFOS_LE_SIBC
+  - product: M_IOSFC_PD_IOSI
+    from:
+    - M_IOSFC_LE_IOSI
+  overrides:
+  - IH_ANGNS_SIAWC
+  - IH_NGANGNS_SIAWC
+  - IH_ANGNS_SIAFOS
+  - IH_NGANGNS_SIAFOS
+  - IH_ANGNS_IOSFC
+  - IH_NGANGNS_IOSFC
+time:
+  law_date: F_DOI

@@ -1,0 +1,131 @@
+"""Atoms must be usable by the engine as written (less hallucination); no database needed."""
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+from akp_ss.guard import engine_ready  # noqa: E402
+
+FACT = {"TYPE": "FACTS", "ELEMENT": "F_SUPPLY_FORM", "RESULTS": 'name: "Form"; type: CODE; options: [BARTER, SALE]; source_kind: DOCUMENT'}
+
+
+def atom(el, results):
+    return {"TYPE": "A", "ELEMENT": el, "RESULTS": results}
+
+
+def test_good_atoms_pass():
+    rows = [FACT, atom("A_BARTER", "statement: \"x\"; order: LOW; handler: python; facts: [F_SUPPLY_FORM]; rule: \"F_SUPPLY_FORM = 'BARTER'\""),
+            atom("A_OTHER", "statement: \"x\"; order: HIGH; handler: heavy; facts: [F_SUPPLY_FORM]; interpretation: \"Is it another form?\"")]
+    assert engine_ready(rows) == []
+
+
+def test_step_number_as_order_is_refused():
+    assert engine_ready([FACT, atom("A_X", 'statement: "x"; order: 1')])[0].startswith("ORDER: A_X")
+
+
+def test_value_not_in_options_and_bad_grammar_are_refused():
+    errs = engine_ready([FACT, atom("A_B", "statement: \"x\"; order: LOW; handler: python; facts: [F_SUPPLY_FORM]; rule: \"F_SUPPLY_FORM = 'SWAP'\""),
+                         atom("A_C", "statement: \"x\"; order: LOW; handler: python; facts: [F_SUPPLY_FORM]; rule: \"F_SUPPLY_FORM IN (SALE)\"")])
+    assert any(e.startswith("VALUE: A_B") for e in errs) and any(e.startswith("RULE: A_C") for e in errs)
+
+
+def test_high_atom_needs_question_and_fact():
+    errs = engine_ready([atom("A_H", 'statement: "x"; order: HIGH')])
+    assert any(e.startswith("QUESTION: A_H") for e in errs) and any(e.startswith("FACTS: A_H") for e in errs)
+
+
+def test_handler_must_fit_the_order():
+    bad = [FACT, atom("A_BARTER", "statement: \"x\"; order: LOW; handler: heavy; facts: [F_SUPPLY_FORM]; "
+                                  "rule: \"F_SUPPLY_FORM = 'BARTER'\""),
+           atom("A_OTHER", "statement: \"x\"; order: HIGH; facts: [F_SUPPLY_FORM]; interpretation: \"Is it another form?\"")]
+    errs = engine_ready(bad)
+    assert any("A_BARTER handler heavy does not fit order LOW" in e for e in errs)
+    assert any("A_OTHER handler must be python, light or heavy" in e for e in errs)
+    light = [FACT, atom("A_OTHER", "statement: \"x\"; order: HIGH; handler: light; facts: [F_SUPPLY_FORM]; "
+                                   "interpretation: \"Is it another form?\"")]
+    assert engine_ready(light) == []
+
+
+# ---- 2026-11-26: python means python - no READ / ASK fact behind a python atom, every WORKED_OUT fact has its formula
+
+def fact(el, results):
+    return {"TYPE": "FACTS", "ELEMENT": el, "RESULTS": results}
+
+
+def test_python_atom_on_a_read_fact_is_refused():
+    rows = [fact("F_FOS", "type: CODE; options: [SALE, RENTAL]; source_kind: READ"),
+            atom("A_S", "statement: \"x\"; order: LOW; handler: python; facts: [F_FOS]; rule: \"F_FOS = 'SALE'\"")]
+    assert any(e.startswith("PYTHON: A_S") and "READ" in e for e in engine_ready(rows))
+
+
+def test_python_atom_without_source_kind_or_facts_row_is_refused():
+    rows = [fact("F_FOS", "type: CODE; options: [SALE]"),
+            atom("A_S", "statement: \"x\"; order: LOW; handler: python; facts: [F_FOS]; rule: \"F_FOS = 'SALE'\"")]
+    assert any(e.startswith("PYTHON: A_S") for e in engine_ready(rows))
+    rows = [atom("A_R", "statement: \"x\"; order: LOW; handler: python; facts: [F_OLD]; rule: \"F_OLD = 'X'\"")]
+    assert any(e.startswith("PYTHON: A_R") and "no FACTS row" in e for e in engine_ready(rows, {"F_OLD"}))
+
+
+def test_interest_formula_passes_and_its_inputs_must_be_python_facts():
+    good = [fact("F_UTA", "type: AMOUNT; unit: INR; source_kind: DOCUMENT"),
+            fact("F_TDD", "type: DATE; source_kind: LOOKUP"),
+            fact("F_TPD", "type: DATE; source_kind: DOCUMENT"),
+            fact("F_IR", "type: PERCENT; source_kind: LOOKUP"),
+            fact("F_DOL", 'type: NUMBER; source_kind: WORKED_OUT; derived_from: [F_TDD, F_TPD]; '
+                          'derivation: "DAYS_BETWEEN(F_TDD, F_TPD)"'),
+            fact("F_IA", 'type: AMOUNT; source_kind: WORKED_OUT; derived_from: [F_UTA, F_IR, F_DOL]; '
+                         'derivation: "ROUND(F_UTA * F_IR / 100 * F_DOL / 365)"'),
+            atom("A_L", "statement: \"x\"; order: LOW; handler: python; facts: [F_DOL]; rule: \"F_DOL > 0\"")]
+    assert engine_ready(good) == []
+    bad = [dict(r) for r in good]
+    bad[2] = fact("F_TPD", "type: DATE; source_kind: ASK")
+    assert any(e.startswith("PYTHON: A_L") and "F_TPD" in e for e in engine_ready(bad))
+
+
+def test_worked_out_fact_needs_inputs_and_a_clean_formula():
+    errs = engine_ready([fact("F_A", "type: AMOUNT; source_kind: DOCUMENT"),
+                         fact("F_X", "type: AMOUNT; source_kind: WORKED_OUT"),
+                         fact("F_Y", 'type: AMOUNT; source_kind: WORKED_OUT; derived_from: [F_A]; derivation: "F_A * F_B"'),
+                         fact("F_Z", 'type: AMOUNT; source_kind: WORKED_OUT; derived_from: [F_A]; derivation: "SQRT(F_A)"')])
+    assert any(e.startswith("FORMULA: F_X") and "derived_from" in e for e in errs)
+    assert any(e.startswith("FORMULA: F_X") and "derivation" in e for e in errs)
+    assert any(e.startswith("FORMULA: F_Y") and "F_B" in e for e in errs)
+    assert any(e.startswith("FORMULA: F_Z") and "SQRT" in e for e in errs)
+
+
+# ---- 2026-11-27: Python repairs - a python atom that Python cannot decide goes to the LLM; registry ids kept
+
+from akp_ss.guard import repair_handlers, structure  # noqa: E402
+from akp_ss.parse import concept_words  # noqa: E402
+from transport import get_field  # noqa: E402
+
+
+def test_python_atom_on_read_or_unknown_fact_is_moved_to_the_llm():
+    rows = [fact("F_SCT", "type: CODE; options: [PAID, NONE]; source_kind: READ"),
+            atom("A_FC", "statement: \"The import of services is for a consideration\"; order: LOW; handler: python; "
+                         "facts: [F_SCT]; rule: \"F_SCT = 'PAID'\""),
+            atom("A_OLD", "statement: \"The old fact holds the value X\"; order: LOW; handler: python; facts: [F_OLD]; "
+                          "rule: \"F_OLD = 'X'\""),
+            fact("F_UTA", "type: AMOUNT; source_kind: DOCUMENT"),
+            atom("A_AMT", "statement: \"The unpaid tax amount is above zero\"; order: LOW; handler: python; "
+                          "facts: [F_UTA]; rule: \"F_UTA > 0\"")]
+    notes = repair_handlers(rows)
+    assert len(notes) == 2
+    for r in rows[1:3]:
+        assert get_field(r, "order") == "HIGH" and get_field(r, "handler") == "light" and not get_field(r, "rule")
+        assert get_field(r, "interpretation").startswith("Decide whether:")
+    assert get_field(rows[4], "handler") == "python" and get_field(rows[4], "rule") == "F_UTA > 0"
+    assert engine_ready(rows, {"F_OLD"}) == []
+
+
+def test_registry_fact_keeps_its_short_id():
+    rows = [{"MKP": "M", "TYPE": "MKP", "ELEMENT": "M", "CONCEPT": "NA", "RESULTS": "x"},
+            {"MKP": "TXN", "TYPE": "FACTS", "ELEMENT": "F_SKOT", "CONCEPT": "Supply Kind", "RESULTS": "type: CODE"}]
+    assert not [e for e in structure(rows, [], False, {"F_SKOT"}) if "F_SKOT: fact id" in e]
+    assert [e for e in structure(rows, [], False, set()) if "F_SKOT: fact id" in e]
+
+
+def test_id_like_concept_becomes_words():
+    assert concept_words("A_RETURN_S44_NOT_FURNISHED") == "Return Not Furnished"
+    assert concept_words("Return", 'statement: "Any registered person fails to furnish"') == "Return Registered Person"
+    assert concept_words("", "") == ""

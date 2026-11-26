@@ -1,0 +1,222 @@
+# GOVERNANCE MASTER TSG11_04 Annual return (GSTR-9 / 9C) (TG11 Returns & Reconciliation)
+# LAW ARC - 3 laws - status APPROVED
+name: TSG11_04 Annual return (GSTR-9 / 9C) - GOVERNANCE MASTER rulebook
+version: TSG11_04
+facts:
+  # ---- level 1: gate facts - if one is false, that law stops here
+  F_DOF:  # 1. 1 gate | 2 law(s)
+    name: Date Of Furnishing
+    type: DATE
+    tier: T1
+    origin:
+      document: GST_RETURN
+      method: FIELD
+      uses: [GST_RETURN.arn_date]
+      how_to_get: Take the filing acknowledgement of the return in question and read arn_date.
+      fallback: 'Ask the user: On what date did you file this return?'
+      when_missing: ASK
+      as_of: date of filing
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: '2024-05-18'
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_ARDD:  # 2. 1 gate | 1 law(s)
+    name: Annual Return Due Date
+    type: DATE
+    tier: T1
+    source_kind: LOOKUP
+  F_ARFD:  # 3. 1 gate | 1 law(s)
+    name: Annual Return Furnishing Date
+    type: DATE
+    tier: T0
+    origin:
+      document: GST_RETURN
+      method: FIELD
+      uses: [GST_RETURN.arn_date, GST_RETURN.return_type]
+      how_to_get: From the GST_RETURN document where 'return_type' is 'Annual Return' (e.g., GSTR-9 or GSTR-9C), take the value of the 'arn_date' field.
+      fallback: UNKNOWN
+      when_missing: UNKNOWN
+      as_of: Date of furnishing
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: '2023-12-31'
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_ARIF:  # 4. 1 gate | 1 law(s)
+    name: Annual Return Is Furnished
+    type: BOOLEAN
+    tier: T0
+    source_kind: DOCUMENT
+  F_DOTC:  # 5. 1 gate | 1 law(s)
+    name: Date Of The Check
+    type: DATE
+    tier: T1
+    source_kind: LOOKUP
+  F_RISD:  # 6. 1 gate | 1 law(s)
+    name: Return Inward Supply Details
+    type: TEXT
+    tier: T0
+    origin:
+      document: GST_RETURN
+      method: FIELD
+      uses: [GST_RETURN.inward_supplies_rcm]
+      how_to_get: Read inward_supplies_rcm (inward supplies shown in the return, e.g. reverse-charge inward supplies and ITC-related inward details). If the return has no such details, leave the fact unset.
+      fallback: Ask the user whether the return shows inward supply details and what they are.
+      when_missing: UNKNOWN
+      as_of: end of the tax period
+      level: RETURN
+      ai_level: NONE
+      cost: LOW
+      example: 'Inward supplies liable to reverse charge: 50,000'
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_RPC:  # 7. 1 gate | 1 law(s)
+    name: Return Period Coverage
+    type: CODE
+    options:
+    - FULL_FINANCIAL_YEAR
+    - PART_FINANCIAL_YEAR
+    - OTHER
+    tier: T1
+  F_RTD:  # 8. 1 gate | 1 law(s)
+    name: Return Turnover Details
+    type: TEXT
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_CTFAR_A_RFFYOP:
+    statement: The return is for each financial year or part thereof
+    order: LOW
+    rule: F_RPC IN ['FULL_FINANCIAL_YEAR', 'PART_FINANCIAL_YEAR']
+    handler: python
+  M_CTFAR_A_RPFR:
+    statement: The registered person furnishes a return as required by the shall obligation
+    order: LOW
+    rule: F_DOF IS_SET
+    handler: python
+  M_CTFAR_A_RCST:
+    statement: The return contains turnover in the State or Union territory
+    order: LOW
+    rule: F_RTD IS_SET
+    handler: python
+  M_CTFAR_A_RCIS:
+    statement: The return contains inward supplies of goods or services or both
+    order: LOW
+    rule: F_RISD IS_SET
+    handler: python
+  M_LFFFTFR_A_ARNFBDD:
+    statement: The person fails to furnish the return required under section 44 by the due date
+    order: LOW
+    facts:
+    - F_ARDD
+    - F_ARFD
+    - F_ARIF
+    - F_DOTC
+    compute:
+      failure_end: IF(F_ARIF = TRUE, F_ARFD, F_DOTC)
+      days_late: MAX(0, DAYS_BETWEEN(F_ARDD, failure_end))
+    rule: days_late > 0
+    handler: python
+    how: Due date from the due-date table for the annual return (s.44); filing date and status from the return acknowledgement
+      (ARN); the check date is the run date; days between the due date and the filing date, or the check date when not filed.
+groups: {}
+outcomes:
+  M_CTFAR_LE_RFFYOP:
+    outcome: RETURN_FOR_FINANCIAL_YEAR_OR_PART
+    expr: M_CTFAR_A_RFFYOP
+    module: M_CTFAR
+    description: The return is for each financial year or part thereof (Section 39(2), part of the law)
+  M_CTFAR_LE_RPFR:
+    outcome: REGISTERED_PERSON_FURNISHES_RETURN
+    expr: M_CTFAR_A_RPFR
+    module: M_CTFAR
+    description: The registered person furnishes a return as required by the shall obligation (Section 39(2), part of the
+      law)
+  M_CTFAR_LE_RCST:
+    outcome: RETURN_CONTAINS_STATE_TURNOVER
+    expr: M_CTFAR_A_RCST
+    module: M_CTFAR
+    description: The return contains turnover in the State or Union territory (Section 39(2), part of the law)
+  M_CTFAR_LE_RCIS:
+    outcome: RETURN_CONTAINS_INWARD_SUPPLIES
+    expr: M_CTFAR_A_RCIS
+    module: M_CTFAR
+    description: The return contains inward supplies of goods or services or both (Section 39(2), part of the law)
+  M_CTFAR_LE_RPFR_RPFTR:
+    outcome: RETURN_HAS_BEEN_FURNISHED
+    expr: M_CTFAR_A_RPFR
+    module: M_RPFTR
+    description: The registered person furnishes a return as required by the shall obligation (Section 39(3), part of the
+      law)
+  M_LFFFTFR_LE_ARNFBDD:
+    outcome: ANNUAL_RETURN_NOT_FURNISHED_BY_DUE_DATE
+    expr: M_LFFFTFR_A_ARNFBDD
+    module: M_LFFFTFR
+    description: The person fails to furnish the return required under section 44 by the due date (Section 47(2), part of
+      the law)
+products:
+  M_CTFAR_PD_RFFYOP:
+    statement: The return is for each financial year or part thereof
+  M_CTFAR_PD_RPFR:
+    statement: The registered person furnishes a return as required by the shall obligation
+  M_CTFAR_PD_RCST:
+    statement: The return contains turnover in the State or Union territory
+  M_CTFAR_PD_RCIS:
+    statement: The return contains inward supplies of goods or services or both
+  M_CTFAR_PD_RPFR_RPFTR:
+    statement: The registered person has furnished a return
+  M_LFFFTFR_PD_ARNFBDD:
+    statement: The person fails to furnish the return required under section 44 by the due date
+compounds:
+- id: C_CTFAR
+  question: The return is for each financial year or part thereof; The registered person furnishes a return as required by
+    the shall obligation; The return contains turnover in the State or Union territory; The return contains inward supplies
+    of goods or services or both? (Section 39(2))
+  includes:
+  - M_CTFAR_LE_RFFYOP
+  - M_CTFAR_LE_RPFR
+  - M_CTFAR_LE_RCST
+  - M_CTFAR_LE_RCIS
+  produces:
+  - product: M_CTFAR_PD_RFFYOP
+    from:
+    - M_CTFAR_LE_RFFYOP
+  - product: M_CTFAR_PD_RPFR
+    from:
+    - M_CTFAR_LE_RPFR
+  - product: M_CTFAR_PD_RCST
+    from:
+    - M_CTFAR_LE_RCST
+  - product: M_CTFAR_PD_RCIS
+    from:
+    - M_CTFAR_LE_RCIS
+- id: C_RPFTR
+  question: The registered person furnishes a return as required by the shall obligation? (Section 39(3))
+  includes:
+  - M_CTFAR_LE_RPFR_RPFTR
+  produces:
+  - product: M_CTFAR_PD_RPFR_RPFTR
+    from:
+    - M_CTFAR_LE_RPFR_RPFTR
+- id: C_LFFFTFR
+  question: The person fails to furnish the return required under section 44 by the due date? (Section 47(2))
+  includes:
+  - M_LFFFTFR_LE_ARNFBDD
+  produces:
+  - product: M_LFFFTFR_PD_ARNFBDD
+    from:
+    - M_LFFFTFR_LE_ARNFBDD
+time:
+  law_date: F_DOI

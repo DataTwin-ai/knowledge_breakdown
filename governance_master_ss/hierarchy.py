@@ -71,7 +71,8 @@ def parse(expr: str):
 
 
 def _facts_of(pred: dict) -> List[str]:
-    return list(dict.fromkeys(_FACT.findall(str(pred.get("rule") or "")) + [f for f in pred.get("grounding") or []
+    return list(dict.fromkeys(_FACT.findall(str(pred.get("rule") or "")) + [f for f in (pred.get("grounding") or [])
+                                                                             + (pred.get("facts") or [])
                                                                              if str(f).startswith("F_")]))
 
 

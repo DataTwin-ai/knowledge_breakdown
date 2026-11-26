@@ -1,6 +1,27 @@
 about: Every fact and the laws it can check. kind = how the fact is obtained (DOCUMENT / DERIVED / LOOKUP / ASK); reviewed
   = false means the kind is a default - confirm it in Config/fact_kinds.json.
 facts:
+- fact_id: F_AATOL
+  name: Amount Added To Output Liability
+  entity: TAX
+  data_type: BOOL
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG09_04
+    name: Reversal & re-claim
+    atoms: 1
+  laws:
+  - mkp: CGSTR17_R37_SR3#TEXT
+    atom: M_ILORC_A_RAATO
+    tsgs:
+    - TSG09_04
+    check: PYTHON
 - fact_id: F_ACBN
   name: Activity Covered By Notification
   entity: ACTIVITY
@@ -10,31 +31,26 @@ facts:
   reviewed: false
   derived_from: []
   checks:
-    python: 3
-    judge: 0
+    python: 0
+    judge: 2
   tsgs:
   - tsg: TSG01_03
     name: Neither supply (Schedule III)
     atoms: 1
   - tsg: TSG01_07
     name: ''
-    atoms: 2
+    atoms: 1
   laws:
   - mkp: CGSTA17_S7_SS2_Cb#TEXT
     atom: M_NGANGNS_A_AINBG
     tsgs:
     - TSG01_03
-    check: PYTHON
-  - mkp: CGSTA17_S7_SS3_Ca#TEXT
-    atom: M_NTTAS_A_TCBN
-    tsgs:
-    - TSG01_07
-    check: PYTHON
+    check: JUDGE
   - mkp: CGSTA17_S7_SS3_Cb#TEXT
-    atom: M_NTTAS_A_TCBN
+    atom: M_NTTAS_A_TISITN
     tsgs:
     - TSG01_07
-    check: PYTHON
+    check: JUDGE
 - fact_id: F_ACR
   name: Architect Council Registration
   entity: PERSON
@@ -82,6 +98,36 @@ facts:
     tsgs:
     - TSG01_02
     check: PYTHON
+- fact_id: F_AERU
+  name: Any Earlier Return Unfurnished
+  entity: RETURN
+  data_type: BOOL
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - F_RHBF
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG01_01
+    name: Supply with consideration
+    atoms: 1
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 1
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S39_SS10#TEXT
+    atom: M_RFNAIPU_A_EPRU
+    tsgs:
+    - TSG01_01
+    - TSG01_03
+    - TSG15_03
+    check: PYTHON
 - fact_id: F_AGVIFY
   name: Aggregate Gift Value In Financial Year
   entity: SUPPLY
@@ -103,6 +149,102 @@ facts:
     tsgs:
     - TSG01_02
     check: PYTHON
+- fact_id: F_APUSF
+  name: Amount Paid Under Sub-section Five
+  entity: PAYMENT
+  data_type: AMOUNT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S74_SS7#TEXT
+    atom: M_SNASP_A_POFO
+    tsgs:
+    - TSG15_03
+    check: JUDGE
+- fact_id: F_ARDD
+  name: Annual Return Due Date
+  entity: RETURN
+  data_type: DATE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG11_04
+    name: Annual return (GSTR-9 / 9C)
+    atoms: 1
+  - tsg: TSG12_04
+    name: Late fee
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S47_SS2#TEXT
+    atom: M_LFFFTFR_A_ARNFBDD
+    tsgs:
+    - TSG11_04
+    - TSG12_04
+    check: PYTHON
+- fact_id: F_ARFD
+  name: Annual Return Furnishing Date
+  entity: RETURN
+  data_type: DATE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG11_04
+    name: Annual return (GSTR-9 / 9C)
+    atoms: 1
+  - tsg: TSG12_04
+    name: Late fee
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S47_SS2#TEXT
+    atom: M_LFFFTFR_A_ARNFBDD
+    tsgs:
+    - TSG11_04
+    - TSG12_04
+    check: PYTHON
+- fact_id: F_ARIF
+  name: Annual Return Is Furnished
+  entity: RETURN
+  data_type: BOOL
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG11_04
+    name: Annual return (GSTR-9 / 9C)
+    atoms: 1
+  - tsg: TSG12_04
+    name: Late fee
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S47_SS2#TEXT
+    atom: M_LFFFTFR_A_ARNFBDD
+    tsgs:
+    - TSG11_04
+    - TSG12_04
+    check: PYTHON
 - fact_id: F_ARU
   name: Agent Receipt Undertaking
   entity: AGENT
@@ -121,6 +263,27 @@ facts:
   laws:
   - mkp: CGSTA17_SCHI_EN3_Cb#TEXT
     atom: M_SOGATP_A_AUROG
+    tsgs:
+    - TSG01_02
+    check: JUDGE
+- fact_id: F_ASIS
+  name: Activity Schedule I Status
+  entity: ACTIVITY
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG01_02
+    name: Supply without consideration (Schedule I)
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S7_SS1_Cc#TEXT
+    atom: M_SIAWC_A_AISISI
     tsgs:
     - TSG01_02
     check: JUDGE
@@ -153,6 +316,27 @@ facts:
     - TSG01_03
     - TSG05_01
     check: PYTHON
+- fact_id: F_ASS
+  name: Activity Schedule Status
+  entity: ACTIVITY
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S7_SS2_Ca#TEXT
+    atom: M_ANGNS_A_AOTISISIII
+    tsgs:
+    - TSG01_03
+    check: JUDGE
 - fact_id: F_AUC
   name: Asset Use Context
   entity: ASSET
@@ -183,18 +367,18 @@ facts:
   reviewed: false
   derived_from: []
   checks:
-    python: 1
-    judge: 0
+    python: 0
+    judge: 1
   tsgs:
   - tsg: TSG01_03
     name: Neither supply (Schedule III)
     atoms: 1
   laws:
   - mkp: CGSTA17_S7_SS2_Cb#TEXT
-    atom: M_NGANGNS_A_UBGB
+    atom: M_NGANGNS_A_AUBGOLA
     tsgs:
     - TSG01_03
-    check: PYTHON
+    check: JUDGE
 - fact_id: F_BAS
   name: Business Asset Status
   entity: ''
@@ -301,6 +485,27 @@ facts:
     atom: M_COTPBTE_A_BTAGC
     tsgs: []
     check: JUDGE
+- fact_id: F_CAD
+  name: Credit Availing Date
+  entity: CREDIT
+  data_type: DATE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG12_03
+    name: Interest
+    atoms: 1
+  laws:
+  - mkp: CGSTR17_R37_SR3#TEXT
+    atom: M_ILORC_A_ISFCA
+    tsgs:
+    - TSG12_03
+    check: PYTHON
 - fact_id: F_CAK
   name: Competent Authority Kind
   entity: AUTHORITY
@@ -467,6 +672,19 @@ facts:
     atom: M_DOWC_A_AIAC
     tsgs: []
     check: JUDGE
+- fact_id: F_COTE
+  name: Capacity of the entity
+  entity: ENTITY
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
 - fact_id: F_CPE
   name: Consideration Payment Extent
   entity: PAYMENT
@@ -488,6 +706,44 @@ facts:
     tsgs:
     - TSG01_01
     check: PYTHON
+- fact_id: F_CPRS
+  name: Chargeable Person Representation Status
+  entity: PROCEEDING
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG15_02
+    name: Assessment & audit
+    atoms: 1
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S74_SS9#TEXT
+    atom: M_ODOTIP_A_RCIM
+    tsgs:
+    - TSG15_02
+    - TSG15_03
+    check: JUDGE
+- fact_id: F_CRDD
+  name: Cutoff Return Due Date
+  entity: RETURN
+  data_type: DATE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
 - fact_id: F_CRT
   name: Consideration Receipt Timing
   entity: CONSIDERATION
@@ -555,6 +811,37 @@ facts:
     - TSG11_01
     - TSG11_03
     check: PYTHON
+- fact_id: F_DIA
+  name: Document Issuing Authority
+  entity: DOCUMENT
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 3
+  tsgs:
+  - tsg: TSG01_07
+    name: ''
+    atoms: 3
+  laws:
+  - mkp: CGSTA17_S7_SS3_Ca#TEXT
+    atom: M_NTTAS_A_NIBG
+    tsgs:
+    - TSG01_07
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS2_Cb#TEXT
+    atom: M_NTTAS_A_NIBG
+    tsgs:
+    - TSG01_07
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS3_Cb#TEXT
+    atom: M_NTTAS_A_NIIBTG
+    tsgs:
+    - TSG01_07
+    check: JUDGE
 - fact_id: F_DOAOT
   name: Description Of Activity Or Transaction
   entity: ACTIVITY
@@ -565,7 +852,7 @@ facts:
   derived_from: []
   checks:
     python: 1
-    judge: 17
+    judge: 18
   tsgs:
   - tsg: TSG01_01
     name: Supply with consideration
@@ -581,19 +868,17 @@ facts:
     atoms: 2
   - tsg: TSG01_06
     name: Business test
-    atoms: 1
+    atoms: 2
   - tsg: TSG01_07
     name: ''
     atoms: 2
   - tsg: TSG05_01
     name: Time of supply – goods
     atoms: 1
+  - tsg: TSG14_06
+    name: Statutory Interpretation of Definitions
+    atoms: 1
   laws:
-  - mkp: CGSTA17_S7_SS2_Ca#TEXT
-    atom: M_ANGNS_A_ASISIII
-    tsgs:
-    - TSG01_03
-    check: JUDGE
   - mkp: CGSTA17_SCHIII_EN5#TEXT
     atom: M_SOLAB_A_BSSTSC
     tsgs: []
@@ -617,21 +902,6 @@ facts:
     atom: M_DBCPH_A_DPIC
     tsgs:
     - TSG01_03
-    check: JUDGE
-  - mkp: CGSTA17_S7_SS1A#TEXT
-    atom: M_TAGOS_A_TASOG
-    tsgs:
-    - TSG01_01
-    check: JUDGE
-  - mkp: CGSTA17_S7_SS1A#TEXT
-    atom: M_TAGOS_A_TASOS
-    tsgs:
-    - TSG01_01
-    check: JUDGE
-  - mkp: CGSTA17_S7_SS3_Ca#TEXT
-    atom: M_NTTAG_A_PSTS
-    tsgs:
-    - TSG01_07
     check: JUDGE
   - mkp: CGSTA17_SCHI_EN2_P1#TEXT
     atom: M_GTENS_A_PSUSP
@@ -665,11 +935,6 @@ facts:
     tsgs:
     - TSG01_01
     check: PYTHON
-  - mkp: CGSTA17_S7_SS3_Cb#TEXT
-    atom: M_NTTAS_A_TSTS
-    tsgs:
-    - TSG01_07
-    check: JUDGE
   - mkp: CGSTA17_SCHI_EN4#TEXT
     atom: M_SIAFOS_A_SBPIB
     tsgs:
@@ -680,6 +945,37 @@ facts:
     atom: M_TOTISOG_A_GTT
     tsgs: []
     check: JUDGE
+  - mkp: CGSTA17_S7_SS1A#TEXT
+    atom: M_TAGOS_A_SITAPSII
+    tsgs: []
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS3_Ca#TEXT
+    atom: M_NTTAG_A_PSTS7P
+    tsgs:
+    - TSG01_07
+    - TSG14_06
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS2_Cb#TEXT
+    atom: M_NGANGNS_A_EEAPA
+    tsgs:
+    - TSG01_03
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS3_Cb#TEXT
+    atom: M_NTTAS_A_TISITN
+    tsgs:
+    - TSG01_07
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIAF
+    tsgs:
+    - TSG01_01
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SICOB
+    tsgs:
+    - TSG01_01
+    - TSG01_06
+    check: JUDGE
 - fact_id: F_DOF
   name: Date Of Furnishing
   entity: RETURN
@@ -689,11 +985,29 @@ facts:
   reviewed: false
   derived_from: []
   checks:
-    python: 0
-    judge: 1
+    python: 5
+    judge: 2
   tsgs:
+  - tsg: TSG01_01
+    name: Supply with consideration
+    atoms: 1
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 1
+  - tsg: TSG05_05
+    name: Tax period & reporting period
+    atoms: 2
+  - tsg: TSG06_03
+    name: Composition & special taxpayers / recipients
+    atoms: 2
   - tsg: TSG11_02
     name: GSTR-3B
+    atoms: 2
+  - tsg: TSG11_04
+    name: Annual return (GSTR-9 / 9C)
+    atoms: 2
+  - tsg: TSG15_03
+    name: Demand & recovery
     atoms: 1
   laws:
   - mkp: CGSTA17_S39_SS1#TEXT
@@ -701,6 +1015,40 @@ facts:
     tsgs:
     - TSG11_02
     check: JUDGE
+  - mkp: CGSTA17_S39_SS5#TEXT
+    atom: M_NTPRF_A_RHBF
+    tsgs:
+    - TSG05_05
+    - TSG06_03
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS2#TEXT
+    atom: M_CTFAR_A_RPFR
+    tsgs:
+    - TSG11_04
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS2#TEXT
+    atom: M_RPFMR_A_RFWPT
+    tsgs:
+    - TSG11_02
+    check: JUDGE
+  - mkp: CGSTA17_S39_SS4#TEXT
+    atom: M_NTPRF_A_RHBF
+    tsgs:
+    - TSG05_05
+    - TSG06_03
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS3#TEXT
+    atom: M_CTFAR_A_RPFR
+    tsgs:
+    - TSG11_04
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS8#TEXT
+    atom: M_MRFBRP_A_RFFTP
+    tsgs:
+    - TSG01_01
+    - TSG01_03
+    - TSG15_03
+    check: PYTHON
 - fact_id: F_DOFM
   name: Day Of Furnishing Month
   entity: RETURN
@@ -711,12 +1059,12 @@ facts:
   derived_from:
   - F_DOF
   checks:
-    python: 2
+    python: 3
     judge: 0
   tsgs:
   - tsg: TSG11_01
     name: GSTR-1 / IFF
-    atoms: 2
+    atoms: 3
   laws:
   - mkp: CGSTA17_S37_SS1_P1#TEXT
     atom: M_FODRP_A_FIDW
@@ -724,6 +1072,11 @@ facts:
     - TSG11_01
     check: PYTHON
   - mkp: CGSTA17_S37_SS1#TEXT
+    atom: M_RPOSD_A_FBTDS
+    tsgs:
+    - TSG11_01
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS3#TEXT
     atom: M_RPOSD_A_FBTDS
     tsgs:
     - TSG11_01
@@ -757,6 +1110,27 @@ facts:
     - TSG01_03
     - TSG05_01
     check: JUDGE
+- fact_id: F_DOIS
+  name: Determination Order Issued Status
+  entity: ORDER
+  data_type: BOOL
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S74_SS9#TEXT
+    atom: M_ODOTIP_A_DOI
+    tsgs:
+    - TSG15_03
+    check: PYTHON
 - fact_id: F_DOTA
   name: Description Of The Activity
   entity: ACTIVITY
@@ -767,45 +1141,24 @@ facts:
   derived_from: []
   checks:
     python: 0
-    judge: 22
+    judge: 18
   tsgs:
   - tsg: TSG01_01
     name: Supply with consideration
-    atoms: 5
+    atoms: 3
   - tsg: TSG01_02
     name: Supply without consideration (Schedule I)
-    atoms: 2
+    atoms: 1
   - tsg: TSG01_03
     name: Neither supply (Schedule III)
-    atoms: 8
+    atoms: 7
   - tsg: TSG01_04
     name: Composite & mixed supply
     atoms: 1
   - tsg: TSG01_06
     name: Business test
-    atoms: 2
+    atoms: 1
   laws:
-  - mkp: CGSTA17_S7_SS2_Cb#TEXT
-    atom: M_NGANGNS_A_EAPA
-    tsgs:
-    - TSG01_03
-    check: JUDGE
-  - mkp: CGSTA17_S7_SS1_Cc#TEXT
-    atom: M_SIAWC_A_ASISI
-    tsgs:
-    - TSG01_02
-    check: JUDGE
-  - mkp: CGSTA17_S7_SS1_Ca#TEXT
-    atom: M_SIAFOS_A_SIAQF
-    tsgs:
-    - TSG01_01
-    check: JUDGE
-  - mkp: CGSTA17_S7_SS1_Ca#TEXT
-    atom: M_SIAFOS_A_SBPIB
-    tsgs:
-    - TSG01_01
-    - TSG01_06
-    check: JUDGE
   - mkp: CGSTA17_SCHIII_EN4#TEXT
     atom: M_FBCMS_A_AIFS
     tsgs:
@@ -891,6 +1244,44 @@ facts:
     atom: M_ATROTAS_A_ATDAA
     tsgs: []
     check: JUDGE
+- fact_id: F_DOTC
+  name: Date Of The Check
+  entity: EVENT
+  data_type: DATE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG11_04
+    name: Annual return (GSTR-9 / 9C)
+    atoms: 1
+  - tsg: TSG12_04
+    name: Late fee
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S47_SS2#TEXT
+    atom: M_LFFFTFR_A_ARNFBDD
+    tsgs:
+    - TSG11_04
+    - TSG12_04
+    check: PYTHON
+- fact_id: F_DOTS
+  name: Description of the supply
+  entity: SUPPLY
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
 - fact_id: F_DPT
   name: Destination Place Territory
   entity: PLACE
@@ -912,6 +1303,27 @@ facts:
     tsgs:
     - TSG01_03
     check: PYTHON
+- fact_id: F_EC
+  name: Engagement Capacity
+  entity: ACTIVITY
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S7_SS2_Cb#TEXT
+    atom: M_NGANGNS_A_EEAPA
+    tsgs:
+    - TSG01_03
+    check: JUDGE
 - fact_id: F_ECRD
   name: Entire Consideration Receipt Date
   entity: CONSIDERATION
@@ -925,6 +1337,23 @@ facts:
     judge: 0
   tsgs: []
   laws: []
+- fact_id: F_EDR
+  name: Error Discovery Route
+  entity: DISCOVERY
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs: []
+  laws:
+  - mkp: CGSTA17_S39_SS9#TEXT
+    atom: M_ROOIR_A_DNBAA
+    tsgs: []
+    check: JUDGE
 - fact_id: F_EIT
   name: Extension Instrument Type
   entity: ''
@@ -1001,6 +1430,32 @@ facts:
     tsgs:
     - TSG11_01
     check: PYTHON
+- fact_id: F_ENGT
+  name: Earlier Notice Grounds Text
+  entity: NOTICE
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 2
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S73_SS4#TEXT
+    atom: M_SOSDN_A_GSAEN
+    tsgs:
+    - TSG15_03
+    check: JUDGE
+  - mkp: CGSTA17_S74_SS4#TEXT
+    atom: M_SOSDN2_A_GSAEN
+    tsgs:
+    - TSG15_03
+    check: JUDGE
 - fact_id: F_FDT
   name: Furnished Detail Type
   entity: RETURN
@@ -1032,6 +1487,21 @@ facts:
     tsgs:
     - TSG11_01
     check: PYTHON
+- fact_id: F_FLFP
+  name: Final Late Fee Payable
+  entity: FEE
+  data_type: AMOUNT
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - F_ULFA
+  - F_MLFA
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
 - fact_id: F_FOGU
   name: Form Of Goods Use
   entity: GOODS_USE
@@ -1084,8 +1554,8 @@ facts:
   reviewed: false
   derived_from: []
   checks:
-    python: 9
-    judge: 3
+    python: 1
+    judge: 11
   tsgs:
   - tsg: TSG01_01
     name: Supply with consideration
@@ -1094,51 +1564,6 @@ facts:
     name: ''
     atoms: 1
   laws:
-  - mkp: CGSTA17_S7_SS1_Ca#TEXT
-    atom: M_SIAFOS_A_SIAS
-    tsgs:
-    - TSG01_01
-    check: PYTHON
-  - mkp: CGSTA17_S7_SS1_Ca#TEXT
-    atom: M_SIAFOS_A_SIAT
-    tsgs:
-    - TSG01_01
-    check: PYTHON
-  - mkp: CGSTA17_S7_SS1_Ca#TEXT
-    atom: M_SIAFOS_A_SIAB
-    tsgs:
-    - TSG01_01
-    check: PYTHON
-  - mkp: CGSTA17_S7_SS1_Ca#TEXT
-    atom: M_SIAFOS_A_SIAE
-    tsgs:
-    - TSG01_01
-    check: PYTHON
-  - mkp: CGSTA17_S7_SS1_Ca#TEXT
-    atom: M_SIAFOS_A_SIALG
-    tsgs:
-    - TSG01_01
-    check: PYTHON
-  - mkp: CGSTA17_S7_SS1_Ca#TEXT
-    atom: M_SIAFOS_A_SIAR
-    tsgs:
-    - TSG01_01
-    check: PYTHON
-  - mkp: CGSTA17_S7_SS1_Ca#TEXT
-    atom: M_SIAFOS_A_SIAL
-    tsgs:
-    - TSG01_01
-    check: PYTHON
-  - mkp: CGSTA17_S7_SS1_Ca#TEXT
-    atom: M_SIAFOS_A_SIAD
-    tsgs:
-    - TSG01_01
-    check: PYTHON
-  - mkp: CGSTA17_S7_SS1_Ca#TEXT
-    atom: M_SIAFOS_A_SIAQF
-    tsgs:
-    - TSG01_01
-    check: JUDGE
   - mkp: CGSTA17_SCHII_EN5_Ca#TEXT
     atom: M_ROIPIS_A_TIR
     tsgs:
@@ -1152,6 +1577,51 @@ facts:
   - mkp: CGSTA17_SCHII_EN1_Ca#TEXT
     atom: M_TOTISOG_A_GTT
     tsgs: []
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIAS
+    tsgs:
+    - TSG01_01
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIAT
+    tsgs:
+    - TSG01_01
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIAB
+    tsgs:
+    - TSG01_01
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIAE
+    tsgs:
+    - TSG01_01
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIAL
+    tsgs:
+    - TSG01_01
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIAR
+    tsgs:
+    - TSG01_01
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIAL2
+    tsgs:
+    - TSG01_01
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIAD
+    tsgs:
+    - TSG01_01
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SIAF
+    tsgs:
+    - TSG01_01
     check: JUDGE
 - fact_id: F_GAS
   name: Goods Asset Status
@@ -1479,6 +1949,27 @@ facts:
     tsgs:
     - TSG01_02
     check: PYTHON
+- fact_id: F_IPB
+  name: Interest Payment Basis
+  entity: INTEREST
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG12_03
+    name: Interest
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S50_SS1#TEXT
+    atom: M_IODPOT_A_IPOHO
+    tsgs:
+    - TSG12_03
+    check: JUDGE
 - fact_id: F_IPS
   name: Intellectual Property Subject
   entity: ''
@@ -1496,6 +1987,31 @@ facts:
     atom: M_TTOIPS_A_SIAIR
     tsgs: []
     check: JUDGE
+- fact_id: F_IPS2
+  name: Interest Payment Status
+  entity: INTEREST
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG12_03
+    name: Interest
+    atoms: 1
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S74_SS11#TEXT
+    atom: M_PCOPAO_A_IUSFP
+    tsgs:
+    - TSG12_03
+    - TSG15_03
+    check: PYTHON
 - fact_id: F_IPTT
   name: Intellectual Property Transaction Type
   entity: ''
@@ -1522,6 +2038,87 @@ facts:
     tsgs:
     - TSG01_01
     check: JUDGE
+- fact_id: F_IRA
+  name: Interest Rate Applied
+  entity: INTEREST
+  data_type: PERCENT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 1
+  tsgs:
+  - tsg: TSG12_03
+    name: Interest
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S50_SS1#TEXT
+    atom: M_IODPOT_A_RNEEP
+    tsgs:
+    - TSG12_03
+    check: PYTHON
+  - mkp: CGSTR17_R37_SR3#TEXT
+    atom: M_ILORC_A_IAS50NR
+    tsgs:
+    - TSG12_03
+    check: JUDGE
+- fact_id: F_LDPD
+  name: Last Demand Payment Date
+  entity: PAYMENT
+  data_type: DATE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
+- fact_id: F_LFCP
+  name: Late Fee Cap Percentage
+  entity: FEE
+  data_type: PERCENT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG12_04
+    name: Late fee
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S47_SS2#TEXT
+    atom: M_LFFFTFR_A_LFFAR
+    tsgs:
+    - TSG12_04
+    check: PYTHON
+- fact_id: F_LFDR
+  name: Late Fee Daily Rate
+  entity: FEE
+  data_type: AMOUNT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG12_04
+    name: Late fee
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S47_SS2#TEXT
+    atom: M_LFFFTFR_A_LFFAR
+    tsgs:
+    - TSG12_04
+    check: PYTHON
 - fact_id: F_LIF
   name: Land Interest Form
   entity: ''
@@ -1569,7 +2166,7 @@ facts:
   - F_DOF
   - F_TPOR
   checks:
-    python: 2
+    python: 3
     judge: 0
   tsgs:
   - tsg: TSG05_05
@@ -1577,7 +2174,7 @@ facts:
     atoms: 1
   - tsg: TSG11_01
     name: GSTR-1 / IFF
-    atoms: 2
+    atoms: 3
   laws:
   - mkp: CGSTA17_S37_SS1_P1#TEXT
     atom: M_FODRP_A_FISM
@@ -1590,6 +2187,26 @@ facts:
     tsgs:
     - TSG11_01
     check: PYTHON
+  - mkp: CGSTA17_S39_SS3#TEXT
+    atom: M_RPOSD_A_FBTDS
+    tsgs:
+    - TSG11_01
+    check: PYTHON
+- fact_id: F_MLFA
+  name: Maximum Late Fee Amount
+  entity: FEE
+  data_type: AMOUNT
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - F_TURNOVER_IN_STATE_UT
+  - F_LFCP
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
 - fact_id: F_MOFD
   name: Mode Of Furnishing Details
   entity: RETURN
@@ -1599,12 +2216,18 @@ facts:
   reviewed: false
   derived_from: []
   checks:
-    python: 2
+    python: 6
     judge: 0
   tsgs:
+  - tsg: TSG05_05
+    name: Tax period & reporting period
+    atoms: 3
+  - tsg: TSG06_03
+    name: Composition & special taxpayers / recipients
+    atoms: 3
   - tsg: TSG11_01
     name: GSTR-1 / IFF
-    atoms: 1
+    atoms: 2
   - tsg: TSG11_02
     name: GSTR-3B
     atoms: 1
@@ -1619,6 +2242,85 @@ facts:
     tsgs:
     - TSG11_02
     check: PYTHON
+  - mkp: CGSTA17_S39_SS5#TEXT
+    atom: M_NTPRF_A_RFE
+    tsgs:
+    - TSG05_05
+    - TSG06_03
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS2#TEXT
+    atom: M_RPOSD_A_DAFE
+    tsgs:
+    - TSG11_01
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS4#TEXT
+    atom: M_NTPRF_A_RFE
+    tsgs:
+    - TSG05_05
+    - TSG06_03
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS3#TEXT
+    atom: M_NTPRF_A_RFE
+    tsgs:
+    - TSG05_05
+    - TSG06_03
+    check: PYTHON
+- fact_id: F_NAB
+  name: Notice Amount Basis
+  entity: NOTICE
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S74_SS7#TEXT
+    atom: M_SNASP_A_NCSA
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+- fact_id: F_NBOCR
+  name: Notification Based On Council Recommendation
+  entity: NOTIFICATION
+  data_type: BOOL
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - NA
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG01_07
+    name: ''
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S7_SS2_Cb#TEXT
+    atom: M_NTTAG_A_NOCR
+    tsgs:
+    - TSG01_07
+    check: JUDGE
+- fact_id: F_NC
+  name: Notification Content
+  entity: NOTIFICATION
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
 - fact_id: F_NCD
   name: Notification Class Description
   entity: NOTIFICATION
@@ -1629,11 +2331,8 @@ facts:
   derived_from: []
   checks:
     python: 0
-    judge: 2
+    judge: 1
   tsgs:
-  - tsg: TSG01_07
-    name: ''
-    atoms: 1
   - tsg: TSG11_07
     name: Notified Quarterly Return Filer Class
     atoms: 1
@@ -1642,11 +2341,6 @@ facts:
     atom: M_GPTNQR_A_PINC
     tsgs:
     - TSG11_07
-    check: JUDGE
-  - mkp: CGSTA17_S7_SS3_Ca#TEXT
-    atom: M_NTTAG_A_PSTS
-    tsgs:
-    - TSG01_07
     check: JUDGE
 - fact_id: F_NCM
   name: Notified Class Membership
@@ -1678,22 +2372,59 @@ facts:
   reviewed: false
   derived_from: []
   checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG12_03
+    name: Interest
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S50_SS1#TEXT
+    atom: M_IODPOT_A_RNOCR
+    tsgs:
+    - TSG12_03
+    check: PYTHON
+- fact_id: F_NIB
+  name: Notice Interest Basis
+  entity: NOTICE
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
+- fact_id: F_NID
+  name: Notice Issue Date
+  entity: NOTICE
+  data_type: DATE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
     python: 2
     judge: 0
   tsgs:
-  - tsg: TSG01_07
-    name: ''
-    atoms: 2
+  - tsg: TSG15_02
+    name: Assessment & audit
+    atoms: 1
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 1
   laws:
-  - mkp: CGSTA17_S7_SS3_Ca#TEXT
-    atom: M_NTTAS_A_GITN
+  - mkp: CGSTA17_S73_SS2#TEXT
+    atom: M_NITL_A_NITME
     tsgs:
-    - TSG01_07
+    - TSG15_02
     check: PYTHON
-  - mkp: CGSTA17_S7_SS3_Cb#TEXT
-    atom: M_NTTAS_A_GITN
+  - mkp: CGSTA17_S74_SS2#TEXT
+    atom: M_NITLFF_A_NSMBOL
     tsgs:
-    - TSG01_07
+    - TSG15_03
     check: PYTHON
 - fact_id: F_NIK
   name: Notified Item Kind
@@ -1721,6 +2452,251 @@ facts:
     tsgs:
     - TSG11_01
     check: PYTHON
+- fact_id: F_NILP
+  name: Notice Includes Leviable Penalty
+  entity: NOTICE
+  data_type: BOOL
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - F_PSM
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 1
+  - tsg: TSG15_05
+    name: Offences & penalties
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S73_SS1#TEXT
+    atom: M_SCNFTNP_A_NILP
+    tsgs:
+    - TSG15_03
+    - TSG15_05
+    check: PYTHON
+- fact_id: F_NIOR
+  name: Notice Issuing Officer Role
+  entity: NOTICE
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 4
+    judge: 1
+  tsgs:
+  - tsg: TSG15_02
+    name: Assessment & audit
+    atoms: 5
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 5
+  laws:
+  - mkp: CGSTA17_S73_SS2#TEXT
+    atom: M_NITL_A_POIN
+    tsgs:
+    - TSG15_02
+    - TSG15_03
+    check: JUDGE
+  - mkp: CGSTA17_S73_SS1#TEXT
+    atom: M_NITL_A_POIN
+    tsgs:
+    - TSG15_02
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS2#TEXT
+    atom: M_NITL_A_POIN
+    tsgs:
+    - TSG15_02
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS6#TEXT
+    atom: M_NITL_A_POIN
+    tsgs:
+    - TSG15_02
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS7#TEXT
+    atom: M_NITL_A_POIN
+    tsgs:
+    - TSG15_02
+    - TSG15_03
+    check: PYTHON
+- fact_id: F_NIP
+  name: Notice Issuing Provision
+  entity: NOTICE
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 7
+    judge: 0
+  tsgs:
+  - tsg: TSG15_02
+    name: Assessment & audit
+    atoms: 7
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 7
+  laws:
+  - mkp: CGSTA17_S73_SS2#TEXT
+    atom: M_NITL_A_NIUSO
+    tsgs:
+    - TSG15_02
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S73_SS6#TEXT
+    atom: M_NITL_A_NIUSO
+    tsgs:
+    - TSG15_02
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S73_SS3#TEXT
+    atom: M_NITL_A_NIUSO
+    tsgs:
+    - TSG15_02
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS2#TEXT
+    atom: M_NITL_A_NIUSO
+    tsgs:
+    - TSG15_02
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS3#TEXT
+    atom: M_NITL_A_NIUSO
+    tsgs:
+    - TSG15_02
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS6#TEXT
+    atom: M_NITL_A_NIUSO
+    tsgs:
+    - TSG15_02
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS7#TEXT
+    atom: M_NITL_A_NIUSO
+    tsgs:
+    - TSG15_02
+    - TSG15_03
+    check: PYTHON
+- fact_id: F_NIS50I
+  name: Notice Includes Section 50 Interest
+  entity: NOTICE
+  data_type: BOOL
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 2
+    judge: 0
+  tsgs:
+  - tsg: TSG12_03
+    name: Interest
+    atoms: 2
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S73_SS1#TEXT
+    atom: M_SCNFTNP_A_NIS50I
+    tsgs:
+    - TSG12_03
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS1#TEXT
+    atom: M_SCNFTNP_A_NIS50I
+    tsgs:
+    - TSG12_03
+    - TSG15_03
+    check: PYTHON
+- fact_id: F_NLM
+  name: Notice Lead Months
+  entity: NOTICE
+  data_type: NUMBER
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - F_NID
+  - F_OTLD
+  checks:
+    python: 2
+    judge: 0
+  tsgs:
+  - tsg: TSG15_02
+    name: Assessment & audit
+    atoms: 1
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S73_SS2#TEXT
+    atom: M_NITL_A_NITME
+    tsgs:
+    - TSG15_02
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS2#TEXT
+    atom: M_NITLFF_A_NSMBOL
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+- fact_id: F_NOCR
+  name: Notified On Council Recommendation
+  entity: NOTIFICATION
+  data_type: CODE
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - F_NRB
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG12_03
+    name: Interest
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S50_SS1#TEXT
+    atom: M_IODPOT_A_RNOCR
+    tsgs:
+    - TSG12_03
+    check: PYTHON
+- fact_id: F_NPB
+  name: Notice Penalty Basis
+  entity: NOTICE
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 1
+  - tsg: TSG15_05
+    name: Offences & penalties
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S74_SS1#TEXT
+    atom: M_SCNFFE_A_NIPETT
+    tsgs:
+    - TSG15_03
+    - TSG15_05
+    check: PYTHON
 - fact_id: F_NRB
   name: Notification Recommending Body
   entity: NOTIFICATION
@@ -1730,32 +2706,31 @@ facts:
   reviewed: false
   derived_from: []
   checks:
-    python: 4
-    judge: 0
+    python: 1
+    judge: 2
   tsgs:
+  - tsg: TSG01_07
+    name: ''
+    atoms: 1
   - tsg: TSG05_05
     name: Tax period & reporting period
-    atoms: 3
+    atoms: 2
   laws:
   - mkp: CGSTA17_S39_SS1_P1#TEXT
     atom: M_GPTNQR_A_NOCR
     tsgs:
     - TSG05_05
     check: PYTHON
-  - mkp: CGSTA17_S7_SS2_Cb#TEXT
-    atom: M_GPTNQR_A_NOCR
-    tsgs:
-    - TSG05_05
-    check: PYTHON
   - mkp: CGSTA17_S7_SS3_Ca#TEXT
-    atom: M_NTTAS_A_CRTN
-    tsgs: []
-    check: PYTHON
+    atom: M_NTTAG_A_SOCR
+    tsgs:
+    - TSG01_07
+    check: JUDGE
   - mkp: CGSTA17_S7_SS3_Cb#TEXT
     atom: M_GPTNQR_A_NOCR
     tsgs:
     - TSG05_05
-    check: PYTHON
+    check: JUDGE
 - fact_id: F_NRFF
   name: Notified Return Filing Frequency
   entity: NOTIFICATION
@@ -1776,6 +2751,96 @@ facts:
     atom: M_GPTNQR_A_NREQ
     tsgs:
     - TSG05_05
+    check: PYTHON
+- fact_id: F_NRR
+  name: Notice Recipient Role
+  entity: PERSON
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 6
+    judge: 1
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 7
+  laws:
+  - mkp: CGSTA17_S73_SS1#TEXT
+    atom: M_SCNFTNP_A_NTPC
+    tsgs:
+    - TSG15_03
+    check: JUDGE
+  - mkp: CGSTA17_S73_SS1#TEXT
+    atom: M_SCNFTNP_A_NTRR
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S73_SS1#TEXT
+    atom: M_SCNFTNP_A_NTWCT
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS1#TEXT
+    atom: M_SCNFTNP_A_NTPC
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS1#TEXT
+    atom: M_SCNFTNP_A_NTRR
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS1#TEXT
+    atom: M_SCNFTNP_A_NTWCT
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS3#TEXT
+    atom: M_POMSS_A_SSOCP
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+- fact_id: F_NRR2
+  name: Notice Recipient Role
+  entity: NOTICE
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
+- fact_id: F_NRSC
+  name: Notice Requires Show Cause
+  entity: NOTICE
+  data_type: BOOL
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 2
+    judge: 0
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S73_SS1#TEXT
+    atom: M_SCNFTNP_A_NRSCOA
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS1#TEXT
+    atom: M_SCNFTNP_A_NRSCOA
+    tsgs:
+    - TSG15_03
     check: PYTHON
 - fact_id: F_NSAC
   name: Notification Specifies Any Condition
@@ -1798,6 +2863,45 @@ facts:
     tsgs:
     - TSG05_05
     check: PYTHON
+- fact_id: F_NSCT
+  name: Notice Show Cause Target
+  entity: NOTICE
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
+- fact_id: F_NSM
+  name: Notification Specification Method
+  entity: NOTIFICATION
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 2
+  tsgs:
+  - tsg: TSG01_07
+    name: ''
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S7_SS3_Ca#TEXT
+    atom: M_NTTAG_A_SIBN
+    tsgs:
+    - TSG01_07
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS3_Cb#TEXT
+    atom: M_NTTAG_A_SIBN
+    tsgs:
+    - TSG01_07
+    check: JUDGE
 - fact_id: F_NTOT
   name: Notified Treatment Of Transaction
   entity: NOTIFICATION
@@ -1807,22 +2911,109 @@ facts:
   reviewed: false
   derived_from: []
   checks:
-    python: 1
-    judge: 1
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
+- fact_id: F_NTT
+  name: Notification Treatment Type
+  entity: NOTIFICATION
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 2
   tsgs:
   - tsg: TSG01_07
     name: ''
     atoms: 2
   laws:
   - mkp: CGSTA17_S7_SS3_Ca#TEXT
-    atom: M_NTTAG_A_TAGNS
+    atom: M_NTTAG_A_STAG
     tsgs:
     - TSG01_07
     check: JUDGE
   - mkp: CGSTA17_S7_SS3_Cb#TEXT
-    atom: M_NTTAS_A_NTIS
+    atom: M_NTTAS_A_NTTAS
     tsgs:
     - TSG01_07
+    check: JUDGE
+- fact_id: F_NTT2
+  name: Notified Treatment Type
+  entity: TRANSACTION
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
+- fact_id: F_NVSC
+  name: Notification Validity S7 Context
+  entity: NOTIFICATION
+  data_type: BOOL
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - NA
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG01_07
+    name: ''
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S7_SS3_Cb#TEXT
+    atom: M_NTTAG_A_NRS11A2
+    tsgs:
+    - TSG01_07
+    check: JUDGE
+- fact_id: F_ODAI
+  name: Order Determined Amount Items
+  entity: ORDER
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 3
+    judge: 0
+  tsgs:
+  - tsg: TSG12_03
+    name: Interest
+    atoms: 1
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 3
+  - tsg: TSG15_05
+    name: Offences & penalties
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S74_SS9#TEXT
+    atom: M_ODOTIP_A_TAD
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS9#TEXT
+    atom: M_ODOTIP_A_IAD
+    tsgs:
+    - TSG12_03
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS9#TEXT
+    atom: M_ODOTIP_A_PAD
+    tsgs:
+    - TSG15_03
+    - TSG15_05
     check: PYTHON
 - fact_id: F_ODR
   name: Origin Destination Relation
@@ -1845,6 +3036,114 @@ facts:
     tsgs:
     - TSG01_03
     check: PYTHON
+- fact_id: F_OFR
+  name: Officer Finding Record
+  entity: PROCEEDING
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 5
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 5
+  laws:
+  - mkp: CGSTA17_S74_SS1#TEXT
+    atom: M_SCNFFE_A_OOOSBF
+    tsgs:
+    - TSG15_03
+    check: JUDGE
+  - mkp: CGSTA17_S74_SS1#TEXT
+    atom: M_SCNFFE_A_SBROF
+    tsgs:
+    - TSG15_03
+    check: JUDGE
+  - mkp: CGSTA17_S74_SS1#TEXT
+    atom: M_SCNFFE_A_SBWMTE
+    tsgs:
+    - TSG15_03
+    check: JUDGE
+  - mkp: CGSTA17_S74_SS1#TEXT
+    atom: M_SCNFFE_A_SBSOF
+    tsgs:
+    - TSG15_03
+    check: JUDGE
+  - mkp: CGSTA17_S74_SS7#TEXT
+    atom: M_SNASP_A_POFO
+    tsgs:
+    - TSG15_03
+    check: JUDGE
+- fact_id: F_OIP
+  name: Order Issue Provision
+  entity: ORDER
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S74_SS11#TEXT
+    atom: M_PCOPAO_A_OIUSN
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+- fact_id: F_OIR
+  name: Order Issuer Role
+  entity: ORDER
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG15_02
+    name: Assessment & audit
+    atoms: 1
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S74_SS9#TEXT
+    atom: M_ODOTIP_A_POMD
+    tsgs:
+    - TSG15_02
+    - TSG15_03
+    check: PYTHON
+- fact_id: F_OOR
+  name: Officer Observation Record
+  entity: PROCEEDING
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S73_SS1#TEXT
+    atom: M_SCNFTNP_A_OBTSE
+    tsgs:
+    - TSG15_03
+    check: JUDGE
 - fact_id: F_OPT
   name: Origin Place Territory
   entity: PLACE
@@ -1865,6 +3164,56 @@ facts:
     atom: M_SOGFNT_A_SOINT
     tsgs:
     - TSG01_03
+    check: PYTHON
+- fact_id: F_OSS
+  name: Order Service Status
+  entity: ORDER
+  data_type: BOOL
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S74_SS11#TEXT
+    atom: M_PCOPAO_A_PSWO
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+- fact_id: F_OTLD
+  name: Order Time Limit Date
+  entity: ORDER
+  data_type: DATE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 2
+    judge: 0
+  tsgs:
+  - tsg: TSG15_02
+    name: Assessment & audit
+    atoms: 1
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S73_SS2#TEXT
+    atom: M_NITL_A_NITME
+    tsgs:
+    - TSG15_02
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS2#TEXT
+    atom: M_NITLFF_A_NSMBOL
+    tsgs:
+    - TSG15_03
     check: PYTHON
 - fact_id: F_PBAD
   name: Person Business Activity Description
@@ -1950,6 +3299,19 @@ facts:
     tsgs:
     - TSG14_01
     check: JUDGE
+- fact_id: F_PCD
+  name: Proceeding Commencement Date
+  entity: PROCEEDING
+  data_type: DATE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
 - fact_id: F_PCM
   name: Provision Context Meaning
   entity: ''
@@ -1989,6 +3351,37 @@ facts:
     tsgs:
     - TSG14_06
     check: JUDGE
+- fact_id: F_PCP
+  name: Payment Components Paid
+  entity: PAYMENT
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 2
+    judge: 0
+  tsgs:
+  - tsg: TSG12_03
+    name: Interest
+    atoms: 2
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S73_SS5#TEXT
+    atom: M_VTPBN_A_TPWS50I
+    tsgs:
+    - TSG12_03
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS5#TEXT
+    atom: M_VTPBN_A_TPWS50I
+    tsgs:
+    - TSG12_03
+    - TSG15_03
+    check: PYTHON
 - fact_id: F_PCR
   name: Person Compliance Records
   entity: PERSON
@@ -2036,6 +3429,57 @@ facts:
     tsgs:
     - TSG06_05
     check: PYTHON
+- fact_id: F_PCT
+  name: Proceeding Commencement Timing
+  entity: PROCEEDING
+  data_type: CODE
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - F_PCD
+  - F_DOF
+  checks:
+    python: 2
+    judge: 0
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S50_SS1_P1#TEXT
+    atom: M_IOTPECL_A_S73PCBR
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S50_SS1_P1#TEXT
+    atom: M_IOTPECL_A_S74PCBR
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+- fact_id: F_PDAO
+  name: Payment Days After Order
+  entity: PAYMENT
+  data_type: NUMBER
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - F_LDPD
+  - F_ORDER_COMMUNICATION_DATE
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S74_SS11#TEXT
+    atom: M_PCOPAO_A_PWTD
+    tsgs:
+    - TSG15_03
+    check: PYTHON
 - fact_id: F_PDEBC
   name: Person Deemed Employee Before Commencement
   entity: PERSON
@@ -2056,6 +3500,27 @@ facts:
     atom: M_DBGBM_A_NDEBC
     tsgs:
     - TSG01_03
+    check: PYTHON
+- fact_id: F_PDTBS
+  name: Proceeding Document To Be Served
+  entity: PROCEEDING
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S73_SS6#TEXT
+    atom: M_BONFTP_A_SUST
+    tsgs:
+    - TSG15_03
     check: PYTHON
 - fact_id: F_PEO
   name: Person Elected Office
@@ -2122,6 +3587,59 @@ facts:
     judge: 0
   tsgs: []
   laws: []
+- fact_id: F_PIF
+  name: Payment Intimation Form
+  entity: PAYMENT
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 2
+    judge: 0
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S73_SS5#TEXT
+    atom: M_VTPBN_A_POIIW
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS5#TEXT
+    atom: M_VTPBN_A_POIIW
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+- fact_id: F_PIRS
+  name: Payment Information Receipt Status
+  entity: PROCEEDING
+  data_type: BOOL
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - F_PIF
+  checks:
+    python: 1
+    judge: 1
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S73_SS6#TEXT
+    atom: M_BONFTP_A_OHRSI
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS6#TEXT
+    atom: M_POSNSN_A_PORSI
+    tsgs:
+    - TSG15_03
+    check: JUDGE
 - fact_id: F_PIS
   name: Property Immovability Status
   entity: PROPERTY
@@ -2138,6 +3656,32 @@ facts:
   - mkp: CGSTA17_S2_C119#TEXT
     atom: M_DOWC_A_WOIP
     tsgs: []
+    check: JUDGE
+- fact_id: F_PLD
+  name: Payment Ledger Debit
+  entity: PAYMENT
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 1
+  tsgs:
+  - tsg: TSG12_01
+    name: Tax payment & ledgers
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S50_SS1_P1#TEXT
+    atom: M_IOTPECL_A_TPBCL
+    tsgs:
+    - TSG12_01
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS7_P1#TEXT
+    atom: M_TPBRPFR_A_TPIPFAM
+    tsgs:
+    - TSG12_01
     check: JUDGE
 - fact_id: F_PLF
   name: Property Letting Form
@@ -2335,6 +3879,53 @@ facts:
     tsgs:
     - TSG01_03
     check: JUDGE
+- fact_id: F_PPI
+  name: Proceeding Provision Invoked
+  entity: PROCEEDING
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs: []
+  laws:
+  - mkp: CGSTA17_S74_E1_SCi#TEXT
+    atom: M_PNIS132_A_PUS132
+    tsgs: []
+    check: PYTHON
+- fact_id: F_PPPOT
+  name: Payment Penalty Percent Of Tax
+  entity: PAYMENT
+  data_type: PERCENT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 2
+    judge: 0
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 1
+  - tsg: TSG15_05
+    name: Offences & penalties
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S74_SS5#TEXT
+    atom: M_PBNFF_A_PEFPOT
+    tsgs:
+    - TSG15_05
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS11#TEXT
+    atom: M_PCOPAO_A_PETFP
+    tsgs:
+    - TSG15_03
+    - TSG15_05
+    check: PYTHON
 - fact_id: F_PPQ
   name: Person Professional Qualification
   entity: ''
@@ -2434,12 +4025,18 @@ facts:
   reviewed: false
   derived_from: []
   checks:
-    python: 4
+    python: 13
     judge: 0
   tsgs:
   - tsg: TSG06_01
     name: GSTIN validity & status
-    atoms: 4
+    atoms: 11
+  - tsg: TSG06_03
+    name: Composition & special taxpayers / recipients
+    atoms: 1
+  - tsg: TSG07_04
+    name: TDS
+    atoms: 1
   laws:
   - mkp: CGSTA17_S37_SS1_P1#TEXT
     atom: M_FODRP_A_FIRP
@@ -2457,6 +4054,51 @@ facts:
     - TSG06_01
     check: PYTHON
   - mkp: CGSTA17_S39_SS1_P1#TEXT
+    atom: M_FODRP_A_FIRP
+    tsgs:
+    - TSG06_01
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS9#TEXT
+    atom: M_TPBRPFR_A_PIARP
+    tsgs: []
+    check: PYTHON
+  - mkp: CGSTR17_R37_SR3#TEXT
+    atom: M_FODRP_A_FIRP
+    tsgs:
+    - TSG06_01
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS5#TEXT
+    atom: M_NTPRF_A_PIR
+    tsgs:
+    - TSG06_01
+    - TSG06_03
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS2#TEXT
+    atom: M_FODRP_A_FIRP
+    tsgs:
+    - TSG06_01
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS3#TEXT
+    atom: M_RPFTR_A_RPDT
+    tsgs:
+    - TSG07_04
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS8#TEXT
+    atom: M_FODRP_A_FIRP
+    tsgs:
+    - TSG06_01
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS7_P1#TEXT
+    atom: M_TPBRPFR_A_PIARP
+    tsgs:
+    - TSG06_01
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS10#TEXT
+    atom: M_FODRP_A_FIRP
+    tsgs:
+    - TSG06_01
+    check: PYTHON
+  - mkp: CGSTA17_S47_SS2#TEXT
     atom: M_FODRP_A_FIRP
     tsgs:
     - TSG06_01
@@ -2482,6 +4124,47 @@ facts:
     tsgs:
     - TSG01_13
     check: JUDGE
+- fact_id: F_PSM
+  name: Proceeding Subject Matter
+  entity: PROCEEDING
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 4
+    judge: 0
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 4
+  - tsg: TSG15_05
+    name: Offences & penalties
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S73_SS6#TEXT
+    atom: M_BONFTP_A_DCTSP
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S73_SS6#TEXT
+    atom: M_BONFTP_A_DCPP
+    tsgs:
+    - TSG15_03
+    - TSG15_05
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS6#TEXT
+    atom: M_BONFTP_A_DCTSP
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS6#TEXT
+    atom: M_BONFTP_A_DCPP
+    tsgs:
+    - TSG15_03
+    - TSG15_05
+    check: PYTHON
 - fact_id: F_PSS
   name: Property Sale Subject
   entity: TRANSACTION
@@ -2555,6 +4238,32 @@ facts:
     tsgs:
     - TSG01_02
     check: PYTHON
+- fact_id: F_PTAS2
+  name: Payment Timing Against Service
+  entity: PAYMENT
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 2
+    judge: 0
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S73_SS5#TEXT
+    atom: M_VTPBN_A_PBNOS
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS5#TEXT
+    atom: M_PBNFF_A_PBNS
+    tsgs:
+    - TSG15_03
+    check: PYTHON
 - fact_id: F_PTC
   name: Person Tax Category
   entity: PERSON
@@ -2564,24 +4273,33 @@ facts:
   reviewed: false
   derived_from: []
   checks:
-    python: 10
-    judge: 0
+    python: 14
+    judge: 1
   tsgs:
+  - tsg: TSG01_01
+    name: Supply with consideration
+    atoms: 2
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 2
   - tsg: TSG06_03
     name: Composition & special taxpayers / recipients
-    atoms: 4
+    atoms: 6
   - tsg: TSG07_04
     name: TDS
-    atoms: 2
+    atoms: 3
   - tsg: TSG07_05
     name: TCS
     atoms: 2
   - tsg: TSG11_01
     name: GSTR-1 / IFF
-    atoms: 5
+    atoms: 7
   - tsg: TSG11_02
     name: GSTR-3B
     atoms: 5
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 2
   laws:
   - mkp: CGSTA17_S37_SS1#TEXT
     atom: M_RPOSD_A_PIISD
@@ -2640,6 +4358,264 @@ facts:
     tsgs:
     - TSG07_05
     - TSG11_02
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS5#TEXT
+    atom: M_RPOSD_A_PINTP
+    tsgs:
+    - TSG06_03
+    - TSG11_01
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS2#TEXT
+    atom: M_RPOSD_A_PPTUS10
+    tsgs:
+    - TSG06_03
+    - TSG11_01
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS4#TEXT
+    atom: M_ISDMR_A_TPRAI
+    tsgs:
+    - TSG01_01
+    - TSG01_03
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS3#TEXT
+    atom: M_RPFTR_A_RPDT
+    tsgs:
+    - TSG07_04
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS8#TEXT
+    atom: M_MRFBRP_A_RRFUS39
+    tsgs:
+    - TSG01_01
+    - TSG01_03
+    - TSG15_03
+    check: JUDGE
+- fact_id: F_PTFP
+  name: Proceeding Type For Period
+  entity: PROCEEDING
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 2
+    judge: 0
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S50_SS1_P1#TEXT
+    atom: M_IOTPECL_A_S73PCBR
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S50_SS1_P1#TEXT
+    atom: M_IOTPECL_A_S74PCBR
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+- fact_id: F_PTLS
+  name: Person Tax Liability Status
+  entity: PERSON
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 3
+    judge: 1
+  tsgs:
+  - tsg: TSG12_03
+    name: Interest
+    atoms: 1
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 3
+  laws:
+  - mkp: CGSTA17_S50_SS1#TEXT
+    atom: M_IODPOT_A_PLTPT
+    tsgs:
+    - TSG12_03
+    check: JUDGE
+  - mkp: CGSTA17_S73_SS5#TEXT
+    atom: M_VTPBN_A_PICWT
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S73_SS3#TEXT
+    atom: M_VTPBN_A_PICWT
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS5#TEXT
+    atom: M_VTPBN_A_PICWT
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+- fact_id: F_RDT
+  name: Return Discrepancy Type
+  entity: RETURN
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs: []
+  laws:
+  - mkp: CGSTA17_S39_SS9#TEXT
+    atom: M_ROOIR_A_OOIPD
+    tsgs: []
+    check: PYTHON
+- fact_id: F_RFDC
+  name: Return Furnishing Day Count
+  entity: RETURN
+  data_type: NUMBER
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - F_DOF
+  - F_TPOR
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
+- fact_id: F_RFPB
+  name: Return Filing Provision Basis
+  entity: RETURN
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs: []
+  laws:
+  - mkp: CGSTA17_S39_SS7_P1#TEXT
+    atom: M_TPBRPFR_A_RFUSP
+    tsgs: []
+    check: PYTHON
+- fact_id: F_RFS
+  name: Return Furnishing Subsection
+  entity: RETURN
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 5
+    judge: 0
+  tsgs: []
+  laws:
+  - mkp: CGSTA17_S39_SS9#TEXT
+    atom: M_ROOIR_A_RFUS1
+    tsgs: []
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS9#TEXT
+    atom: M_ROOIR_A_RFUS2
+    tsgs: []
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS9#TEXT
+    atom: M_ROOIR_A_RFUS3
+    tsgs: []
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS9#TEXT
+    atom: M_ROOIR_A_RFUS4
+    tsgs: []
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS9#TEXT
+    atom: M_ROOIR_A_RFUS5
+    tsgs: []
+    check: PYTHON
+- fact_id: F_RFT
+  name: Return Furnishing Timing
+  entity: RETURN
+  data_type: CODE
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - F_DOF
+  - F_TPOR
+  checks:
+    python: 3
+    judge: 0
+  tsgs:
+  - tsg: TSG01_01
+    name: Supply with consideration
+    atoms: 1
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 1
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S50_SS1_P1#TEXT
+    atom: M_IOTPECL_A_RFADD
+    tsgs: []
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS5#TEXT
+    atom: M_NTPRF_A_FWED
+    tsgs: []
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS4#TEXT
+    atom: M_ISDMR_A_RFWTD
+    tsgs:
+    - TSG01_01
+    - TSG01_03
+    - TSG15_03
+    check: PYTHON
+- fact_id: F_RFTS
+  name: Reason For Tax Shortfall
+  entity: TAX
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 2
+    judge: 3
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 5
+  laws:
+  - mkp: CGSTA17_S73_SS1#TEXT
+    atom: M_SCNFTNP_A_ROTF
+    tsgs:
+    - TSG15_03
+    check: JUDGE
+  - mkp: CGSTA17_S74_SS6#TEXT
+    atom: M_POSNSN_A_DBFOS
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS5#TEXT
+    atom: M_PBNFF_A_SIBROF
+    tsgs:
+    - TSG15_03
+    check: JUDGE
+  - mkp: CGSTA17_S74_SS5#TEXT
+    atom: M_PBNFF_A_SBMOS
+    tsgs:
+    - TSG15_03
+    check: JUDGE
+  - mkp: CGSTA17_S74_SS9#TEXT
+    atom: M_POSNSN_A_DBFOS
+    tsgs:
+    - TSG15_03
     check: PYTHON
 - fact_id: F_RFUFF
   name: Return Form Used For Furnishing
@@ -2651,13 +4627,28 @@ facts:
   derived_from: []
   checks:
     python: 0
-    judge: 2
+    judge: 6
   tsgs:
+  - tsg: TSG01_01
+    name: Supply with consideration
+    atoms: 1
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 1
+  - tsg: TSG05_05
+    name: Tax period & reporting period
+    atoms: 2
+  - tsg: TSG06_03
+    name: Composition & special taxpayers / recipients
+    atoms: 2
   - tsg: TSG11_01
     name: GSTR-1 / IFF
-    atoms: 1
+    atoms: 2
   - tsg: TSG11_02
     name: GSTR-3B
+    atoms: 1
+  - tsg: TSG15_03
+    name: Demand & recovery
     atoms: 1
   laws:
   - mkp: CGSTA17_S37_SS1#TEXT
@@ -2670,6 +4661,44 @@ facts:
     tsgs:
     - TSG11_02
     check: JUDGE
+  - mkp: CGSTA17_S39_SS5#TEXT
+    atom: M_NTPRF_A_RIPF
+    tsgs:
+    - TSG05_05
+    - TSG06_03
+    check: JUDGE
+  - mkp: CGSTA17_S39_SS2#TEXT
+    atom: M_RPOSD_A_FIPFAM
+    tsgs:
+    - TSG11_01
+    check: JUDGE
+  - mkp: CGSTA17_S39_SS4#TEXT
+    atom: M_ISDMR_A_RIPFAM
+    tsgs:
+    - TSG01_01
+    - TSG01_03
+    - TSG15_03
+    check: JUDGE
+  - mkp: CGSTA17_S39_SS3#TEXT
+    atom: M_NTPRF_A_RIPF
+    tsgs:
+    - TSG05_05
+    - TSG06_03
+    check: JUDGE
+- fact_id: F_RHBF
+  name: Return Has Been Furnished
+  entity: ''
+  data_type: BOOL
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - F_RFT
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
 - fact_id: F_RICD
   name: Return Input Credit Details
   entity: RETURN
@@ -2680,16 +4709,46 @@ facts:
   derived_from: []
   checks:
     python: 1
-    judge: 0
+    judge: 2
   tsgs:
   - tsg: TSG11_02
     name: GSTR-3B
+    atoms: 2
+  - tsg: TSG15_03
+    name: Demand & recovery
     atoms: 1
   laws:
   - mkp: CGSTA17_S39_SS1#TEXT
     atom: M_RPFMR_A_RSITCA
     tsgs:
     - TSG11_02
+    check: PYTHON
+  - mkp: CGSTA17_S73_SS1#TEXT
+    atom: M_SCNFTNP_A_OBTSE
+    tsgs:
+    - TSG15_03
+    check: JUDGE
+  - mkp: CGSTA17_S39_SS7_P1#TEXT
+    atom: M_TPBRPFR_A_TDTAOP
+    tsgs:
+    - TSG11_02
+    check: JUDGE
+- fact_id: F_RIS
+  name: Rectification Interest Status
+  entity: INTEREST
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs: []
+  laws:
+  - mkp: CGSTA17_S39_SS9#TEXT
+    atom: M_ROOIR_A_IPOR
+    tsgs: []
     check: PYTHON
 - fact_id: F_RISD
   name: Return Inward Supply Details
@@ -2700,14 +4759,17 @@ facts:
   reviewed: false
   derived_from: []
   checks:
-    python: 1
-    judge: 0
+    python: 2
+    judge: 1
   tsgs:
   - tsg: TSG11_01
     name: GSTR-1 / IFF
     atoms: 1
   - tsg: TSG11_02
     name: GSTR-3B
+    atoms: 2
+  - tsg: TSG11_04
+    name: Annual return (GSTR-9 / 9C)
     atoms: 1
   laws:
   - mkp: CGSTA17_S39_SS1#TEXT
@@ -2716,6 +4778,45 @@ facts:
     - TSG11_01
     - TSG11_02
     check: PYTHON
+  - mkp: CGSTA17_S39_SS2#TEXT
+    atom: M_CTFAR_A_RCIS
+    tsgs:
+    - TSG11_04
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS7_P1#TEXT
+    atom: M_TPBRPFR_A_TDTAOP
+    tsgs:
+    - TSG11_02
+    check: JUDGE
+- fact_id: F_RMC
+  name: Return Manner Compliant
+  entity: ''
+  data_type: BOOL
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG01_01
+    name: Supply with consideration
+    atoms: 1
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 1
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S39_SS4#TEXT
+    atom: M_ISDMR_A_RIPFAM
+    tsgs:
+    - TSG01_01
+    - TSG01_03
+    - TSG15_03
+    check: JUDGE
 - fact_id: F_RMS
   name: Recipient Membership Status
   entity: RECIPIENT
@@ -2743,14 +4844,24 @@ facts:
   derived_from: []
   checks:
     python: 0
-    judge: 1
+    judge: 3
   tsgs:
   - tsg: TSG11_02
     name: GSTR-3B
-    atoms: 1
+    atoms: 3
   laws:
   - mkp: CGSTA17_S39_SS1#TEXT
     atom: M_RPFMR_A_RHOPP
+    tsgs:
+    - TSG11_02
+    check: JUDGE
+  - mkp: CGSTA17_S39_SS2#TEXT
+    atom: M_RPFMR_A_RHOPP
+    tsgs:
+    - TSG11_02
+    check: JUDGE
+  - mkp: CGSTA17_S39_SS7_P1#TEXT
+    atom: M_TPBRPFR_A_TDTAOP
     tsgs:
     - TSG11_02
     check: JUDGE
@@ -2764,14 +4875,14 @@ facts:
   derived_from: []
   checks:
     python: 1
-    judge: 0
+    judge: 1
   tsgs:
   - tsg: TSG11_01
     name: GSTR-1 / IFF
     atoms: 1
   - tsg: TSG11_02
     name: GSTR-3B
-    atoms: 1
+    atoms: 2
   laws:
   - mkp: CGSTA17_S39_SS1#TEXT
     atom: M_RPFMR_A_RSIOS
@@ -2779,6 +4890,72 @@ facts:
     - TSG11_01
     - TSG11_02
     check: PYTHON
+  - mkp: CGSTA17_S39_SS7_P1#TEXT
+    atom: M_TPBRPFR_A_TDTAOP
+    tsgs:
+    - TSG11_02
+    check: JUDGE
+- fact_id: F_RPC
+  name: Return Period Coverage
+  entity: RETURN
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG05_05
+    name: Tax period & reporting period
+    atoms: 1
+  - tsg: TSG11_04
+    name: Annual return (GSTR-9 / 9C)
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S39_SS2#TEXT
+    atom: M_CTFAR_A_RFFYOP
+    tsgs:
+    - TSG05_05
+    - TSG11_04
+    check: PYTHON
+- fact_id: F_RPM
+  name: Rectification Period Match
+  entity: RECTIFICATION
+  data_type: CODE
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - F_RTP
+  - F_ERROR_NOTICED_PERIOD
+  checks:
+    python: 1
+    judge: 0
+  tsgs: []
+  laws:
+  - mkp: CGSTA17_S39_SS9#TEXT
+    atom: M_ROOIR_A_RINPR
+    tsgs: []
+    check: PYTHON
+- fact_id: F_RPP
+  name: Rectification Priority Provision
+  entity: RECT
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs: []
+  laws:
+  - mkp: CGSTA17_S39_SS9#TEXT
+    atom: M_ROOIR_A_STS37A38
+    tsgs: []
+    check: JUDGE
 - fact_id: F_RRF
   name: Reason Recording Form
   entity: ''
@@ -2821,6 +4998,19 @@ facts:
     tsgs:
     - TSG01_03
     check: PYTHON
+- fact_id: F_RSD
+  name: Rectification Submission Date
+  entity: RECTIFICATION
+  data_type: DATE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
 - fact_id: F_RSS
   name: Recipient SEZ Status
   entity: RECIPIENT
@@ -2838,6 +5028,121 @@ facts:
     atom: M_ISESS_A_STSP
     tsgs: []
     check: PYTHON
+- fact_id: F_RT
+  name: Return Type
+  entity: RETURN
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
+- fact_id: F_RTAAR
+  name: Rectification Timing Against Annual Return
+  entity: RECTIFICATION
+  data_type: CODE
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - F_RSD
+  - F_ARFD
+  checks:
+    python: 1
+    judge: 0
+  tsgs: []
+  laws:
+  - mkp: CGSTA17_S39_SS9_P1#TEXT
+    atom: M_TLFROO_A_RAARD
+    tsgs: []
+    check: PYTHON
+- fact_id: F_RTADD
+  name: Rectification Timing Against Due Date
+  entity: RECTIFICATION
+  data_type: CODE
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - F_RSD
+  - F_CRDD
+  checks:
+    python: 1
+    judge: 0
+  tsgs: []
+  laws:
+  - mkp: CGSTA17_S39_SS9_P1#TEXT
+    atom: M_TLFROO_A_RARDD
+    tsgs: []
+    check: PYTHON
+- fact_id: F_RTD
+  name: Return Turnover Details
+  entity: RETURN
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG11_04
+    name: Annual return (GSTR-9 / 9C)
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S39_SS2#TEXT
+    atom: M_CTFAR_A_RCST
+    tsgs:
+    - TSG11_04
+    check: PYTHON
+- fact_id: F_RTP
+  name: Return Tax Period
+  entity: RETURN
+  data_type: PERIOD
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 3
+    judge: 0
+  tsgs:
+  - tsg: TSG01_01
+    name: Supply with consideration
+    atoms: 3
+  - tsg: TSG01_03
+    name: Neither supply (Schedule III)
+    atoms: 3
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 3
+  laws:
+  - mkp: CGSTA17_S39_SS8#TEXT
+    atom: M_MRFBRP_A_RFFTP
+    tsgs:
+    - TSG01_01
+    - TSG01_03
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS10#TEXT
+    atom: M_RFNAIPU_A_RFTPF
+    tsgs:
+    - TSG01_01
+    - TSG01_03
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS10#TEXT
+    atom: M_RFNAIPU_A_EPRU
+    tsgs:
+    - TSG01_01
+    - TSG01_03
+    - TSG15_03
+    check: PYTHON
 - fact_id: F_RTPD
   name: Return Tax Payable Details
   entity: RETURN
@@ -2847,11 +5152,14 @@ facts:
   reviewed: false
   derived_from: []
   checks:
-    python: 1
-    judge: 0
+    python: 2
+    judge: 3
   tsgs:
   - tsg: TSG11_02
     name: GSTR-3B
+    atoms: 4
+  - tsg: TSG15_03
+    name: Demand & recovery
     atoms: 1
   laws:
   - mkp: CGSTA17_S39_SS1#TEXT
@@ -2859,6 +5167,26 @@ facts:
     tsgs:
     - TSG11_02
     check: PYTHON
+  - mkp: CGSTA17_S50_SS1_P1#TEXT
+    atom: M_IOTPECL_A_TDIR
+    tsgs:
+    - TSG11_02
+    check: JUDGE
+  - mkp: CGSTA17_S73_SS1#TEXT
+    atom: M_SCNFTNP_A_OBTSE
+    tsgs:
+    - TSG15_03
+    check: JUDGE
+  - mkp: CGSTA17_S39_SS2#TEXT
+    atom: M_RPFMR_A_RSTP
+    tsgs:
+    - TSG11_02
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS7_P1#TEXT
+    atom: M_TPBRPFR_A_TDTAOP
+    tsgs:
+    - TSG11_02
+    check: JUDGE
 - fact_id: F_RTPD2
   name: Return Tax Paid Details
   entity: RETURN
@@ -2868,18 +5196,36 @@ facts:
   reviewed: false
   derived_from: []
   checks:
-    python: 1
+    python: 2
     judge: 0
   tsgs:
   - tsg: TSG11_02
     name: GSTR-3B
-    atoms: 1
+    atoms: 2
   laws:
   - mkp: CGSTA17_S39_SS1#TEXT
     atom: M_RPFMR_A_RSTP2
     tsgs:
     - TSG11_02
     check: PYTHON
+  - mkp: CGSTA17_S39_SS2#TEXT
+    atom: M_RPFMR_A_RSTP2
+    tsgs:
+    - TSG11_02
+    check: PYTHON
+- fact_id: F_RTSII
+  name: Reference to Schedule II
+  entity: SUPPLY
+  data_type: BOOL
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
 - fact_id: F_SAT
   name: Software Activity Type
   entity: ACTIVITY
@@ -2936,6 +5282,31 @@ facts:
     tsgs:
     - TSG01_10
     check: PYTHON
+- fact_id: F_SBC
+  name: Supply Business Context
+  entity: SUPPLY
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG01_01
+    name: Supply with consideration
+    atoms: 1
+  - tsg: TSG01_06
+    name: Business test
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SICOB
+    tsgs:
+    - TSG01_01
+    - TSG01_06
+    check: JUDGE
 - fact_id: F_SCB
   name: Supply Charge Basis
   entity: SUPPLY
@@ -2957,6 +5328,42 @@ facts:
     tsgs:
     - TSG07_01
     check: PYTHON
+- fact_id: F_SCR
+  name: Shortfall Cause Recorded
+  entity: TAX
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 4
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 4
+  laws:
+  - mkp: CGSTA17_S74_SS1#TEXT
+    atom: M_SCNFFE_A_OOOSBF
+    tsgs:
+    - TSG15_03
+    check: JUDGE
+  - mkp: CGSTA17_S74_SS1#TEXT
+    atom: M_SCNFFE_A_SBROF
+    tsgs:
+    - TSG15_03
+    check: JUDGE
+  - mkp: CGSTA17_S74_SS1#TEXT
+    atom: M_SCNFFE_A_SBWMTE
+    tsgs:
+    - TSG15_03
+    check: JUDGE
+  - mkp: CGSTA17_S74_SS1#TEXT
+    atom: M_SCNFFE_A_SBSOF
+    tsgs:
+    - TSG15_03
+    check: JUDGE
 - fact_id: F_SCS
   name: Supply Consideration Status
   entity: SUPPLY
@@ -2966,31 +5373,19 @@ facts:
   reviewed: false
   derived_from: []
   checks:
-    python: 6
-    judge: 1
+    python: 3
+    judge: 5
   tsgs:
   - tsg: TSG01_01
     name: Supply with consideration
-    atoms: 5
+    atoms: 6
   - tsg: TSG01_02
     name: Supply without consideration (Schedule I)
     atoms: 2
+  - tsg: TSG03_04
+    name: Imports
+    atoms: 1
   laws:
-  - mkp: CGSTA17_S7_SS1_Cc#TEXT
-    atom: M_SIAWC_A_AMWC
-    tsgs:
-    - TSG01_02
-    check: PYTHON
-  - mkp: CGSTA17_S7_SS1_Ca#TEXT
-    atom: M_SIAFOS_A_SIMFC
-    tsgs:
-    - TSG01_01
-    check: PYTHON
-  - mkp: CGSTA17_S7_SS1_Ca#TEXT
-    atom: M_SIAFOS_A_SIAFC
-    tsgs:
-    - TSG01_01
-    check: PYTHON
   - mkp: CGSTA17_SCHI_EN2_P1#TEXT
     atom: M_GTENS_A_TIAG
     tsgs:
@@ -3011,6 +5406,27 @@ facts:
     tsgs:
     - TSG01_01
     check: PYTHON
+  - mkp: CGSTA17_S7_SS1_Cc#TEXT
+    atom: M_SIAWC_A_AIWC
+    tsgs:
+    - TSG01_02
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SMFC
+    tsgs:
+    - TSG01_01
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS1_Ca#TEXT
+    atom: M_SIAFOS_A_SAFC
+    tsgs:
+    - TSG01_01
+    check: JUDGE
+  - mkp: CGSTA17_S7_SS1_Cb#TEXT
+    atom: M_IOSFC_A_IIFAC
+    tsgs:
+    - TSG01_01
+    - TSG03_04
+    check: JUDGE
 - fact_id: F_SCT
   name: Supply Consideration Type
   entity: ''
@@ -3020,18 +5436,10 @@ facts:
   reviewed: false
   derived_from: []
   checks:
-    python: 1
+    python: 0
     judge: 0
-  tsgs:
-  - tsg: TSG01_01
-    name: Supply with consideration
-    atoms: 1
-  laws:
-  - mkp: CGSTA17_S7_SS1_Cb#TEXT
-    atom: M_IOSFC_A_IMFC
-    tsgs:
-    - TSG01_01
-    check: PYTHON
+  tsgs: []
+  laws: []
 - fact_id: F_SEC
   name: Service Employment Context
   entity: SERVICE
@@ -3108,6 +5516,45 @@ facts:
     tsgs:
     - TSG01_02
     check: JUDGE
+- fact_id: F_SGT
+  name: Statement Grounds Text
+  entity: STATEMENT
+  data_type: TEXT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 2
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S73_SS4#TEXT
+    atom: M_SOSDN_A_GSAEN
+    tsgs:
+    - TSG15_03
+    check: JUDGE
+  - mkp: CGSTA17_S74_SS4#TEXT
+    atom: M_SOSDN2_A_GSAEN
+    tsgs:
+    - TSG15_03
+    check: JUDGE
+- fact_id: F_SIAP
+  name: Supplier Is A Person
+  entity: SUPPLIER
+  data_type: BOOL
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
 - fact_id: F_SK
   name: Software Kind
   entity: SOFTWARE
@@ -3138,33 +5585,19 @@ facts:
   reviewed: false
   derived_from: []
   checks:
-    python: 9
-    judge: 3
+    python: 8
+    judge: 2
   tsgs:
   - tsg: TSG01_01
     name: Supply with consideration
-    atoms: 3
+    atoms: 1
   - tsg: TSG01_02
     name: Supply without consideration (Schedule I)
     atoms: 3
   - tsg: TSG01_03
     name: Neither supply (Schedule III)
     atoms: 3
-  - tsg: TSG03_04
-    name: Imports
-    atoms: 1
   laws:
-  - mkp: CGSTA17_S7_SS1_Cb#TEXT
-    atom: M_IOSFC_A_TISI
-    tsgs:
-    - TSG01_01
-    - TSG03_04
-    check: JUDGE
-  - mkp: CGSTA17_S7_SS1_Ca#TEXT
-    atom: M_SIAFOS_A_SIOGOS
-    tsgs:
-    - TSG01_01
-    check: PYTHON
   - mkp: CGSTA17_SCHIII_EN1#TEXT
     atom: M_ESTE_A_AIAS
     tsgs:
@@ -3260,21 +5693,40 @@ facts:
   derived_from: []
   checks:
     python: 0
-    judge: 1
+    judge: 0
+  tsgs: []
+  laws: []
+- fact_id: F_SPCS
+  name: Statement Period Coverage Status
+  entity: PERIOD
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 3
+    judge: 0
   tsgs:
-  - tsg: TSG01_01
-    name: Supply with consideration
-    atoms: 1
-  - tsg: TSG03_04
-    name: Imports
-    atoms: 1
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 3
   laws:
-  - mkp: CGSTA17_S7_SS1_Cb#TEXT
-    atom: M_IOSFC_A_TISI
+  - mkp: CGSTA17_S73_SS3#TEXT
+    atom: M_SFOP_A_POTN
     tsgs:
-    - TSG01_01
-    - TSG03_04
-    check: JUDGE
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS3#TEXT
+    atom: M_SFOP_A_POTN
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS4#TEXT
+    atom: M_SFOP_A_POTN
+    tsgs:
+    - TSG15_03
+    check: PYTHON
 - fact_id: F_SPRD
   name: Supply Payment Receipt Date
   entity: SUPPLY
@@ -3338,6 +5790,32 @@ facts:
     tsgs:
     - TSG01_14
     check: PYTHON
+- fact_id: F_SSOS
+  name: Statement Serving Officer Status
+  entity: AUTHORITY
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 1
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S73_SS3#TEXT
+    atom: M_SFOP_A_POSS
+    tsgs:
+    - TSG15_03
+    check: JUDGE
+  - mkp: CGSTA17_S74_SS3#TEXT
+    atom: M_SFOP_A_POSS
+    tsgs:
+    - TSG15_03
+    check: PYTHON
 - fact_id: F_SSS
   name: Supplier SEZ Status
   entity: SUPPLIER
@@ -3355,6 +5833,227 @@ facts:
     atom: M_ISESS_A_SBSP
     tsgs: []
     check: PYTHON
+- fact_id: F_SSS2
+  name: Statement Service Status
+  entity: STATEMENT
+  data_type: BOOL
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 2
+    judge: 0
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S73_SS4#TEXT
+    atom: M_SOSDN_A_SISOP
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS4#TEXT
+    atom: M_SOSDN_A_SISOP
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+- fact_id: F_STST
+  name: Statement Tax Shortfall Type
+  entity: TAX
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 15
+    judge: 1
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 16
+  laws:
+  - mkp: CGSTA17_S73_SS3#TEXT
+    atom: M_SFOP_A_SCTD
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S73_SS1#TEXT
+    atom: M_SCNFTNP_A_THNBP
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S73_SS1#TEXT
+    atom: M_SCNFTNP_A_THBSP
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S73_SS1#TEXT
+    atom: M_SCNFTNP_A_TER
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S73_SS1#TEXT
+    atom: M_SCNFTNP_A_ICWA
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S73_SS1#TEXT
+    atom: M_SCNFTNP_A_ICWU
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS1#TEXT
+    atom: M_SCNFFE_A_OOOSBF
+    tsgs:
+    - TSG15_03
+    check: JUDGE
+  - mkp: CGSTA17_S74_SS1#TEXT
+    atom: M_SCNFTNP_A_THNBP
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS1#TEXT
+    atom: M_SCNFTNP_A_THBSP
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS1#TEXT
+    atom: M_SCNFTNP_A_TER
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS1#TEXT
+    atom: M_SCNFTNP_A_ICWA
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS1#TEXT
+    atom: M_SCNFTNP_A_ICWU
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS3#TEXT
+    atom: M_SFOP_A_SCTD
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS6#TEXT
+    atom: M_SFOP_A_SCTD
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS5#TEXT
+    atom: M_PBNFF_A_TSIOLT
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS9#TEXT
+    atom: M_PBNFF_A_TSIOLT
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+- fact_id: F_TAB
+  name: Tax Ascertainment Basis
+  entity: TAX
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 4
+    judge: 0
+  tsgs:
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 4
+  laws:
+  - mkp: CGSTA17_S73_SS5#TEXT
+    atom: M_VTPBN_A_POOA
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S73_SS5#TEXT
+    atom: M_VTPBN_A_POOA2
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS5#TEXT
+    atom: M_VTPBN_A_POOA
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS5#TEXT
+    atom: M_VTPBN_A_POOA2
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+- fact_id: F_TACS11A2
+  name: Transaction Already Characterized S7(1), (1A), (2)
+  entity: TRANSACTION
+  data_type: BOOL
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
+- fact_id: F_TDA
+  name: Tax Due Amount
+  entity: TAX
+  data_type: AMOUNT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 2
+  tsgs:
+  - tsg: TSG11_02
+    name: GSTR-3B
+    atoms: 1
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S39_SS7_P1#TEXT
+    atom: M_TPBRPFR_A_TDTAOP
+    tsgs:
+    - TSG11_02
+    check: JUDGE
+  - mkp: CGSTA17_S74_SS7#TEXT
+    atom: M_SNASP_A_POFO
+    tsgs:
+    - TSG15_03
+    check: JUDGE
+- fact_id: F_TDP
+  name: Tax Deduction Period
+  entity: TAX
+  data_type: PERIOD
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG05_05
+    name: Tax period & reporting period
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S39_SS3#TEXT
+    atom: M_RPFTR_A_RFMOD
+    tsgs:
+    - TSG05_05
+    check: JUDGE
 - fact_id: F_TIR
   name: Transfer Initiator Role
   entity: ''
@@ -3376,6 +6075,86 @@ facts:
     tsgs:
     - TSG01_02
     check: PYTHON
+- fact_id: F_TISOU
+  name: Turnover In State Or UT
+  entity: PERSON
+  data_type: AMOUNT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG12_04
+    name: Late fee
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S47_SS2#TEXT
+    atom: M_LFFFTFR_A_LFFAR
+    tsgs:
+    - TSG12_04
+    check: PYTHON
+- fact_id: F_TISUS1
+  name: Transaction Is Supply Under S7(1)
+  entity: TRANSACTION
+  data_type: BOOL
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG01_01
+    name: Supply with consideration
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S7_SS1A#TEXT
+    atom: M_TAGOS_A_TIASUS1
+    tsgs:
+    - TSG01_01
+    check: JUDGE
+- fact_id: F_TN
+  name: Transaction Nature
+  entity: TRANSACTION
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 1
+  tsgs:
+  - tsg: TSG01_01
+    name: Supply with consideration
+    atoms: 1
+  - tsg: TSG03_04
+    name: Imports
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S7_SS1_Cb#TEXT
+    atom: M_IOSFC_A_TIAIOS
+    tsgs:
+    - TSG01_01
+    - TSG03_04
+    check: JUDGE
+- fact_id: F_TOLI
+  name: Type Of Legal Instrument
+  entity: DOCUMENT
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
 - fact_id: F_TOSOG
   name: Time Of Supply Of Goods
   entity: SUPPLY
@@ -3393,6 +6172,53 @@ facts:
     atom: M_LTPTOG_A_TOSDPS
     tsgs: []
     check: JUDGE
+- fact_id: F_TPBDD
+  name: Tax Paid By Due Date
+  entity: TAX
+  data_type: AMOUNT
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
+- fact_id: F_TPD
+  name: Tax Payment Date
+  entity: TAX
+  data_type: DATE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG12_03
+    name: Interest
+    atoms: 1
+  laws:
+  - mkp: CGSTR17_R37_SR3#TEXT
+    atom: M_ILORC_A_IRTAP
+    tsgs:
+    - TSG12_03
+    check: PYTHON
+- fact_id: F_TPDD
+  name: Tax Payment Due Date
+  entity: TAX
+  data_type: DATE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
 - fact_id: F_TPOR
   name: Tax Period Of Return
   entity: PERIOD
@@ -3403,17 +6229,17 @@ facts:
   derived_from: []
   checks:
     python: 1
-    judge: 2
+    judge: 8
   tsgs:
   - tsg: TSG05_05
     name: Tax period & reporting period
-    atoms: 1
+    atoms: 4
   - tsg: TSG11_01
     name: GSTR-1 / IFF
     atoms: 1
   - tsg: TSG11_02
     name: GSTR-3B
-    atoms: 2
+    atoms: 7
   laws:
   - mkp: CGSTA17_S37_SS1#TEXT
     atom: M_RPOSD_A_DAOOS
@@ -3431,6 +6257,137 @@ facts:
     tsgs:
     - TSG11_02
     check: JUDGE
+  - mkp: CGSTA17_S50_SS1_P1#TEXT
+    atom: M_IOTPECL_A_TDIR
+    tsgs:
+    - TSG11_02
+    check: JUDGE
+  - mkp: CGSTA17_S39_SS5#TEXT
+    atom: M_RPFMR_A_RCCMOP
+    tsgs:
+    - TSG05_05
+    - TSG11_02
+    check: JUDGE
+  - mkp: CGSTA17_S39_SS2#TEXT
+    atom: M_RPFMR_A_RFWPT
+    tsgs:
+    - TSG11_02
+    check: JUDGE
+  - mkp: CGSTA17_S39_SS4#TEXT
+    atom: M_RPFMR_A_RCCMOP
+    tsgs:
+    - TSG05_05
+    - TSG11_02
+    check: JUDGE
+  - mkp: CGSTA17_S39_SS3#TEXT
+    atom: M_RPFTR_A_RFMOD
+    tsgs:
+    - TSG05_05
+    check: JUDGE
+  - mkp: CGSTA17_S39_SS7_P1#TEXT
+    atom: M_TPBRPFR_A_TDTAOP
+    tsgs:
+    - TSG11_02
+    check: JUDGE
+- fact_id: F_TPS
+  name: Tax Payment Status
+  entity: TAX
+  data_type: CODE
+  kind: DOCUMENT
+  how: ''
+  reviewed: false
+  derived_from: []
+  checks:
+    python: 4
+    judge: 0
+  tsgs:
+  - tsg: TSG12_01
+    name: Tax payment & ledgers
+    atoms: 2
+  - tsg: TSG15_03
+    name: Demand & recovery
+    atoms: 2
+  laws:
+  - mkp: CGSTA17_S73_SS6#TEXT
+    atom: M_BONFTP_A_TSP
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S39_SS7_P1#TEXT
+    atom: M_TPBRPFR_A_TDPTG
+    tsgs:
+    - TSG12_01
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS6#TEXT
+    atom: M_BONFTP_A_TSP
+    tsgs:
+    - TSG15_03
+    check: PYTHON
+  - mkp: CGSTA17_S74_SS11#TEXT
+    atom: M_TPBRPFR_A_TDPTG
+    tsgs:
+    - TSG12_01
+    check: PYTHON
+- fact_id: F_TPT
+  name: Tax Payment Timing
+  entity: TAX
+  data_type: CODE
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - F_TPD
+  - F_TPDD
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG12_01
+    name: Tax payment & ledgers
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S39_SS7_P1#TEXT
+    atom: M_TPBRPFR_A_TPWPT
+    tsgs:
+    - TSG12_01
+    check: PYTHON
+- fact_id: F_TTSBN
+  name: Transaction Type Specified By Notification
+  entity: TRANSACTION
+  data_type: BOOL
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - NA
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
+- fact_id: F_TUA
+  name: Tax Unpaid Amount
+  entity: TAX
+  data_type: AMOUNT
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - F_TDA
+  - F_TPBDD
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG12_03
+    name: Interest
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S50_SS1#TEXT
+    atom: M_IODPOT_A_TNPWP
+    tsgs:
+    - TSG12_03
+    check: PYTHON
 - fact_id: F_TUC
   name: Term Usage Context
   entity: ''
@@ -3439,6 +6396,44 @@ facts:
   how: ''
   reviewed: false
   derived_from: []
+  checks:
+    python: 0
+    judge: 0
+  tsgs: []
+  laws: []
+- fact_id: F_TUP
+  name: Tax Unpaid Period
+  entity: TAX
+  data_type: PERIOD
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - F_TPDD
+  - F_TPD
+  checks:
+    python: 1
+    judge: 0
+  tsgs:
+  - tsg: TSG12_03
+    name: Interest
+    atoms: 1
+  laws:
+  - mkp: CGSTA17_S50_SS1#TEXT
+    atom: M_IODPOT_A_TRUFP
+    tsgs:
+    - TSG12_03
+    check: PYTHON
+- fact_id: F_ULFA
+  name: Uncapped Late Fee Amount
+  entity: FEE
+  data_type: AMOUNT
+  kind: DERIVED
+  how: ''
+  reviewed: false
+  derived_from:
+  - F_RETURN_DELAY_DAYS
+  - F_LFDR
   checks:
     python: 0
     judge: 0

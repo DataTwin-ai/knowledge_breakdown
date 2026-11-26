@@ -1,10 +1,10 @@
 # GOVERNANCE MASTER TSG14_06 Statutory Interpretation of Definitions (TG14 Definitions & Effective Law)
-# LAW ARC - 19 laws - status NEEDS_REVIEW
+# LAW ARC - 20 laws - status NEEDS_REVIEW
 name: TSG14_06 Statutory Interpretation of Definitions - GOVERNANCE MASTER rulebook
 version: TSG14_06
 facts:
   # ---- level 1: gate facts - if one is false, that law stops here
-  F_SKOT:  # 1. 1 gate | 5 law(s)
+  F_SKOT:  # 1. 1 gate | 3 law(s)
     name: Supply Kind Of Transaction
     type: CODE
     options:
@@ -12,6 +12,22 @@ facts:
     - GOODS
     - SERVICES
     tier: T1
+    origin:
+      document: SALE_INVOICE
+      method: LOOKUP
+      uses: [SALE_INVOICE.hsn_sac]
+      how_to_get: 'For each line take hsn_sac. Look it up in the HSN/SAC table: codes beginning with 99 are services, other codes are goods. If all lines are goods the value is GOODS, if all are services the value is SERVICES, if both appear the value is BOTH.'
+      fallback: 'Read SALE_INVOICE.line_description and decide goods or services; if still unclear, read CONTRACT.subject or ask the user: ''Is this a sale of goods, a service, or both?'''
+      when_missing: ASK
+      as_of: invoice date
+      level: INVOICE
+      ai_level: NONE
+      cost: MEDIUM
+      example: SERVICES
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
   F_GWS:  # 2. 1 gate | 2 law(s)
     name: Goods Warehousing Status
     type: CODE
@@ -20,6 +36,22 @@ facts:
     - OTHER
     - WAREHOUSED
     tier: T0
+    origin:
+      document: CUSTOMS
+      method: FIELD
+      uses: [CUSTOMS.warehoused, CUSTOMS.be_type]
+      how_to_get: Take CUSTOMS.warehoused from the bill of entry or warehouse papers. If true, the value is WAREHOUSED. If false, the value is NOT_WAREHOUSED. If the be_type shows something that is neither, the value is OTHER.
+      fallback: 'If the warehoused flag is empty, treat a filled CUSTOMS.warehouse_code as WAREHOUSED. Otherwise ask the user: ''Were the goods held in a customs warehouse when supplied?'''
+      when_missing: ASK
+      as_of: date of supply
+      level: LINE_ITEM
+      ai_level: NONE
+      cost: LOW
+      example: WAREHOUSED
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
   F_HCS:  # 3. 1 gate | 2 law(s)
     name: Home Clearance Status
     type: CODE
@@ -28,6 +60,22 @@ facts:
     - CLEARED_FOR_HOME_CONSUMPTION
     - OTHER
     tier: T1
+    origin:
+      document: CUSTOMS
+      method: FIELD
+      uses: [CUSTOMS.cleared_for_home_consumption, CUSTOMS.be_date]
+      how_to_get: Take CUSTOMS.cleared_for_home_consumption from the bill of entry. If it is false or not yet cleared on the date of supply, the value is BEFORE_CLEARANCE. If it is true and the clearance was on or before the date of supply, the value is CLEARED_FOR_HOME_CONSUMPTION. Otherwise OTHER.
+      fallback: 'Ask the user: ''Had the goods been cleared for home consumption when you supplied them?'''
+      when_missing: ASK
+      as_of: date of supply
+      level: LINE_ITEM
+      ai_level: NONE
+      cost: LOW
+      example: BEFORE_CLEARANCE
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
   F_PEO:  # 4. 1 gate | 2 law(s)
     name: Person Elected Office
     type: CODE
@@ -39,15 +87,23 @@ facts:
     - OTHER_LOCAL_AUTHORITY_MEMBER
     - NONE
     tier: T1
-  F_SCS:  # 5. 1 gate | 2 law(s)
-    name: Supply Consideration Status
-    type: CODE
-    options:
-    - AGREED
-    - NONE
-    - PAID
-    tier: T1
-  F_BEA:  # 6. 1 gate | 1 law(s)
+    origin:
+      document: PROFILE
+      method: FIELD
+      uses: [PROFILE.elected_office]
+      how_to_get: 'From the person''s profile, read elected_office. Map it to one code: Member of Parliament gives MP, State Legislature gives STATE_LEGISLATURE_MEMBER, Panchayat gives PANCHAYAT_MEMBER, Municipality gives MUNICIPAL_MEMBER, any other local authority gives OTHER_LOCAL_AUTHORITY_MEMBER. If the field is blank, return NONE.'
+      fallback: 'Ask the user: ''Which elected office does the person hold (MP, State Legislature, Panchayat, Municipality, other local authority, or none)?'''
+      when_missing: ASK
+      as_of: date the functions were performed
+      level: TAXPAYER
+      ai_level: NONE
+      cost: LOW
+      example: PANCHAYAT_MEMBER
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_BEA:  # 5. 1 gate | 1 law(s)
     name: Body Establishing Authority
     type: CODE
     options:
@@ -56,14 +112,46 @@ facts:
     - LOCAL_AUTHORITY
     - OTHER
     tier: T1
-  F_DPT:  # 7. 1 gate | 1 law(s)
+    origin:
+      document: PROFILE
+      method: FIELD
+      uses: [PROFILE.established_by, PROFILE.establishing_law]
+      how_to_get: 'Read PROFILE.established_by. Map it: Central Government to CENTRAL_GOVT, State Government to STATE_GOVT, Local Authority to LOCAL_AUTHORITY, anything else to OTHER.'
+      fallback: Read PROFILE.establishing_law to see which government made the law that set up the body. If still unclear, ask the user who established the body.
+      when_missing: ASK
+      as_of: date of supply
+      level: TAXPAYER
+      ai_level: NONE
+      cost: LOW
+      example: STATE_GOVT
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_DPT:  # 6. 1 gate | 1 law(s)
     name: Destination Place Territory
     type: CODE
     options:
     - NON_TAXABLE_TERRITORY
     - OTHER_TERRITORY
     tier: T1
-  F_GDPL:  # 8. 1 gate | 1 law(s)
+    origin:
+      document: SALE_INVOICE
+      method: LOOKUP
+      uses: [SALE_INVOICE.ship_to_state]
+      how_to_get: Read ship_to_state from the invoice. Look it up in the table of Indian states and Union Territories. If it is found, the value is OTHER_TERRITORY. If it is a place outside India, the value is NON_TAXABLE_TERRITORY.
+      fallback: 'Use SALE_INVOICE.place_of_supply the same way. If both are empty, ask the user: To which country or state are the goods delivered?'
+      when_missing: ASK
+      as_of: date of supply
+      level: INVOICE
+      ai_level: NONE
+      cost: MEDIUM
+      example: OTHER_TERRITORY
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_GDPL:  # 7. 1 gate | 1 law(s)
     name: Goods Dispatch Port Location
     type: CODE
     options:
@@ -71,35 +159,119 @@ facts:
     - NOT_DISPATCHED
     - OUTSIDE_INDIA_PORT
     tier: T1
-  F_GEII:  # 9. 1 gate | 1 law(s)
+    origin:
+      document: USER
+      method: ASK
+      uses: [CUSTOMS.be_no, CUSTOMS.port_code]
+      how_to_get: 'Ask the user: ''Have the goods been dispatched yet? If so, was the port of dispatch in India or outside India?'' Answers map to NOT_DISPATCHED, INDIA_PORT or OUTSIDE_INDIA_PORT.'
+      fallback: If a CUSTOMS bill of entry exists with be_no, the goods were dispatched from outside India, so use OUTSIDE_INDIA_PORT.
+      when_missing: UNKNOWN
+      as_of: date of supply
+      level: TRANSACTION
+      ai_level: NONE
+      cost: HIGH
+      example: OUTSIDE_INDIA_PORT
+      confidence: low
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_GEII:  # 8. 1 gate | 1 law(s)
     name: Goods Entry Into India
     type: CODE
     options:
     - ENTERS_INDIA
     - DOES_NOT_ENTER
     tier: T1
-  F_GTM:  # 10. 1 gate | 1 law(s)
+    derived_from:
+    - F_SOOT
+    formula: If F_SOOT = 'IMPORT', then F_GEII = 'ENTERS_INDIA'. Otherwise (if F_SOOT = 'EXPORT' or 'DOMESTIC'), F_GEII =
+      'DOES_NOT_ENTER'.
+    origin:
+      document: CUSTOMS
+      method: DERIVED
+      uses: [F_SOOT, CUSTOMS.be_no]
+      how_to_get: 'If a CUSTOMS bill of entry exists (CUSTOMS.be_no present), the goods entered India: ENTERS_INDIA. Otherwise use the origin and destination places from F_SOOT. If both are in the non-taxable territory and no bill of entry exists, the value is DOES_NOT_ENTER.'
+      fallback: 'Ask the user: ''Did these goods enter into India?'''
+      when_missing: ASK
+      as_of: date of supply
+      level: TRANSACTION
+      ai_level: NONE
+      cost: MEDIUM
+      example: DOES_NOT_ENTER
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_GTM:  # 9. 1 gate | 1 law(s)
     name: Goods Transfer Mechanism
     type: CODE
     options:
     - ENDORSEMENT_OF_DOCUMENTS_OF_TITLE
     - OTHER
     tier: T1
-  F_ODR:  # 11. 1 gate | 1 law(s)
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.subject]
+      how_to_get: Read CONTRACT.subject for how the goods are passed to the buyer. If it says the documents of title (bill of lading, delivery order) are endorsed to the buyer, the value is ENDORSEMENT_OF_DOCUMENTS_OF_TITLE. Otherwise OTHER.
+      fallback: 'Ask the user: ''Were the goods transferred by endorsement of documents of title, or in another way?'''
+      when_missing: ASK
+      as_of: date of supply
+      level: TRANSACTION
+      ai_level: LOW
+      cost: HIGH
+      example: ENDORSEMENT_OF_DOCUMENTS_OF_TITLE
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_ODR:  # 10. 1 gate | 1 law(s)
     name: Origin Destination Relation
     type: CODE
     options:
     - DIFFERENT_PLACE
     - SAME_PLACE
     tier: T1
-  F_OPT:  # 12. 1 gate | 1 law(s)
+    origin:
+      document: SALE_INVOICE
+      method: DERIVED
+      uses: [SALE_INVOICE.supplier_state, SALE_INVOICE.ship_to_state, SALE_INVOICE.place_of_supply]
+      how_to_get: Compare the origin place with the destination place on the invoice. Origin is supplier_state. Destination is ship_to_state, or place_of_supply if ship_to_state is blank. Return SAME_PLACE if they are the same, otherwise DIFFERENT_PLACE.
+      fallback: 'Ask the user: ''Is the place the goods are sent to the same as the place they are sent from?'''
+      when_missing: ASK
+      as_of: date of supply (invoice date)
+      level: TRANSACTION
+      ai_level: NONE
+      cost: LOW
+      example: DIFFERENT_PLACE
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_OPT:  # 11. 1 gate | 1 law(s)
     name: Origin Place Territory
     type: CODE
     options:
     - NON_TAXABLE_TERRITORY
     - OTHER_TERRITORY
     tier: T1
-  F_PBR:  # 13. 1 gate | 1 law(s)
+    origin:
+      document: SALE_INVOICE
+      method: LOOKUP
+      uses: [SALE_INVOICE.supplier_state]
+      how_to_get: Take supplier_state from the invoice. Look it up in the table of Indian States and Union Territories. If it is found, return OTHER_TERRITORY. If it is a place outside India's taxable territory (a foreign country or other place outside India), return NON_TAXABLE_TERRITORY.
+      fallback: 'Ask the user: ''Were the goods supplied from a place outside India''s taxable territory?'''
+      when_missing: ASK
+      as_of: date of supply (invoice date)
+      level: TRANSACTION
+      ai_level: NONE
+      cost: MEDIUM
+      example: OTHER_TERRITORY
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_PBR:  # 12. 1 gate | 1 law(s)
     name: Person Body Role
     type: CODE
     options:
@@ -108,11 +280,43 @@ facts:
     - DIRECTOR
     - OTHER
     tier: T1
-  F_PDEBC:  # 14. 1 gate | 1 law(s)
+    origin:
+      document: PROFILE
+      method: FIELD
+      uses: [PROFILE.post_held, PROFILE.designation]
+      how_to_get: 'From the person''s profile, read post_held (or designation if post_held is blank). Python maps the text: Chairperson or Chairman to CHAIRPERSON, Member to MEMBER, Director to DIRECTOR, anything else to OTHER.'
+      fallback: 'Ask the user: ''Is the person a Chairperson, a Member or a Director of the body, or something else?'''
+      when_missing: ASK
+      as_of: date the duties were performed
+      level: TAXPAYER
+      ai_level: NONE
+      cost: LOW
+      example: DIRECTOR
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_PDEBC:  # 13. 1 gate | 1 law(s)
     name: Person Deemed Employee Before Commencement
     type: BOOLEAN
     tier: T1
-  F_PRR:  # 15. 1 gate | 1 law(s)
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.employment_terms, CONTRACT.start_date, CONTRACT.parties]
+      how_to_get: 'Read the employment papers in the contract: employment_terms, start_date and parties. Decide whether the person was in an employer-employee relationship (or deemed to be one) with the body before the clause commenced. Return true if so, otherwise false.'
+      fallback: 'Ask the user: ''Before this rule came into force, was the person treated as an employee of the body?'''
+      when_missing: ASK
+      as_of: date the clause commenced
+      level: TAXPAYER
+      ai_level: HIGH
+      cost: HIGH
+      example: 'false'
+      confidence: low
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_PRR:  # 14. 1 gate | 1 law(s)
     name: Provider Recipient Relation
     type: CODE
     options:
@@ -123,30 +327,40 @@ facts:
     - PRINCIPAL_AGENT
     - RELATED_PERSONS
     tier: T1
-  F_RRIT:  # 16. 1 gate | 1 law(s)
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.relation_between_parties, CONTRACT.parties, CONTRACT.employment_terms]
+      how_to_get: Read the relation between the parties in the contract. Map it to EMPLOYEE_EMPLOYER, PRINCIPAL_AGENT, CONTRACTOR_CLIENT, RELATED_PERSONS or DISTINCT_PERSONS. If there is no stated relation, use the parties and the employment terms to decide. Use OTHER if none fits.
+      fallback: 'Ask the user: ''What is the relationship between the provider and the recipient: employee-employer, principal-agent, or something else?'''
+      when_missing: ASK
+      as_of: date of supply
+      level: TRANSACTION
+      ai_level: LOW
+      cost: HIGH
+      example: EMPLOYEE_EMPLOYER
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_RRIT:  # 15. 1 gate | 1 law(s)
     name: Recipient Role In Transaction
     type: CODE
     options:
     - CONSIGNEE
     - OTHER_PERSON
     tier: T0
-  F_SCT:  # 17. 1 gate | 1 law(s)
-    name: Supply Consideration Type
-    type: CODE
-    options:
-    - MONEY
-    - NON_MONEY
-    - NONE
-    tier: T1
-  F_SRIS:  # 18. 1 gate | 1 law(s)
+    origin: {document: USER, method: ASK, how_to_get: 'Ask the user: ''Is the buyer the consignee named in the bill of lading / bill of entry, or another person to whom the consignee transferred the goods by endorsing the documents of title?''. Map consignee to CONSIGNEE and any other person to OTHER_PERSON.', fallback: 'Compare the recipient on SALE_INVOICE (recipient_name) with the importer on the customs papers (CUSTOMS.importer_iec). If they are different persons, the value is OTHER_PERSON.', when_missing: ASK, as_of: date of supply, level: TRANSACTION, ai_level: NONE, cost: HIGH, example: OTHER_PERSON, confidence: medium, sensitive: false, reviewed: false, origin_by: AI}
+  F_SRIS:  # 16. 1 gate | 1 law(s)
     name: Supplier Role In Supply
     type: CODE
     options:
     - CONSIGNEE
     - OTHER
     tier: T0
+    origin: {document: USER, method: ASK, how_to_get: 'Ask the user: ''Is the person making this supply the consignee of the goods named in the bill of lading or import papers?'' Answer yes gives CONSIGNEE, no gives OTHER.', fallback: 'If a CUSTOMS bill of entry is available, compare importer_iec with the supplier''s IEC; if it is not the same, the value is OTHER.', when_missing: UNKNOWN, as_of: date of supply, level: TRANSACTION, ai_level: NONE, cost: HIGH, example: OTHER, confidence: low, sensitive: false, reviewed: false, origin_by: AI}
   # ---- level 2: asked only when that law's gates pass
-  F_BD:  # 19. 2 | 1 law(s)
+  F_BD:  # 17. 2 | 1 law(s)
     name: Body Designation
     type: CODE
     options:
@@ -157,7 +371,168 @@ facts:
     - SUPREME_COURT
     - TRIBUNAL
     tier: T1
-  F_FOS:  # 20. 2 | 1 law(s) | asked only if M_SIAFOS: F_SKOT + F_SCS
+    origin:
+      document: PROFILE
+      method: FIELD
+      uses: [PROFILE.body_type]
+      how_to_get: 'Read PROFILE.body_type of the body. Map it: District Court to DISTRICT_COURT, High Court to HIGH_COURT, Supreme Court to SUPREME_COURT, Tribunal to TRIBUNAL, any other court to OTHER_COURT, anything else to OTHER_BODY.'
+      fallback: 'Ask the user: ''Is the body a District Court, High Court, Supreme Court, other court, tribunal or another body?'''
+      when_missing: ASK
+      as_of: date of supply
+      level: TAXPAYER
+      ai_level: NONE
+      cost: LOW
+      example: HIGH_COURT
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_PSS:  # 18. 2 | 1 law(s)
+    name: Property Sale Subject
+    type: CODE
+    options:
+    - BUILDING
+    - LAND
+    - LAND_AND_BUILDING
+    - OTHER
+    tier: T1
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.property_description, CONTRACT.subject]
+      how_to_get: Read the property description in the sale deed or contract. If only land is sold, the value is LAND. If only a building is sold, the value is BUILDING. If both are sold, the value is LAND_AND_BUILDING. If it is something else, the value is OTHER.
+      fallback: 'Ask the user: ''Is the property sold land, a building, or both?'''
+      when_missing: ASK
+      as_of: date of the sale deed
+      level: TRANSACTION
+      ai_level: LOW
+      cost: HIGH
+      example: LAND_AND_BUILDING
+      confidence: high
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  # ---- LAST: only heavy checks (free text) need these
+  F_DOAOT:  # 19. LAST (heavy check only) | 6 law(s) | asked only if M_ESTE: F_SKOT + F_PRR
+    name: Description Of Activity Or Transaction
+    type: TEXT
+    tier: T1
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.subject, CONTRACT.property_description, CONTRACT.employment_terms]
+      how_to_get: Read the contract subject, then property_description if it is about property, or employment_terms if it is about employment. Write a short plain-text description of the activity or transaction and who does it for whom.
+      fallback: 'Use SALE_INVOICE.line_description. If that is also missing, ask the user: Please describe the activity or transaction.'
+      when_missing: ASK
+      as_of: date of the activity or transaction
+      level: TRANSACTION
+      ai_level: LOW
+      cost: HIGH
+      example: Sale of a vacant plot of land to a buyer
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_DOTA:  # 20. LAST (heavy check only) | 4 law(s) | asked only if M_FOEM: F_PEO | M_DBGBM: F_BEA + F_PBR + F_PDEBC
+    name: Description Of The Activity
+    type: TEXT
+    tier: T1
+    source_kind: DOCUMENT
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.parties, CONTRACT.subject]
+      how_to_get: Read parties and subject. Write what the activity consists of, and whether the Central Government, a State Government or a local authority carries it out as a public authority (sovereign function) or as a commercial service.
+      fallback: 'Ask the user: What is the activity, and does the government body carry it on as a public authority?'
+      when_missing: ASK
+      as_of: date of the activity
+      level: TRANSACTION
+      ai_level: HIGH
+      cost: HIGH
+      example: Municipal corporation issuing a trade licence as a statutory function
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_PCM:  # 21. LAST (heavy check only) | 3 law(s)
+    name: Provision Context Meaning
+    type: CODE
+    options:
+    - CONTEXT_REQUIRES_OTHER_MEANING
+    - NO_OTHER_MEANING_REQUIRED
+    - UNDETERMINED
+    tier: T1
+    unit: M_DOISOG_CT_N
+    origin: {document: SYSTEM, method: READ, how_to_get: 'The engine reads the provision that uses the defined term, with its neighbouring text. It decides whether that provision shows the term must carry a different meaning. Return CONTEXT_REQUIRES_OTHER_MEANING if so, NO_OTHER_MEANING_REQUIRED if the provision is consistent with the standard definition, and UNDETERMINED if it cannot tell. Never ask the user.', fallback: Return UNDETERMINED., when_missing: UNKNOWN, as_of: not date dependent (the law text as in force on the date of the transaction), level: DOCUMENT, ai_level: HIGH, cost: HIGH, example: NO_OTHER_MEANING_REQUIRED, confidence: medium, sensitive: false, reviewed: false, origin_by: AI}
+  F_SCS:  # 22. LAST (heavy check only) | 3 law(s)
+    name: Supply Consideration Status
+    type: CODE
+    options:
+    - AGREED
+    - NONE
+    - PAID
+    tier: T1
+    origin:
+      document: CONTRACT
+      method: DERIVED
+      uses: [CONTRACT.consideration, CONTRACT.consideration_type]
+      how_to_get: Read consideration and consideration_type from the contract. If consideration is blank or nil / zero (or the type says no consideration, e.g. gift), the value is NONE. If consideration_type or the papers show it has been paid (cash, bank, advance received), the value is PAID. If an amount or benefit is promised but not yet paid, the value is AGREED.
+      fallback: 'Use SALE_INVOICE.total_value: if it is above zero there is a consideration (AGREED, or PAID if payment is shown). Otherwise ask the user: ''Is anything paid or promised in return for this supply?'''
+      when_missing: ASK
+      as_of: date of supply
+      level: TRANSACTION
+      ai_level: NONE
+      cost: MEDIUM
+      example: AGREED
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_EL:  # 23. LAST (heavy check only) | 2 law(s)
+    name: Establishing Law
+    type: TEXT
+    tier: T1
+    origin:
+      document: PROFILE
+      method: FIELD
+      uses: [PROFILE.establishing_law]
+      how_to_get: Read PROFILE.establishing_law for the court or Tribunal. This is the law or order under which it was established. Copy the text as printed.
+      fallback: 'If the profile has no value, ask the user: ''Under which law or order was this court or Tribunal established?'''
+      when_missing: ASK
+      as_of: date of supply
+      level: TAXPAYER
+      ai_level: NONE
+      cost: LOW
+      example: Administrative Tribunals Act, 1985
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_ASIS:  # 24. LAST (heavy check only) | 1 law(s)
+    name: Activity Schedule I Status
+    type: CODE
+    options:
+    - NOT_SPECIFIED_IN_SCHEDULE_I
+    - SPECIFIED_IN_SCHEDULE_I
+    tier: T1
+    source_kind: READ
+    origin:
+      document: SYSTEM
+      method: ASK
+      uses: [F_DOTS, SALE_INVOICE.line_description, CONTRACT.subject]
+      how_to_get: Compare the description of the activity (from F_DOTS or SALE_INVOICE.line_description or CONTRACT.subject) against the list of activities specified in Schedule I of the CGST Act. If it matches any activity listed, the value is SPECIFIED_IN_SCHEDULE_I. Otherwise, it is NOT_SPECIFIED_IN_SCHEDULE_I.
+      fallback: UNKNOWN
+      when_missing: UNKNOWN
+      as_of: Date of supply/activity
+      level: TRANSACTION
+      ai_level: NONE
+      cost: MEDIUM
+      example: SPECIFIED_IN_SCHEDULE_I
+      confidence: low
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_FOS:  # 25. LAST (heavy check only) | 1 law(s)
     name: Form Of Supply
     type: CODE
     options:
@@ -171,36 +546,22 @@ facts:
     - SALE
     - TRANSFER
     tier: T1
-  F_PSS:  # 21. 2 | 1 law(s)
-    name: Property Sale Subject
-    type: CODE
-    options:
-    - BUILDING
-    - LAND
-    - LAND_AND_BUILDING
-    - OTHER
-    tier: T1
-  # ---- LAST: only heavy checks (free text) need these
-  F_DOTA:  # 22. LAST (heavy check only) | 6 law(s) | asked only if M_SIAFOS: F_SKOT + F_SCS | M_SIAWC: F_SCS | M_FOEM: F_PEO | M_DBGBM: F_BEA + F_PBR + F_PDEBC
-    name: Description Of The Activity
-    type: TEXT
-    tier: T1
-  F_DOAOT:  # 23. LAST (heavy check only) | 4 law(s) | asked only if M_ESTE: F_SKOT + F_PRR
-    name: Description Of Activity Or Transaction
-    type: TEXT
-    tier: T1
-  F_PCM:  # 24. LAST (heavy check only) | 3 law(s)
-    name: Provision Context Meaning
-    type: CODE
-    options:
-    - CONTEXT_REQUIRES_OTHER_MEANING
-    - NO_OTHER_MEANING_REQUIRED
-    - UNDETERMINED
-    tier: T1
-  F_EL:  # 25. LAST (heavy check only) | 2 law(s)
-    name: Establishing Law
-    type: TEXT
-    tier: T1
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.subject, CONTRACT.consideration_type, SALE_INVOICE.line_description]
+      how_to_get: 'Read CONTRACT.subject and CONTRACT.consideration_type. Decide the form of supply: SALE for a price in money with transfer of title, BARTER if the consideration is other goods or services, EXCHANGE, LEASE, RENTAL, LICENCE, TRANSFER or DISPOSAL as the wording says. Use OTHER if none fits.'
+      fallback: If there is no contract, read SALE_INVOICE.line_description and invoice_type. If that is also unclear, ask the user how the supply was made.
+      when_missing: ASK
+      as_of: date of supply
+      level: TRANSACTION
+      ai_level: HIGH
+      cost: HIGH
+      example: SALE
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
   F_PBT:  # 26. LAST (heavy check only) | 1 law(s)
     name: Provider Body Type
     type: CODE
@@ -209,6 +570,22 @@ facts:
     - TRIBUNAL
     - OTHER
     tier: T0
+    origin:
+      document: PROFILE
+      method: FIELD
+      uses: [PROFILE.body_type]
+      how_to_get: 'From the profile of the body providing the service, read body_type. Map it: court gives COURT, tribunal gives TRIBUNAL, anything else gives OTHER.'
+      fallback: 'Ask the user: ''Is the body providing the service a court, a tribunal, or something else?'''
+      when_missing: ASK
+      as_of: date of supply of the service
+      level: TRANSACTION
+      ai_level: NONE
+      cost: LOW
+      example: TRIBUNAL
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
   F_PCAS:  # 27. LAST (heavy check only) | 1 law(s)
     name: Person Chartered Accountant Status
     type: CODE
@@ -217,6 +594,22 @@ facts:
     - NOT_DEFINED_BY_CA_ACT_1949
     - UNDETERMINED
     tier: T1
+    origin:
+      document: PROFILE
+      method: LOOKUP
+      uses: [PROFILE.membership_no, PROFILE.professional_qualification]
+      how_to_get: Take membership_no from the person's profile and look it up in the Institute of Chartered Accountants of India members register. If a current member is found with the same name, return DEFINED_BY_CA_ACT_1949. If the register has no such member, return NOT_DEFINED_BY_CA_ACT_1949. If there is no membership_no, return UNDETERMINED.
+      fallback: 'Ask the user: ''Is the person a member of the Institute of Chartered Accountants of India? Please give the membership number.'''
+      when_missing: ASK
+      as_of: date of the service or act being checked
+      level: TAXPAYER
+      ai_level: NONE
+      cost: MEDIUM
+      example: DEFINED_BY_CA_ACT_1949
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
   F_PPC:  # 28. LAST (heavy check only) | 1 law(s)
     name: Provision Paragraph Context
     type: CODE
@@ -225,6 +618,7 @@ facts:
     - OTHER_PROVISION
     - UNDETERMINED
     tier: T1
+    origin: {document: SYSTEM, method: DERIVED, how_to_get: 'The engine knows which provision of the law is being evaluated. If the term ''warehoused goods'' is used in paragraph 8 of Schedule III, the value is PARA8_PROVISION. If it is used in any other provision, the value is OTHER_PROVISION. If the engine cannot tell, the value is UNDETERMINED.', fallback: Use UNDETERMINED., when_missing: UNKNOWN, as_of: time of validation, level: DOCUMENT, ai_level: NONE, cost: LOW, example: PARA8_PROVISION, confidence: low, sensitive: false, reviewed: false, origin_by: AI}
   F_PPH:  # 29. LAST (heavy check only) | 1 law(s)
     name: Person Post Held
     type: CODE
@@ -233,7 +627,32 @@ facts:
     - OTHER_POST
     - NONE
     tier: T1
-  F_SEC:  # 30. LAST (heavy check only) | 1 law(s) | asked only if M_ESTE: F_SKOT + F_PRR
+    origin:
+      document: PROFILE
+      method: READ
+      uses: [PROFILE.post_held, PROFILE.elected_office, PROFILE.designation]
+      how_to_get: Read the post held, the elected office and the designation in the profile. If the person holds a post created by the Constitution of India, such as President, Governor, judge of a High Court, Comptroller and Auditor General, or Member of Parliament or a State Legislature, the value is CONSTITUTIONAL_POST. If the person holds some other post, the value is OTHER_POST. If no post is held, the value is NONE.
+      fallback: 'Ask the user: ''Does this person hold any post under the Constitution? If so, which one?'''
+      when_missing: ASK
+      as_of: date the duties were performed
+      level: TAXPAYER
+      ai_level: LOW
+      cost: HIGH
+      example: CONSTITUTIONAL_POST
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_SBC:  # 30. LAST (heavy check only) | 1 law(s)
+    name: Supply Business Context
+    type: CODE
+    options:
+    - IN_BUSINESS
+    - NOT_IN_BUSINESS
+    - UNKNOWN
+    tier: T1
+    source_kind: READ
+  F_SEC:  # 31. LAST (heavy check only) | 1 law(s) | asked only if M_ESTE: F_SKOT + F_PRR
     name: Service Employment Context
     type: CODE
     options:
@@ -241,13 +660,31 @@ facts:
     - IN_RELATION_TO_EMPLOYMENT
     - NOT_RELATED_TO_EMPLOYMENT
     tier: T1
-  F_SOOT:  # 31. LAST (heavy check only) | 1 law(s) | asked only if M_IOSFC: F_SCT
-    name: Supply Origin Of Transaction
+    origin:
+      document: CONTRACT
+      method: READ
+      uses: [CONTRACT.employment_terms, CONTRACT.subject, CONTRACT.parties, CONTRACT.relation_between_parties]
+      how_to_get: Open the employment papers or contract. Read employment_terms, subject and parties. Decide whether the service is done by an employee for the employer as part of the job (IN_COURSE_OF_EMPLOYMENT), is linked to the job but not part of the normal duties (IN_RELATION_TO_EMPLOYMENT), or has no connection to any employment (NOT_RELATED_TO_EMPLOYMENT, e.g. an independent contractor or a separate business service).
+      fallback: 'Ask the user: ''Is this service done by an employee for their employer, as part of or connected to the job?'''
+      when_missing: ASK
+      as_of: date of supply
+      level: TRANSACTION
+      ai_level: HIGH
+      cost: HIGH
+      example: IN_COURSE_OF_EMPLOYMENT
+      confidence: medium
+      sensitive: false
+      reviewed: false
+      origin_by: AI
+  F_TN:  # 32. LAST (heavy check only) | 1 law(s)
+    name: Transaction Nature
     type: CODE
     options:
-    - IMPORT
-    - DOMESTIC
-    - EXPORT
+    - DOMESTIC_GOODS
+    - DOMESTIC_SERVICES
+    - IMPORT_GOODS
+    - IMPORT_SERVICES
+    - OTHER
     tier: T1
   F_DOI:
     name: Date Of Invoice
@@ -335,103 +772,129 @@ predicates:
     - F_PCM
     handler: heavy
   M_SIAFOS_A_SIAS:
-    statement: The supply takes the form of a sale of goods or services or both
-    order: LOW
-    rule: F_FOS = 'SALE'
-    handler: python
-  M_SIAFOS_A_SIAT:
-    statement: The supply takes the form of a transfer of goods or services or both
-    order: LOW
-    rule: F_FOS = 'TRANSFER'
-    handler: python
-  M_SIAFOS_A_SIAB:
-    statement: The supply takes the form of a barter of goods or services or both
-    order: LOW
-    rule: F_FOS = 'BARTER'
-    handler: python
-  M_SIAFOS_A_SIAE:
-    statement: The supply takes the form of an exchange of goods or services or both
-    order: LOW
-    rule: F_FOS = 'EXCHANGE'
-    handler: python
-  M_SIAFOS_A_SIALG:
-    statement: The supply takes the form of a licence of goods or services or both
-    order: LOW
-    rule: F_FOS = 'LICENCE'
-    handler: python
-  M_SIAFOS_A_SIAR:
-    statement: The supply takes the form of a rental of goods or services or both
-    order: LOW
-    rule: F_FOS = 'RENTAL'
-    handler: python
-  M_SIAFOS_A_SIAL:
-    statement: The supply takes the form of a lease of goods or services or both
-    order: LOW
-    rule: F_FOS = 'LEASE'
-    handler: python
-  M_SIAFOS_A_SIAD:
-    statement: The supply takes the form of a disposal of goods or services or both
-    order: LOW
-    rule: F_FOS = 'DISPOSAL'
-    handler: python
-  M_SIAFOS_A_SIAQF:
-    statement: The supply is another qualifying form of supply of goods or services or both, not one of the listed forms
+    statement: The supply of goods or services or both is a sale.
     order: HIGH
-    interpretation: Is this unlisted form of supply a form of supply of the same kind as sale, transfer, barter, exchange,
-      licence, rental, lease or disposal, given that the list is only illustrative?
+    interpretation: 'Decide whether: The supply of goods or services or both is a sale'
     grounding:
     - F_FOS
-    - F_DOTA
-    handler: heavy
-  M_SIAFOS_A_SIOGOS:
-    statement: The supply is of goods or services or both
-    order: LOW
-    rule: F_SKOT IN ['GOODS', 'SERVICES', 'BOTH']
-    handler: python
-  M_SIAFOS_A_SIMFC:
-    statement: The supply is made for a consideration
-    order: LOW
-    rule: F_SCS = 'PAID'
-    handler: python
-  M_SIAFOS_A_SIAFC:
-    statement: The supply is agreed to be made for a consideration
-    order: LOW
-    rule: F_SCS = 'AGREED'
-    handler: python
-  M_SIAFOS_A_SBPIB:
-    statement: The supply is made by a person in the course or furtherance of business
-    order: HIGH
-    interpretation: Is the person making the supply doing so in the course or furtherance of business, judged from the description
-      of the activity?
-    grounding:
-    - F_DOTA
-    handler: heavy
-  M_IOSFC_A_TISI:
-    statement: The transaction is an import of services
-    order: HIGH
-    interpretation: Does the documented transaction amount to an import of services under the Act, given its supply origin
-      and whether the supply is of services?
-    grounding:
-    - F_SOOT
-    - F_SKOT
     handler: light
-  M_IOSFC_A_IMFC:
-    statement: The import of services was made for a consideration
-    order: LOW
-    rule: F_SCT IN ['MONEY', 'NON_MONEY']
-    handler: python
-  M_SIAWC_A_ASISI:
-    statement: The activity is one of the activities specified in Schedule I.
+  M_SIAFOS_A_SIAT:
+    statement: The supply of goods or services or both is a transfer.
     order: HIGH
-    interpretation: Does the described activity fall within an entry of Schedule I, read with the Schedule entry wording
+    interpretation: 'Decide whether: The supply of goods or services or both is a transfer'
     grounding:
-    - F_DOTA
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAB:
+    statement: The supply of goods or services or both is a barter.
+    order: HIGH
+    interpretation: 'Decide whether: The supply of goods or services or both is a barter'
+    grounding:
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAE:
+    statement: The supply of goods or services or both is an exchange.
+    order: HIGH
+    interpretation: 'Decide whether: The supply of goods or services or both is an exchange'
+    grounding:
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAL:
+    statement: The supply of goods or services or both is a licence.
+    order: HIGH
+    interpretation: 'Decide whether: The supply of goods or services or both is a licence'
+    grounding:
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAR:
+    statement: The supply of goods or services or both is a rental.
+    order: HIGH
+    interpretation: 'Decide whether: The supply of goods or services or both is a rental'
+    grounding:
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAL2:
+    statement: The supply of goods or services or both is a lease.
+    order: HIGH
+    interpretation: 'Decide whether: The supply of goods or services or both is a lease'
+    grounding:
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAD:
+    statement: The supply of goods or services or both is a disposal.
+    order: HIGH
+    interpretation: 'Decide whether: The supply of goods or services or both is a disposal'
+    grounding:
+    - F_FOS
+    handler: light
+  M_SIAFOS_A_SIAF:
+    statement: The supply of goods or services or both is a form other than the specified examples.
+    order: HIGH
+    interpretation: Does the described activity qualify as a form of supply under Section 7(1)(a), even though it is not one
+      of the listed examples (sale, transfer, etc.)?
+    grounding:
+    - F_FOS
+    - F_DOAOT
+    handler: light
+  M_SIAFOS_A_SMFC:
+    statement: The supply is made for a consideration.
+    order: HIGH
+    interpretation: 'Decide whether: The supply is made for a consideration'
+    grounding:
+    - F_SCS
+    handler: light
+  M_SIAFOS_A_SAFC:
+    statement: The supply is agreed to be made for a consideration.
+    order: HIGH
+    interpretation: 'Decide whether: The supply is agreed to be made for a consideration'
+    grounding:
+    - F_SCS
+    handler: light
+  M_SIAFOS_A_SICOB:
+    statement: The supply is made by a person in the course or furtherance of business.
+    order: HIGH
+    interpretation: Is the supply made in the course or furtherance of the person's business?
+    grounding:
+    - F_SBC
+    - F_DOAOT
     handler: heavy
-  M_SIAWC_A_AMWC:
-    statement: The activity was made, or agreed to be made, without a consideration.
-    order: LOW
-    rule: F_SCS = 'NONE'
-    handler: python
+  M_IOSFC_A_TIAIOS:
+    statement: The transaction is an import of services.
+    order: HIGH
+    interpretation: 'Decide whether: The transaction is an import of services'
+    grounding:
+    - F_TN
+    handler: light
+  M_IOSFC_A_IIFAC:
+    statement: The import of services is for a consideration.
+    order: HIGH
+    interpretation: 'Decide whether: The import of services is for a consideration'
+    grounding:
+    - F_SCS
+    handler: light
+  M_SIAWC_A_AISISI:
+    statement: The activity is specified in Schedule I
+    order: HIGH
+    interpretation: Is the activity one of the activities specified in Schedule I of the CGST Act?
+    grounding:
+    - F_ASIS
+    handler: heavy
+  M_SIAWC_A_AIWC:
+    statement: The activity is made or agreed to be made without a consideration
+    order: HIGH
+    interpretation: 'Decide whether: The activity is made or agreed to be made without a consideration'
+    grounding:
+    - F_SCS
+    handler: light
+  M_NTTAG_A_PSTS7P:
+    statement: The power to specify transactions is subject to the provisions of sub-sections (1), (1A) and (2) of Section
+      7.
+    order: HIGH
+    interpretation: Given the description of the transaction(s) covered by the notification, does the specification conflict
+      with the provisions of Section 7(1), (1A), or (2)?
+    grounding:
+    - F_DOAOT
+    handler: heavy
   M_ESTE_A_SBETE:
     statement: The services are provided by an employee to the employer
     order: LOW
@@ -619,6 +1082,9 @@ predicates:
     order: LOW
     rule: F_GEII = 'DOES_NOT_ENTER'
     handler: python
+    compute:
+      F_GEII: If F_SOOT = 'IMPORT', then F_GEII = 'ENTERS_INDIA'. Otherwise (if F_SOOT = 'EXPORT' or 'DOMESTIC'), F_GEII =
+        'DOES_NOT_ENTER'.
   M_SOWGBC_A_GAWG:
     statement: The transaction is a supply of goods that are warehoused goods, as shown by the goods warehousing status
     order: LOW
@@ -686,43 +1152,34 @@ groups:
     - M_MOWG_A_TUFPE
     - M_MOWG_A_GMCM
     description: Both the paragraph 8 scope and the Customs meaning test must hold for the imported meaning to apply
-  M_SIAFOS_G_SFA:
-    name: Supply Form Alternatives
+  M_SIAFOS_G_QFOS:
+    name: Qualifying Forms Of Supply
     logic: ANY
     members:
     - M_SIAFOS_A_SIAS
     - M_SIAFOS_A_SIAT
     - M_SIAFOS_A_SIAB
     - M_SIAFOS_A_SIAE
-    - M_SIAFOS_A_SIALG
-    - M_SIAFOS_A_SIAR
     - M_SIAFOS_A_SIAL
+    - M_SIAFOS_A_SIAR
+    - M_SIAFOS_A_SIAL2
     - M_SIAFOS_A_SIAD
-    - M_SIAFOS_A_SIAQF
-    description: Any one listed form or any other qualifying form of supply. The list after such as is illustrative and not
-      closed.
-  M_SIAFOS_G_MOAC:
-    name: Made Or Agreed Consideration
+    - M_SIAFOS_A_SIAF
+    description: The supply must take one of the listed forms or another qualifying form.
+  M_SIAFOS_G_SFC:
+    name: Supply For Consideration
     logic: ANY
     members:
-    - M_SIAFOS_A_SIMFC
-    - M_SIAFOS_A_SIAFC
-    description: The supply is either made for a consideration or agreed to be made for a consideration. Both events are not
-      required.
-  M_IOSFC_G_IFCG:
-    name: Import For Consideration Group
+    - M_SIAFOS_A_SMFC
+    - M_SIAFOS_A_SAFC
+    description: The supply must be made or agreed to be made for a consideration.
+  M_IOSFC_G_CFIOSTBS:
+    name: Conditions For Import Of Service To Be Supply
     logic: ALL
     members:
-    - M_IOSFC_A_TISI
-    - M_IOSFC_A_IMFC
-    description: Both the import of services and its consideration are required for the inclusion
-  M_SIAWC_G_SAWC:
-    name: Schedule Activity Without Consideration
-    logic: ALL
-    members:
-    - M_SIAWC_A_ASISI
-    - M_SIAWC_A_AMWC
-    description: Both the Schedule I activity test and the nil consideration test must be met for this inclusion.
+    - M_IOSFC_A_TIAIOS
+    - M_IOSFC_A_IIFAC
+    description: Both conditions must be met. The business test is explicitly not a condition for this type of supply.
   M_ESTE_G_ESC:
     name: Employee Service Conditions
     logic: ALL
@@ -822,23 +1279,29 @@ outcomes:
     module: M_DOWC
     description: The context does not otherwise require a meaning of works contract other than this definition. (Section 2(119),
       part of the law)
-  M_SIAFOS_LE_SIBC:
+  M_SIAFOS_LE_IISUS71A:
     outcome: SUPPLY_INCLUDED
-    expr: M_SIAFOS_G_SFA AND M_SIAFOS_A_SIOGOS AND M_SIAFOS_G_MOAC AND M_SIAFOS_A_SBPIB
+    expr: M_SIAFOS_G_QFOS AND M_SIAFOS_G_SFC AND M_SIAFOS_A_SICOB
     module: M_SIAFOS
-    description: The transaction is included in supply under Section 7(1)(a) when it is in a qualifying form, is of goods
-      or services or both, is made or agreed to be made for a consideration, and is by a person in the course or furtherance
-      of business.
-  M_IOSFC_LE_IOSI:
+    description: A transaction is included in the definition of supply if it is a qualifying form of supply, for a consideration,
+      and in the course or furtherance of business.
+  M_IOSFC_LE_IOSFCIS:
     outcome: SUPPLY_INCLUDED
-    expr: M_IOSFC_G_IFCG
+    expr: M_IOSFC_G_CFIOSTBS
     module: M_IOSFC
-    description: Import of services for a consideration is included in supply; the business test is not a member of this expression
-  M_SIAWC_LE_SIO:
+    description: The transaction is included in the scope of supply if it meets the conditions for an import of service for
+      consideration.
+  M_SIAWC_LE_IISFSIA:
     outcome: SUPPLY_INCLUDED
-    expr: M_SIAWC_G_SAWC
+    expr: M_SIAWC_A_AISISI AND M_SIAWC_A_AIWC
     module: M_SIAWC
-    description: The supply is included under this limb only when the Schedule I activity group is met.
+    description: The transaction is included in the scope of supply if it is a Schedule I activity and is without consideration.
+  M_NTTAG_LE_PSTS7P:
+    outcome: POWER_SUBJECT_TO_SECTION_7_PROVISIONS
+    expr: M_NTTAG_A_PSTS7P
+    module: M_NTTAG
+    description: The power to specify transactions is subject to the provisions of sub-sections (1), (1A) and (2) of Section
+      7. (Section 7(3), part of the law)
   M_ESTE_LE_ESNS:
     outcome: NEITHER_SUPPLY
     expr: M_ESTE_G_ESC
@@ -920,14 +1383,17 @@ products:
       both met
   M_DOWC_PD_CDNROM:
     statement: The context does not otherwise require a meaning of works contract other than this definition.
-  M_SIAFOS_PD_SIBC:
-    statement: The transaction is included in supply under Section 7(1)(a) when it is in a qualifying form, is of goods or
-      services or both, is made or agreed to be made for a consideration, and is by a person in the course or furtherance
-      of business.
-  M_IOSFC_PD_IOSI:
-    statement: Import of services for a consideration is included in supply; the business test is not a member of this expression
-  M_SIAWC_PD_SIO:
-    statement: The supply is included under this limb only when the Schedule I activity group is met.
+  M_SIAFOS_PD_IISUS71A:
+    statement: A transaction is included in the definition of supply if it is a qualifying form of supply, for a consideration,
+      and in the course or furtherance of business.
+  M_IOSFC_PD_IOSFCIS:
+    statement: The transaction is included in the scope of supply if it meets the conditions for an import of service for
+      consideration.
+  M_SIAWC_PD_IISFSIA:
+    statement: The transaction is included in the scope of supply if it is a Schedule I activity and is without consideration.
+  M_NTTAG_PD_PSTS7P:
+    statement: The power to specify transactions is subject to the provisions of sub-sections (1), (1A) and (2) of Section
+      7.
   M_ESTE_PD_ESNS:
     statement: The activity is treated as neither a supply of goods nor a supply of services when all employee service conditions
       are met.
@@ -1000,19 +1466,28 @@ compounds:
 - id: C_S7_SS1
   question: 'Section 7(1): which clause applies?'
   includes:
-  - M_SIAFOS_LE_SIBC
-  - M_IOSFC_LE_IOSI
-  - M_SIAWC_LE_SIO
+  - M_SIAFOS_LE_IISUS71A
+  - M_IOSFC_LE_IOSFCIS
+  - M_SIAWC_LE_IISFSIA
   produces:
-  - product: M_SIAFOS_PD_SIBC
+  - product: M_SIAFOS_PD_IISUS71A
     from:
-    - M_SIAFOS_LE_SIBC
-  - product: M_IOSFC_PD_IOSI
+    - M_SIAFOS_LE_IISUS71A
+  - product: M_IOSFC_PD_IOSFCIS
     from:
-    - M_IOSFC_LE_IOSI
-  - product: M_SIAWC_PD_SIO
+    - M_IOSFC_LE_IOSFCIS
+  - product: M_SIAWC_PD_IISFSIA
     from:
-    - M_SIAWC_LE_SIO
+    - M_SIAWC_LE_IISFSIA
+- id: C_NTTAG
+  question: The power to specify transactions is subject to the provisions of sub-sections (1), (1A) and (2) of Section 7?
+    (Section 7(3))
+  includes:
+  - M_NTTAG_LE_PSTS7P
+  produces:
+  - product: M_NTTAG_PD_PSTS7P
+    from:
+    - M_NTTAG_LE_PSTS7P
 - id: C_ESTE
   question: 'Schedule III, entry 1: Employee Services To Employer?'
   includes:

@@ -1,0 +1,109 @@
+# GOVERNANCE MASTER TSG14_02 Amendments & effective dates (TG14 Definitions & Effective Law)
+# LAW ARC - 2 laws - status APPROVED
+name: TSG14_02 Amendments & effective dates - GOVERNANCE MASTER rulebook
+version: TSG14_02
+facts:
+  # ---- level 1: gate facts - if one is false, that law stops here
+  F_ACBN:  # 1. 1 gate | 1 law(s)
+    name: Activity Covered By Notification
+    type: BOOLEAN
+    tier: T1
+  F_AUT:  # 2. 1 gate | 1 law(s)
+    name: Activity Undertaker Type
+    type: CODE
+    options:
+    - CENTRAL_GOVT
+    - STATE_GOVT
+    - LOCAL_AUTHORITY
+    - OTHER
+    tier: T1
+  F_NRB:  # 3. 1 gate | 1 law(s)
+    name: Notification Recommending Body
+    type: CODE
+    options:
+    - COUNCIL
+    - NONE_STATED
+    - OTHER
+    tier: T1
+  # ---- LAST: only heavy checks (free text) need these
+  F_DOAOT:  # 4. LAST (heavy check only) | 1 law(s)
+    name: Description Of Activity Or Transaction
+    type: TEXT
+    tier: T1
+  F_DOTA:  # 5. LAST (heavy check only) | 1 law(s) | asked only if M_NGANGNS: F_ACBN + F_AUT + F_NRB
+    name: Description Of The Activity
+    type: TEXT
+    tier: T1
+  F_DOI:
+    name: Date Of Invoice
+    type: DATE
+    tier: T0
+predicates:
+  M_ANGNS_A_ASISIII:
+    statement: The activity or transaction is specified in Schedule III
+    order: HIGH
+    interpretation: Does the activity or transaction described in the document match an entry specified in Schedule III?
+    grounding:
+    - F_DOAOT
+    handler: heavy
+  M_NGANGNS_A_UBGB:
+    statement: The activity or transaction is undertaken by the Central Government, a State Government or any local authority.
+    order: LOW
+    rule: F_AUT IN ['CENTRAL_GOVT', 'STATE_GOVT', 'LOCAL_AUTHORITY']
+    handler: python
+  M_NGANGNS_A_EAPA:
+    statement: The Central Government, State Government or local authority is engaged in the activity or transaction as a
+      public authority.
+    order: HIGH
+    if_false: the activity is carried on other than as a public authority
+    interpretation: On the description of the activity, is the government body engaged in it as a public authority, rather
+      than in an ordinary commercial or private capacity?
+    grounding:
+    - F_DOTA
+    handler: heavy
+  M_NGANGNS_A_AINBG:
+    statement: The activity or transaction is one that may be notified by the Government and has been so notified.
+    order: LOW
+    rule: F_ACBN = TRUE
+    handler: python
+  M_GPTNQR_A_NOCR:
+    statement: The Government's notification of the class of registered persons is made on the recommendations of the Council
+    order: LOW
+    rule: F_NRB = 'COUNCIL'
+    handler: python
+groups: {}
+outcomes:
+  M_ANGNS_LE_SIIINSO:
+    outcome: NEITHER_GOODS_NOR_SERVICES
+    expr: M_ANGNS_A_ASISIII
+    module: M_ANGNS
+    description: The activity or transaction is treated neither as a supply of goods nor as a supply of services when it is
+      specified in Schedule III, notwithstanding sub-section (1).
+  M_NGANGNS_LE_NANS:
+    outcome: NEITHER_GOODS_NOR_SERVICES
+    expr: M_NGANGNS_A_UBGB AND M_NGANGNS_A_EAPA AND M_NGANGNS_A_AINBG AND M_GPTNQR_A_NOCR
+    module: M_NGANGNS
+    description: When all four conditions hold, the activity or transaction shall be treated neither as a supply of goods
+      nor a supply of services, overriding sub-section (1).
+products:
+  M_ANGNS_PD_SIIINSO:
+    statement: The activity or transaction is treated neither as a supply of goods nor as a supply of services when it is
+      specified in Schedule III, notwithstanding sub-section (1).
+  M_NGANGNS_PD_NANS:
+    statement: When all four conditions hold, the activity or transaction shall be treated neither as a supply of goods nor
+      a supply of services, overriding sub-section (1).
+compounds:
+- id: C_S7_SS2
+  question: 'Section 7(2): which clause applies?'
+  includes:
+  - M_ANGNS_LE_SIIINSO
+  - M_NGANGNS_LE_NANS
+  produces:
+  - product: M_ANGNS_PD_SIIINSO
+    from:
+    - M_ANGNS_LE_SIIINSO
+  - product: M_NGANGNS_PD_NANS
+    from:
+    - M_NGANGNS_LE_NANS
+time:
+  law_date: F_DOI

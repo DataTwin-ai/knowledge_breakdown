@@ -38,6 +38,15 @@ def rf(row: dict, key: str) -> str:
     return str(parse_results(row.get("results") or "").get(key.lower(), "") or "").strip()
 
 
+def _rule_facts(p: dict) -> Set[str]:
+    """The facts a check reads: its rule (engine grammar), or the facts of a calculation atom, or its grounding."""
+    if p.get("facts"):
+        return set(p["facts"])
+    if "rule" in p:
+        return set(R.parse(p["rule"])["facts"])
+    return set(p.get("grounding", []))
+
+
 def rlist(row: dict, key: str) -> List[str]:
     v = rf(row, key).strip().strip("[]")
     return [x.strip().strip("'\"") for x in v.split(",") if x.strip().strip("'\"") and x.strip().upper() != "NA"]
@@ -359,6 +368,28 @@ def build(snap: Snapshot, tsg: str, tsg_name: str, tg: str, tg_name: str, cfg: d
         nl = str(g("nl") or "")
         if nl.strip().endswith("?"):
             spec["ask"] = nl.strip()
+        # 2026-11-26: where the value comes from, and the calculation of a WORKED_OUT fact (python means python)
+        kind = str(g("source_kind") or "").strip().upper().replace(" ", "_")
+        if kind:
+            spec["source_kind"] = kind
+        ins = [f_alias.get(x, x) for x in ((reg or {}).get("derived_from") or (rlist(row, "derived_from") if row else []))]
+        if ins:
+            spec["derived_from"] = list(dict.fromkeys(ins))
+        formula = str(g("derivation") or "").strip()
+        if formula and formula.upper() != "NA":
+            from akp_ss.formula import check as fcheck, own
+            formula = own(formula, fid)
+            spec["formula"] = formula[:500]
+            if fcheck(formula)[1]:
+                report["warnings"].append(f"{fid}: formula '{formula[:80]}' is not formula grammar - review it")
+            used_in = sorted(fcheck(formula)[0] - {fid})
+            if used_in:                                  # every fact the formula uses is an input
+                spec["derived_from"] = list(dict.fromkeys(spec.get("derived_from", []) + [f_alias.get(x, x) for x in used_in]))
+            if kind in ("", "DOCUMENT", "LOOKUP"):
+                spec["source_kind"] = "WORKED_OUT"
+        if unit := str(g("unit") or "").strip():
+            if unit.upper() != "NA":
+                spec["unit"] = unit[:40]
         report["facts"].append({"fact": fid, "akp_type": ptype, "engine_type": spec["type"], "tier": tier,
                                 "evidence": evidence[:200], "derived_from": (reg or {}).get("derived_from") or []})
         return spec
@@ -486,7 +517,9 @@ def build(snap: Snapshot, tsg: str, tsg_name: str, tg: str, tg_name: str, cfg: d
             return []
         held = set(rlist(a, "outside_refs") + rlist(src, "outside_refs"))   # reference design item 7: set at AKP save
         if held or any("outside_refs:" in str(x.get("results") or "") for x in bundles[me].of("A")):
-            return [k for r in mine if r.get("ref_id") in held for k in str(r["source_key"]).split(",") if k]
+            # 2026-11-25: an atom holds a document id, or the exact part of an Act / Rules it names (target_key)
+            return [k for r in mine if r.get("ref_id") in held or (r.get("target_key") and r["target_key"] in held)
+                    for k in str(r["source_key"]).split(",") if k]
         said = " ".join([rf(src, "statement"), " ".join(rlist(src, "reference")), " ".join(rlist(a, "reference"))]).lower()
         out = []
         for r in mine:
@@ -571,7 +604,36 @@ def build(snap: Snapshot, tsg: str, tsg_name: str, tg: str, tg_name: str, cfg: d
             fi = rf(src, "false_if")
             if _sentence(fi):
                 pred["if_false"] = fi[:300]
-            if order == "LOW":
+            from akp_ss.guard import atom_steps, uses_steps
+            steps = atom_steps({"RESULTS": src.get("results") or ""})
+            if order == "LOW" and (steps or uses_steps(rf(src, "rule"))):
+                # 2026-11-27: the calculation is inside the atom - facts are raw inputs, steps are not facts
+                from akp_ss.formula import check_steps
+                names = {**f_alias, **local}
+                steps = OrderedDict((n, R.rename(f, names)) for n, f in steps.items())
+                rule = R.rename(rf(src, "rule"), names)
+                when = rf(src, "when")
+                when = local.get(when, when) if when and when.upper() != "NA" else ""
+                outside = []
+                if when:
+                    w_src = next((x for x in b.of("A") + b.of("A_REF") if local.get(x["element"]) == when), None)
+                    outside = [f"{when}.{s}" for s in (atom_steps({"RESULTS": w_src.get("results") or ""}) if w_src else {})]
+                result = rf(src, "result").lstrip("@")
+                result = "" if result.upper() == "NA" else result
+                used, problems = check_steps(steps, rule, result, outside)
+                for f in sorted(used) + [f for f in facts if f.startswith("F_")]:
+                    use_fact(f)
+                missing = sorted(f for f in used if f not in set(spine_facts) | set(out_facts))
+                if problems or missing:
+                    pred["order"] = "HIGH"
+                    report["warnings"].append(f"{key} {a['element']}: calculation not usable "
+                                              f"({'; '.join(problems + [f'unknown fact {m}' for m in missing])[:200]}) - "
+                                              "decided by the judge instead")
+                else:
+                    pred["facts"] = list(dict.fromkeys([f for f in facts if f in out_facts or f in spine_facts] + sorted(used)))
+                    pred["compute"] = dict(steps)
+                    pred["rule"] = rule
+            elif order == "LOW":
                 raw_rule = rf(src, "rule")
                 for tok in R.ID_TOKEN.findall(raw_rule):
                     if tok.startswith("F_"):
@@ -601,6 +663,34 @@ def build(snap: Snapshot, tsg: str, tsg_name: str, tg: str, tg_name: str, cfg: d
                 report["warnings"].append(f"{key} {a['element']}: handler '{given}' does not fit order {pred['order']} - "
                                           f"{fits[-1]} used")
             pred["handler"] = given if given in fits else fits[-1]
+            how = rf(src, "how")                       # 2026-11-27: how Python gets every input and works it out
+            if pred["handler"] == "python" and how and how.upper() != "NA":
+                pred["how"] = how[:600]
+            # 2026-11-27: an amount atom - runs only when its `when` atom is TRUE and gives `result` (the money)
+            when = rf(src, "when")
+            if when and when.upper() != "NA":
+                pred["when"] = local.get(when, when)
+            result = rf(src, "result").lstrip("@")
+            if result and result.upper() != "NA" and pred["order"] == "LOW":
+                if result.startswith("F_"):                       # older form: a WORKED_OUT fact
+                    result = f_alias.get(result, result)
+                    use_fact(result)
+                pred["result"] = result
+            # 2026-11-26: a python atom carries its calculation - the formula of every WORKED_OUT fact behind its rule
+            if pred["handler"] == "python" and ("rule" in pred or "result" in pred) and "facts" not in pred:
+                compute, todo = OrderedDict(), list(R.parse(pred["rule"])["facts"]) if "rule" in pred else []
+                if "result" in pred:
+                    todo.append(pred["result"])
+                while todo:
+                    fid = todo.pop(0)
+                    s = out_facts.get(fid) or spine_facts.get(fid) or {}
+                    if s.get("formula") and fid not in compute:
+                        compute[fid] = s["formula"]
+                        for x in s.get("derived_from") or []:
+                            use_fact(x)
+                            todo.append(x)
+                if compute:
+                    pred["compute"] = dict(reversed(list(compute.items())))
             # when the check is in force (notes section 6): the AKP time step wrote the window on the atom
             for w in ("valid_from", "valid_to"):
                 day = rf(src, w)
@@ -662,6 +752,35 @@ def build(snap: Snapshot, tsg: str, tsg_name: str, tg: str, tg_name: str, cfg: d
             ex = [local[e] for e in rlist(orow, "exclusive") if e in local]
             if len(ex) >= 2:
                 d["exclusive"] = ex
+            # 2026-11-27: the money of the outcome (late fee, interest ...) - a WORKED_OUT fact with its formula
+            step_amount = next((v for v in (rf(orow, "amount").lstrip("@"), rf(orow, "value").lstrip("@"))
+                                if re.fullmatch(r"[A-Z][A-Z0-9_]*\.[a-z][a-z0-9_]*", v)), "")
+            if step_amount and d["outcomes"]:          # 2026-11-27: the amount atom's result step
+                atom, step = step_amount.split(".", 1)
+                target = next(iter(d["outcomes"]))
+                d["outcomes"][target]["amount"] = f"{local.get(atom, atom)}.{step}"
+                if rf(orow, "unit"):
+                    d["outcomes"][target]["unit"] = rf(orow, "unit")[:20]
+            amount = next((v for v in (rf(orow, "amount").lstrip("@"), rf(orow, "value").lstrip("@"))
+                           if re.fullmatch(r"F_[A-Z0-9_]+", v)), "")
+            if amount and d["outcomes"] and not step_amount:
+                amount = f_alias.get(amount, amount)
+                if use_fact(amount):
+                    target = next(iter(d["outcomes"]))
+                    d["outcomes"][target]["amount"] = amount
+                    if rf(orow, "unit"):
+                        d["outcomes"][target]["unit"] = rf(orow, "unit")[:20]
+                    chain, todo = OrderedDict(), [amount]
+                    while todo:
+                        fid = todo.pop(0)
+                        s = out_facts.get(fid) or spine_facts.get(fid) or {}
+                        if s.get("formula") and fid not in chain:
+                            chain[fid] = s["formula"]
+                            for x in s.get("derived_from") or []:
+                                use_fact(x)
+                                todo.append(x)
+                    if chain:
+                        d["outcomes"][target]["compute"] = dict(reversed(list(chain.items())))
         # triggers
         for ct in b.of("CT"):
             for tok in R.ID_TOKEN.findall(rf(ct, "trigger")):
@@ -817,9 +936,18 @@ def build(snap: Snapshot, tsg: str, tsg_name: str, tg: str, tg_name: str, cfg: d
             for oid in mine:
                 rb["overrides"][oid] = overrides[oid]
         for p in d["predicates"].values():
-            used_facts |= set(R.parse(p["rule"])["facts"]) if "rule" in p else set(p.get("grounding", []))
+            used_facts |= _rule_facts(p)
+            used_facts |= set(p.get("facts") or []) | set(p.get("compute") or {}) | ({p["result"]} if p.get("result") else set())
+        for o in d["outcomes"].values():                 # 2026-11-27: the money of an outcome and its formulas
+            used_facts |= set(o.get("compute") or {}) | ({o["amount"]} if o.get("amount") else set())
         for t in d["triggers"].values():
             used_facts |= R.parse(t["trigger"])["facts"]
+    while True:                                          # every input of a formula is a fact of the yaml too
+        more = {x for f in used_facts for x in (out_facts.get(f) or {}).get("derived_from", [])
+                if x in out_facts and x not in used_facts}
+        if not more:
+            break
+        used_facts |= more
     for fid, spec in out_facts.items():
         if fid in used_facts and fid not in rb["facts"]:
             rb["facts"][fid] = spec
@@ -931,9 +1059,19 @@ def _test_pack(d: dict, rb: dict, name: str) -> Tuple[dict, Dict[str, str]]:
     used = set(facts)
     for pid, p in d["predicates"].items():
         preds[pid] = p
-        used |= set(R.parse(p["rule"])["facts"]) if "rule" in p else set(p.get("grounding", []))
+        used |= _rule_facts(p)
+        used |= set(p.get("facts") or []) | set(p.get("compute") or {}) | ({p["result"]} if p.get("result") else set())
+    for o in d["outcomes"].values():
+        used |= set(o.get("compute") or {}) | ({o["amount"]} if o.get("amount") else set())
+    while True:
+        more = {x for f in used if f in rb["facts"] for x in rb["facts"][f].get("derived_from", [])
+                if x in rb["facts"] and x not in used}
+        if not more:
+            break
+        used |= more
     for f in used - set(facts):
-        facts[f] = rb["facts"][f]
+        if f in rb["facts"]:
+            facts[f] = rb["facts"][f]
     groups = {gid: dict(g, members=[swap.get(m, m) for m in g["members"]]) for gid, g in d["groups"].items()}
     outcomes = {lid: dict(o, expr=R.rename(o["expr"], swap)) for lid, o in d["outcomes"].items()}
     comp = {"id": "C_TEST", "question": name, "includes": list(outcomes),
